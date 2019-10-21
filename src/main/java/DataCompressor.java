@@ -1,10 +1,15 @@
 import quantization.LloydMaxU16ScalarQuantization;
+import quantization.U16;
 import quantization.Utils;
 
 import java.io.FileNotFoundException;
 
 public class DataCompressor {
     public static void main(String[] args) throws FileNotFoundException {
+
+        short max = (short)((1<<16) - 1);
+        int maxi = (int)(1<<16);
+        assert (int)max == 65535;
 
         final String sourceFile = "D:\\tmp\\server-dump\\small.bin";
         final int NumberOfBits = 3;
