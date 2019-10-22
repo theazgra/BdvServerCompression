@@ -6,100 +6,118 @@ import java.util.Arrays;
 
 
 public class LloydMaxU16ScalarQuantization {
+    private final static int U16Max = 0xffff;
+    private final static int U16Min = 0x0;
 
-    private final U16 Min = U16.MinU16;
-    private final U16 Max = U16.MaxU16
-
-    private final U16[] trainingData;
+    private final int[] trainingData;
     private final int bitCount;
     private int intervalCount;
 
-    private U16[] centroids;
-    private U16[] boundaryPoints;
+    private int[] centroids;
+    private int[] boundaryPoints;
     private double[] pdf;
 
-    private static U16[] convertToU16(final short[] src) {
-        U16[] result = new U16[src.length];
-        for (int i = 0; i < src.length; i++) {
-            result[i] = new U16(src[i]);
-        }
+    private static int shortBitsToInt(final short value) {
+        final int result = ((value & 0xff00) | (value & 0x00ff));
         return result;
     }
 
-    private static U16[] convertToU16(final char[] src) {
-        U16[] result = new U16[src.length];
+    private static short u16BitsToShort(final int value) {
+        final short result = (short) value;
+        return result;
+    }
+
+    private static int[] convertToIntArray(final short[] src) {
+        int[] result = new int[src.length];
+        int intValue;
         for (int i = 0; i < src.length; i++) {
-            result[i] = new U16(src[i]);
+            intValue = shortBitsToInt(src[i]);
+            if (intValue < U16Min || intValue > U16Max) {
+                throw new RuntimeException("Source value is outside of bounds for 16-bit unsigned integer.");
+            }
+            result[i] = intValue;
         }
         return result;
     }
 
     public LloydMaxU16ScalarQuantization(final String trainDataset, final int bitCount) throws FileNotFoundException {
-        trainingData = convertToU16(Utils.convertBytesToU16(Utils.readFileBytes(trainDataset)));
-        this.bitCount = bitCount;
-        this.intervalCount = (int) Math.pow(2, this.bitCount);
-    }
-
-    public LloydMaxU16ScalarQuantization(final char[] trainData, final int bitCount) {
-        trainingData = convertToU16(trainData);
+        trainingData = Utils.convertU16BytesToInt(Utils.readFileBytes(trainDataset));
         this.bitCount = bitCount;
         this.intervalCount = (int) Math.pow(2, this.bitCount);
     }
 
     public LloydMaxU16ScalarQuantization(final short[] trainData, final int bitCount) {
-        trainingData = convertToU16(trainData);
+        trainingData = convertToIntArray(trainData);
+        this.bitCount = bitCount;
+        this.intervalCount = (int) Math.pow(2, this.bitCount);
+    }
+
+    public LloydMaxU16ScalarQuantization(final int[] trainData, final int bitCount) {
+        trainingData = trainData;
         this.bitCount = bitCount;
         this.intervalCount = (int) Math.pow(2, this.bitCount);
     }
 
 
     private void initialize() {
-        centroids = new U16[intervalCount];
-        boundaryPoints = new U16[intervalCount + 1];
+        centroids = new int[intervalCount];
+        boundaryPoints = new int[intervalCount + 1];
 
-        boundaryPoints[0] = U16.MinU16;
-        boundaryPoints[intervalCount] = U16.MaxU16;
+        boundaryPoints[0] = U16Min;
+        boundaryPoints[intervalCount] = U16Max;
 
         double intervalSize = (double) (U16.MaxValue - U16.MinValue) / (double) intervalCount;
         for (int i = 0; i < intervalCount; i++) {
-            centroids[i] = new U16((int) Math.floor(((double) i + 0.5) * intervalSize));
+            centroids[i] = (int) Math.floor(((double) i + 0.5) * intervalSize);
         }
     }
 
     private void initializeProbabilityDensityFunction() {
         pdf = new double[U16.MaxValue + 1];
         for (int i = 0; i < trainingData.length; i++) {
-            pdf[trainingData[i].value()] += 1;
+            pdf[trainingData[i]] += 1;
         }
     }
 
     private void recalculateBoundaryPoints() {
         for (int j = 1; j < intervalCount; j++) {
-            if (j == intervalCount - 1) {
-                boundaryPoints[j].set((int) Math.ceil((centroids[j].add(centroids[j - 1]).doubleValue()) / 2.0));
-            }
+            boundaryPoints[j] = (centroids[j] + centroids[j - 1]) / 2;
         }
     }
 
     private void recalculateCentroids() {
         // TODO(Moravec): We cann't create floating points in here because we are trying to quantize to integer values.
+
         double numerator = 0.0;
         double denominator = 0.0;
+
+        int lowerBound, upperBound;
+
         for (int j = 0; j < intervalCount; j++) {
-            int from = (int) Math.floor(boundaryPoints[j]);
-            int to = (int) Math.ceil(boundaryPoints[j + 1]);
-            for (int n = from; n <= to; n++) {
+
+            numerator = 0.0;
+            denominator = 0.0;
+
+            lowerBound = boundaryPoints[j];
+            //lowerBound = (int) Math.ceil(boundaryPoints[j]);
+            upperBound = boundaryPoints[j + 1];
+            //upperBound = (int) ((j == (intervalCount - 1)) ? Math.ceil(boundaryPoints[j + 1]) : Math.floor(boundaryPoints[j + 1]));
+
+            for (int n = lowerBound; n <= upperBound; n++) {
                 numerator += (double) n * pdf[n];
                 denominator += pdf[n];
             }
-            centroids[j] = (numerator / denominator);
+
+            if (denominator > 0) {
+                // NOTE: Maybe try ceil instead of floor.
+                centroids[j] = (int) Math.floor(numerator / denominator);
+            }
         }
     }
 
-    public <T extends Number> U16 quantize(final T value) {
-        double doubleValue = value.doubleValue();
+    public int quantize(final int value) {
         for (int intervalId = 1; intervalId <= intervalCount; intervalId++) {
-            if ((doubleValue >= boundaryPoints[intervalId - 1]) && (doubleValue < boundaryPoints[intervalId])) {
+            if ((value >= boundaryPoints[intervalId - 1]) && (value < boundaryPoints[intervalId])) {
                 return centroids[intervalId - 1];
             }
         }
@@ -109,8 +127,8 @@ public class LloydMaxU16ScalarQuantization {
     private double getCurrentMse() {
         double mse = 0.0;
         for (int i = 0; i < trainingData.length; i++) {
-            U16 quantizedValue = quantize(trainingData[i]);
-            mse += Math.pow((trainingData[i].sub(quantizedValue).doubleValue()),2);
+            int quantizedValue = quantize(trainingData[i]);
+            mse += Math.pow((double) trainingData[i] - (double) quantizedValue, 2);
         }
         mse /= (double) trainingData.length;
         return mse;
@@ -153,21 +171,34 @@ public class LloydMaxU16ScalarQuantization {
         StringBuilder sb = new StringBuilder();
         sb.append("Centroids: ");
         for (int i = 0; i < centroids.length; i++) {
-            sb.append(String.format("a[%d]=%d;", i, centroids[i].value()));
+            sb.append(String.format("a[%d]=%d;", i, centroids[i]));
         }
         sb.append("\n");
         sb.append("Boundaries: ");
         for (int i = 0; i < boundaryPoints.length; i++) {
-            sb.append(String.format("b[%d]=%d;", i, boundaryPoints[i].value()));
+            sb.append(String.format("b[%d]=%d;", i, boundaryPoints[i]));
         }
         System.out.println(sb);
     }
 
-    public <T extends Number> U16[] quantize(T[] data) {
-        U16[] result = new U16[data.length];
+    public short[] quantize(short[] data) {
+        short[] result = new short[data.length];
+        for (int i = 0; i < data.length; i++) {
+            final int intRepresentationOfValue = shortBitsToInt(data[i]);
+            final int quantizedValue = quantize(intRepresentationOfValue);
+            final short shortRepresentation = u16BitsToShort(quantizedValue);
+            result[i] = shortRepresentation;
+        }
+        return result;
+    }
+
+    public int[] quantize(int[] data) {
+        int[] result = new int[data.length];
         for (int i = 0; i < data.length; i++) {
             result[i] = quantize(data[i]);
         }
         return result;
     }
+
 }
+

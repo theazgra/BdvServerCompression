@@ -15,15 +15,19 @@ public class Utils {
         return new byte[0];
     }
 
-    public static char[] convertBytesToU16(final byte[] bytes) {
-        assert ((bytes.length % 2) == 0);
+    public static int[] convertU16BytesToInt(final byte[] bytes) {
+        assert (bytes.length % 2 == 0);
+        int[] values = new int[bytes.length / 2];
 
-        char[] values = new char[bytes.length / 2];
         int index = 0;
         for (int i = 0; i < bytes.length; i += 2) {
-            short value = 0;
-
-            values[index++] = (char) (((bytes[i] & 0xFF) << 8) | (bytes[i + 1] & 0xFF));
+            final int value = (int)(((bytes[i] & 0xff) << 8) | (bytes[i + 1] & 0xff));
+            if (value > 0)
+            {
+                values[index++] = value;
+                continue;
+            }
+            values[index++] = value;
         }
         return values;
     }
