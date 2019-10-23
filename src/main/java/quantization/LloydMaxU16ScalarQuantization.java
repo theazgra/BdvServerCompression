@@ -4,9 +4,6 @@ import java.io.FileNotFoundException;
 
 
 public class LloydMaxU16ScalarQuantization {
-    private final static int U16Max = 0xffff;
-    private final static int U16Min = 0x0;
-
     private final int[] trainingData;
     private final int bitCount;
     private int intervalCount;
@@ -30,7 +27,7 @@ public class LloydMaxU16ScalarQuantization {
         int intValue;
         for (int i = 0; i < src.length; i++) {
             intValue = shortBitsToInt(src[i]);
-            if (intValue < U16Min || intValue > U16Max) {
+            if (intValue < U16.Min || intValue > U16.Max) {
                 throw new RuntimeException("Source value is outside of bounds for 16-bit unsigned integer.");
             }
             result[i] = intValue;
@@ -61,17 +58,17 @@ public class LloydMaxU16ScalarQuantization {
         centroids = new int[intervalCount];
         boundaryPoints = new int[intervalCount + 1];
 
-        boundaryPoints[0] = U16Min;
-        boundaryPoints[intervalCount] = U16Max;
+        boundaryPoints[0] = U16.Min;
+        boundaryPoints[intervalCount] = U16.Max;
 
-        double intervalSize = (double) (U16Max - U16Min) / (double) intervalCount;
+        double intervalSize = (double) (U16.Max - U16.Min) / (double) intervalCount;
         for (int i = 0; i < intervalCount; i++) {
             centroids[i] = (int) Math.floor(((double) i + 0.5) * intervalSize);
         }
     }
 
     private void initializeProbabilityDensityFunction() {
-        pdf = new double[U16Max + 1];
+        pdf = new double[U16.Max + 1];
         for (int i = 0; i < trainingData.length; i++) {
             pdf[trainingData[i]] += 1;
         }
