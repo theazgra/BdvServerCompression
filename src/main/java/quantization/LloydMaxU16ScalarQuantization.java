@@ -1,8 +1,6 @@
 package quantization;
 
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 
 public class LloydMaxU16ScalarQuantization {
@@ -66,14 +64,14 @@ public class LloydMaxU16ScalarQuantization {
         boundaryPoints[0] = U16Min;
         boundaryPoints[intervalCount] = U16Max;
 
-        double intervalSize = (double) (U16.MaxValue - U16.MinValue) / (double) intervalCount;
+        double intervalSize = (double) (U16Max - U16Min) / (double) intervalCount;
         for (int i = 0; i < intervalCount; i++) {
             centroids[i] = (int) Math.floor(((double) i + 0.5) * intervalSize);
         }
     }
 
     private void initializeProbabilityDensityFunction() {
-        pdf = new double[U16.MaxValue + 1];
+        pdf = new double[U16Max + 1];
         for (int i = 0; i < trainingData.length; i++) {
             pdf[trainingData[i]] += 1;
         }
