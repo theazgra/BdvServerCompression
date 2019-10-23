@@ -1,8 +1,10 @@
+import org.apache.commons.math3.distribution.CauchyDistribution;
 import quantization.LloydMaxU16ScalarQuantization;
-import quantization.U16;
 import quantization.Utils;
 
 import java.io.FileNotFoundException;
+
+
 
 public class DataCompressor {
     public static void main(String[] args) throws FileNotFoundException {
@@ -15,5 +17,6 @@ public class DataCompressor {
         quantization.train();
 
         System.out.println("Finished learning...");
+
     }
 }
