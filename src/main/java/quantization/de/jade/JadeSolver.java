@@ -13,6 +13,7 @@ import quantization.Utils;
 import quantization.de.IDESolver;
 import quantization.de.IIndividual;
 import quantization.de.DeException;
+import quantization.utilities.Stopwatch;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,8 +42,12 @@ public class JadeSolver implements IDESolver {
     private RandomGenerator rg;
     private int[] m_trainingData;
 
+    private int m_workerCount;
+
     public JadeSolver() {
         rg = new MersenneTwister();
+        m_workerCount = Runtime.getRuntime().availableProcessors() - 1;
+        assert (m_workerCount > 0);
     }
 
     public JadeSolver(final int dimension, final int populationSize, final int generationCount) {
@@ -196,22 +201,39 @@ public class JadeSolver implements IDESolver {
         return mse;
     }
 
-
     /**
-     * Calculate fitness values for individuals in current population.
+     * Parallelized calculation of fitness values for individuals in current population.
      */
-    private double calculateFitnessForPopulation() {
+    private double calculateFitnessForPopulationParallel() {
 
         double avg = 0.0;
-        // TODO(Moravec): Parallelize.
-        for (int individualIndex = 0; individualIndex < m_populationSize; individualIndex++) {
-            double individualFitness = getIndividualFitness(m_currentPopulation[individualIndex]);
-            m_currentPopulation[individualIndex].setFitness(individualFitness);
-            avg += individualFitness;
-            System.out.print(String.format("\rFinished fitness for individual %d/%d", individualIndex + 1, m_populationSize));
+        Stopwatch s = new Stopwatch();
+        s.start();
+
+        RunnablePopulationFitness[] workerInfos = new RunnablePopulationFitness[m_workerCount];
+        Thread[] workers = new Thread[m_workerCount];
+        int threadWorkSize = m_populationSize / m_workerCount;
+
+        for (int workerId = 0; workerId < m_workerCount; workerId++) {
+            int workerFrom = workerId * threadWorkSize;
+            int workerTo = (workerId == (m_workerCount - 1)) ? m_populationSize : (workerId * threadWorkSize) + threadWorkSize;
+            workerInfos[workerId] = new RunnablePopulationFitness(m_trainingData, m_currentPopulation, workerFrom, workerTo);
+            workers[workerId] = new Thread(workerInfos[workerId]);
+            workers[workerId].start();
         }
-        System.out.println();
+
+        try {
+            for (int workerId = 0; workerId < m_workerCount; workerId++) {
+                workers[workerId].join();
+                avg += workerInfos[workerId].getTotalMse();
+            }
+        } catch (InterruptedException ignored) {
+        }
+
+
         avg /= (double) m_populationSize;
+        s.stop();
+        System.out.println("Calculated population fitness in [ms]: " + s.totalElapsedMilliseconds());
 
         return avg;
     }
@@ -224,8 +246,6 @@ public class JadeSolver implements IDESolver {
 
         double mutationFactor = current.getMutationFactor();
         for (int j = 0; j < m_dimension; j++) {
-
-            // TODO: Check constraints! (p.3)
 
             mutationVector[j] = (int) Math.floor(current.getAttribute(j) +
                     (mutationFactor * ((double) x_p_Best.getAttribute(j) - current.getAttribute(j))) +
@@ -298,7 +318,7 @@ public class JadeSolver implements IDESolver {
 
 
         generateInitialPopulation();
-        double avgFitness = calculateFitnessForPopulation();
+        double avgFitness = calculateFitnessForPopulationParallel();
         System.out.println(String.format("Generation %d average fitness(COST): %.5f", 0, avgFitness));
 
         ArrayList<Double> successfulCr = new ArrayList<Double>(m_populationSize);
@@ -354,7 +374,7 @@ public class JadeSolver implements IDESolver {
                     oldMuCr, m_muCr, oldMuF, m_muF));
             truncateArchive();
             m_currentPopulation = nextPopulation;
-            avgFitness = calculateFitnessForPopulation();
+            avgFitness = calculateFitnessForPopulationParallel();
             System.out.println(String.format("Generation %d average fitness(COST): %.5f", (generation + 1), avgFitness));
         }
     }

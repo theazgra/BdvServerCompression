@@ -1,8 +1,11 @@
 package quantization;
 
-public class Quantizer {
+public class Quantizer implements Runnable {
     private int[] m_centroids;
     private int[] m_boundaryPoints;
+    private double m_mse = 0.0;
+
+    private int[] m_trainData = null;
 
     public Quantizer(final int min, final int max, final int[] centroids) {
         m_centroids = centroids;
@@ -33,5 +36,21 @@ public class Quantizer {
         }
         mse /= (double) data.length;
         return mse;
+    }
+
+    public void setThreadTrainData(final int[] data) {
+        m_trainData = data;
+    }
+
+    @Override
+    public void run() {
+        if (m_trainData == null) {
+            throw new RuntimeException("Train data weren't set.");
+        }
+        m_mse = getMse(m_trainData);
+    }
+
+    public double getMse() {
+        return m_mse;
     }
 }
