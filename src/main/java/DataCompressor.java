@@ -1,20 +1,13 @@
-import org.apache.commons.math3.distribution.CauchyDistribution;
-import quantization.LloydMaxU16ScalarQuantization;
-import quantization.Utils;
 import quantization.de.DeException;
 import quantization.de.DeHistory;
 import quantization.de.jade.JadeSolver;
-import quantization.utilities.Stopwatch;
+import quantization.lloyd_max.LloydMaxIteration;
+import quantization.lloyd_max.LloydMaxU16ScalarQuantization;
+import quantization.utilities.Utils;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 
 class RunnableTest implements Runnable {
@@ -31,15 +24,48 @@ class RunnableTest implements Runnable {
 public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
-        final String sourceFile = "D:\\tmp\\server-dump\\small.bin";
-        final int NumberOfBits = 4;
+        final String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
+        final int NumberOfBits = 5;
         final int Dimension = (int) Math.pow(2, NumberOfBits);
         int[] values = Utils.convertU16BytesToInt(Utils.readFileBytes(sourceFile));
 
-//        LloydMaxU16ScalarQuantization quantization = new LloydMaxU16ScalarQuantization(values, NumberOfBits);
-//        quantization.train();
+        //benchmarkLloydMax(values);
+        //lloydMax(NumberOfBits, values);
+        jade(Dimension, values);
+    }
 
-        JadeSolver jadeSolver = new JadeSolver(Dimension, 10 * Dimension, 250, 0.05, 0.1);
+    private static void benchmarkLloydMax(final int[] values) {
+        for (int bitCount = 2; bitCount < 3; bitCount++) {
+            LloydMaxIteration[] solutionHistory = lloydMax(bitCount, values);
+            String fileName = String.format("lloyd_max_%dbits.csv", bitCount);
+            saveLloydMaxSolutionHistory(solutionHistory, fileName);
+        }
+    }
+
+    private static LloydMaxIteration[] lloydMax(final int noOfBits, final int[] values) {
+        LloydMaxU16ScalarQuantization quantization = new LloydMaxU16ScalarQuantization(values, noOfBits);
+        return quantization.train(true);
+    }
+
+    private static void saveLloydMaxSolutionHistory(final LloydMaxIteration[] solutionHistory, String filename) {
+        try {
+            FileOutputStream os = new FileOutputStream(filename);
+            OutputStreamWriter writer = new OutputStreamWriter(os);
+            writer.write("Iteration;Mse\n");
+            for (final LloydMaxIteration lmi : solutionHistory) {
+                writer.write(String.format("%d;%.5f\n", lmi.getIteration(), lmi.getMse()));
+            }
+            writer.flush();
+            writer.close();
+            os.flush();
+            os.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void jade(final int dimension, final int[] values) throws IOException {
+        JadeSolver jadeSolver = new JadeSolver(dimension, 5 * dimension, 250, 0.05, 0.1);
         jadeSolver.setTrainingData(values);
 
         DeHistory[] solutionHistory = null;

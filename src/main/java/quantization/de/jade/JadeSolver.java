@@ -8,7 +8,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import quantization.Quantizer;
 import quantization.U16;
-import quantization.Utils;
+import quantization.utilities.Utils;
 import quantization.de.DeHistory;
 import quantization.de.IDESolver;
 import quantization.de.IIndividual;
@@ -48,7 +48,7 @@ public class JadeSolver implements IDESolver {
 
     public JadeSolver() {
         //rg = new MersenneTwister();
-        m_workerCount = Runtime.getRuntime().availableProcessors() - 1;
+        m_workerCount = Runtime.getRuntime().availableProcessors() - 4;
         assert (m_workerCount > 0);
     }
 
@@ -434,7 +434,7 @@ public class JadeSolver implements IDESolver {
             stopwatch.stop();
 
             generationLog.append("Current best: ").append(m_currentPopulationSorted[0].getInfo());
-            generationLog.append(String.format("Average fitness(cost): %.6f\nIteration finished in: %d ms\n", avgFitness, stopwatch.totalElapsedMilliseconds()));
+            generationLog.append(String.format("\nAverage fitness(cost): %.6f\nIteration finished in: %d ms\n", avgFitness, stopwatch.totalElapsedMilliseconds()));
 
 //            System.out.println(String.format("Generation %d average fitness(COST): %.5f", (generation + 1), avgFitness));
             System.out.println(generationLog.toString());

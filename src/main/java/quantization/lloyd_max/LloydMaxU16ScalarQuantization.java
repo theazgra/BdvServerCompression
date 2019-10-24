@@ -1,6 +1,10 @@
-package quantization;
+package quantization.lloyd_max;
+
+import quantization.U16;
+import quantization.utilities.Utils;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 
 
 public class LloydMaxU16ScalarQuantization {
@@ -129,35 +133,44 @@ public class LloydMaxU16ScalarQuantization {
         return mse;
     }
 
-    public void train() {
+    public LloydMaxIteration[] train(boolean verbose) {
         initialize();
         initializeProbabilityDensityFunction();
 
         double prevMse = 1.0;
         double currentMse = 1.0;
 
+        ArrayList<LloydMaxIteration> solutionHistory = new ArrayList<LloydMaxIteration>();
+
         recalculateBoundaryPoints();
         recalculateCentroids();
-
-        printCurrentConfigration();
-
+        if (verbose) {
+            printCurrentConfigration();
+        }
         currentMse = getCurrentMse();
         System.out.println(String.format("Current MSE: %f", currentMse));
+        int iter = 0;
+        solutionHistory.add(new LloydMaxIteration(iter++, currentMse, centroids));
 
         double dist = 1;
         do {
             recalculateBoundaryPoints();
             recalculateCentroids();
 
-            printCurrentConfigration();
+            if (verbose) {
+                printCurrentConfigration();
+            }
 
             prevMse = currentMse;
             currentMse = getCurrentMse();
+            solutionHistory.add(new LloydMaxIteration(iter++, currentMse, centroids));
             dist = (prevMse - currentMse) / currentMse;
             System.out.println(String.format("Current MSE: %f", currentMse));
 
         } while (dist > 0.001);
 
+        LloydMaxIteration[] result = solutionHistory.toArray(new LloydMaxIteration[0]);
+        return result;
         //recalculateCentroids2();
     }
 
