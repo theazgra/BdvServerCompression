@@ -24,8 +24,13 @@ public class RunnablePopulationFitness implements Runnable {
         double mse = 0.0;
         for (int i = m_fromIndex; i < m_toIndex; i++) {
 
-            Quantizer quantizer = new Quantizer(0, 0xffff, m_population[i].getAttributes());
-            double indivMse = quantizer.getMse(m_testData);
+            double indivMse;
+            if (m_population[i].hasCachedFitness()) {
+                indivMse = m_population[i].getFitness();
+            } else {
+                Quantizer quantizer = new Quantizer(0, 0xffff, m_population[i].getAttributes());
+                indivMse = quantizer.getMse(m_testData);
+            }
             m_population[i].setFitness(indivMse);
             mse += indivMse;
         }

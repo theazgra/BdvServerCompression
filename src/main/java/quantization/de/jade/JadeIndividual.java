@@ -11,7 +11,7 @@ public class JadeIndividual implements IIndividual, Comparable<JadeIndividual> {
      */
     int[] m_attributes;
 
-    private double m_fitness;
+    private Double m_fitness = null;
     private double m_crossoverProbability;
     private double m_mutationFactor;
 
@@ -103,5 +103,9 @@ public class JadeIndividual implements IIndividual, Comparable<JadeIndividual> {
         sb.append(" Fitness: ");
         sb.append(m_fitness);
         return sb.toString();
+    }
+
+    public boolean hasCachedFitness() {
+        return (m_fitness != null);
     }
 }
