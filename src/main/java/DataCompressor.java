@@ -2,10 +2,14 @@ import org.apache.commons.math3.distribution.CauchyDistribution;
 import quantization.LloydMaxU16ScalarQuantization;
 import quantization.Utils;
 import quantization.de.DeException;
+import quantization.de.DeHistory;
 import quantization.de.jade.JadeSolver;
 import quantization.utilities.Stopwatch;
 
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutorService;
@@ -25,34 +29,7 @@ class RunnableTest implements Runnable {
 }
 
 public class DataCompressor {
-    public static void main(String[] args) throws FileNotFoundException {
-
-
-/*
-        int coreCount = Runtime.getRuntime().availableProcessors() - 1;
-//        Thread[] threads = new Thread[coreCount];
-        ExecutorService es = Executors.newFixedThreadPool(coreCount);
-        RunnableTest[] runnables = new RunnableTest[coreCount];
-        for (int i = 0; i < coreCount; i++) {
-            runnables[i] = new RunnableTest();
-            es.execute(runnables[i]);
-        }
-
-
-        es.shutdown();
-        try {
-            es.awaitTermination(1, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-            System.out.println("Thread interrupted: " + e.getMessage());
-        }
-
-        for (int i = 0; i < coreCount; i++) {
-            System.out.println(runnables[i].tid);
-        }
-
-        System.out.println("All threads finished");
-
- */
+    public static void main(String[] args) throws IOException {
 
         final String sourceFile = "D:\\tmp\\server-dump\\small.bin";
         final int NumberOfBits = 4;
@@ -62,13 +39,27 @@ public class DataCompressor {
 //        LloydMaxU16ScalarQuantization quantization = new LloydMaxU16ScalarQuantization(values, NumberOfBits);
 //        quantization.train();
 
-        JadeSolver jadeSolver = new JadeSolver(Dimension, 10 * Dimension, 100, 0.05, 0.1);
+        JadeSolver jadeSolver = new JadeSolver(Dimension, 10 * Dimension, 250, 0.05, 0.1);
         jadeSolver.setTrainingData(values);
 
+        DeHistory[] solutionHistory = null;
         try {
-            jadeSolver.train();
+            solutionHistory = jadeSolver.train();
         } catch (DeException e) {
             e.printStackTrace();
+        }
+
+        if (solutionHistory != null) {
+            FileOutputStream os = new FileOutputStream("JadeSolutionHistory.csv");
+            OutputStreamWriter writer = new OutputStreamWriter(os);
+            writer.write("Generation;AvgCost;BestCost\n");
+            for (final DeHistory hist : solutionHistory) {
+                writer.write(String.format("%d;%.5f;%.5f\n", hist.getIteration(), hist.getAvgCost(), hist.getBestCost()));
+            }
+            writer.flush();
+            writer.close();
+            os.flush();
+            os.close();
         }
 
         System.out.println("Finished learning...");

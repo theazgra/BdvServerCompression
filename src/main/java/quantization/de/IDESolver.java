@@ -11,7 +11,7 @@ public interface IDESolver {
 
     void setDimension(final int dimension);
 
-    void train() throws DeException;
+    DeHistory[] train() throws DeException;
 
     void setTrainingData(final int[] data);
 

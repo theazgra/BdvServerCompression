@@ -9,6 +9,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import quantization.Quantizer;
 import quantization.U16;
 import quantization.Utils;
+import quantization.de.DeHistory;
 import quantization.de.IDESolver;
 import quantization.de.IIndividual;
 import quantization.de.DeException;
@@ -358,8 +359,9 @@ public class JadeSolver implements IDESolver {
     }
 
     @Override
-    public void train() throws DeException {
+    public DeHistory[] train() throws DeException {
         final String delimiter = "-------------------------------------------";
+        DeHistory[] solutionHistory = new DeHistory[m_generationCount];
         if (m_trainingData == null || m_trainingData.length <= 0) {
             throw new DeException("Training data weren't set.");
         }
@@ -436,7 +438,9 @@ public class JadeSolver implements IDESolver {
 
 //            System.out.println(String.format("Generation %d average fitness(COST): %.5f", (generation + 1), avgFitness));
             System.out.println(generationLog.toString());
+            solutionHistory[generation] = new DeHistory(generation, avgFitness, m_currentPopulationSorted[0].getFitness());
         }
+        return solutionHistory;
     }
 
     @Override
