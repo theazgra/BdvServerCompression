@@ -62,7 +62,7 @@ public class DataCompressor {
 //        LloydMaxU16ScalarQuantization quantization = new LloydMaxU16ScalarQuantization(values, NumberOfBits);
 //        quantization.train();
 
-        JadeSolver jadeSolver = new JadeSolver(Dimension, 10 * Dimension, 5, 0.05, 0.1);
+        JadeSolver jadeSolver = new JadeSolver(Dimension, 10 * Dimension, 100, 0.05, 0.1);
         jadeSolver.setTrainingData(values);
 
         try {
