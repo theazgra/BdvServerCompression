@@ -101,6 +101,8 @@ public class JadeIndividual implements IIndividual, Comparable<JadeIndividual> {
             sb.append(attrib);
             sb.append(" ");
         }
+        sb.append(" Fitness: ");
+        sb.append(m_fitness);
         System.out.println(sb.toString());
     }
 }

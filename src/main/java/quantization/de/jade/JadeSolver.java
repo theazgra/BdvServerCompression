@@ -41,13 +41,13 @@ public class JadeSolver implements IDESolver {
     private int m_maxArchiveSize;
     private ArrayList<JadeIndividual> m_archive;
 
-    private RandomGenerator rg;
+    //private RandomGenerator rg;
     private int[] m_trainingData;
 
     private int m_workerCount;
 
     public JadeSolver() {
-        rg = new MersenneTwister();
+        //rg = new MersenneTwister();
         m_workerCount = Runtime.getRuntime().availableProcessors() - 1;
         assert (m_workerCount > 0);
     }
@@ -142,7 +142,7 @@ public class JadeSolver implements IDESolver {
         assert m_populationSize > 0;
         m_currentPopulation = new JadeIndividual[m_populationSize];
         m_archive = new ArrayList<JadeIndividual>(m_maxArchiveSize);
-        UniformIntegerDistribution uniformIntDistribution = new UniformIntegerDistribution(rg, m_minConstraint, m_maxConstraint);
+        UniformIntegerDistribution uniformIntDistribution = new UniformIntegerDistribution(new MersenneTwister(), m_minConstraint, m_maxConstraint);
 
         for (int individualIndex = 0; individualIndex < m_populationSize; individualIndex++) {
             int[] individualAttributes = generateIndividualAttribues(uniformIntDistribution);
@@ -159,8 +159,6 @@ public class JadeSolver implements IDESolver {
      */
     private JadeIndividual getRandomFromPBest(UniformIntegerDistribution pBestDistribution,
                                               final JadeIndividual... others) {
-//        JadeIndividual[] sorted = Arrays.copyOf(m_currentPopulation, m_currentPopulation.length);
-//        Arrays.sort(sorted);
         assert (m_currentPopulationSorted != null);
 
         int rndIndex = pBestDistribution.sample();
@@ -319,9 +317,9 @@ public class JadeSolver implements IDESolver {
 
     private void deParallelIteration(final int fromPopIndex, final int toPopIndex, JadeIndividual[] nextPopulation,
                                      ConcurrentLinkedQueue<Double> successfulCr,
-                                     ConcurrentLinkedQueue<Double> successfulF) {
+                                     ConcurrentLinkedQueue<Double> successfulF,
+                                     RandomGenerator threadRg) {
 
-        RandomGenerator threadRg = new MersenneTwister();
         int pBestUpperLimit = (int) Math.floor(m_populationSize * m_mutationGreediness);
         UniformIntegerDistribution rndPBestDist =
                 new UniformIntegerDistribution(threadRg, 0, (pBestUpperLimit - 1));
@@ -334,10 +332,10 @@ public class JadeSolver implements IDESolver {
         UniformRealDistribution rndCrDist = new UniformRealDistribution(threadRg, 0.0, 1.0);
 
         UniformIntegerDistribution rndPopArchiveDist =
-                new UniformIntegerDistribution(rg, 0, ((m_populationSize - 1) + m_archive.size()));
+                new UniformIntegerDistribution(threadRg, 0, ((m_populationSize - 1) + m_archive.size()));
 
-        NormalDistribution crNormalDistribution = new NormalDistribution(rg, m_muCr, 0.1);
-        CauchyDistribution fCauchyDistribution = new CauchyDistribution(rg, m_muF, 0.1);
+        NormalDistribution crNormalDistribution = new NormalDistribution(threadRg, m_muCr, 0.1);
+        CauchyDistribution fCauchyDistribution = new CauchyDistribution(threadRg, m_muF, 0.1);
 
         for (int i = fromPopIndex; i < toPopIndex; i++) {
             JadeIndividual current = m_currentPopulation[i];
@@ -383,6 +381,10 @@ public class JadeSolver implements IDESolver {
 
         Stopwatch stopwatch = new Stopwatch();
         Thread[] workers = new Thread[m_workerCount];
+        RandomGenerator[] rgs = new RandomGenerator[m_workerCount];
+        for (int workerId = 0; workerId < m_workerCount; workerId++) {
+            rgs[workerId] = new MersenneTwister();
+        }
         int workSize = m_populationSize / m_workerCount;
 
         for (int generation = 0; generation < m_generationCount; generation++) {
@@ -401,8 +403,9 @@ public class JadeSolver implements IDESolver {
                 int workerFrom = workerId * workSize;
                 int workerTo = (workerId == (m_workerCount - 1)) ? m_populationSize : (workerId * workSize) + workSize;
 
+                final int rgId = workerId;
                 Runnable workerTask = () -> {
-                    deParallelIteration(workerFrom, workerTo, nextPopulation, successfulCr, successfulF);
+                    deParallelIteration(workerFrom, workerTo, nextPopulation, successfulCr, successfulF, rgs[rgId]);
                 };
                 workers[workerId] = new Thread(workerTask);
                 workers[workerId].start();
@@ -420,6 +423,7 @@ public class JadeSolver implements IDESolver {
             double oldMuCr = m_muCr, oldMuF = m_muF;
             m_muCr = ((1.0 - m_parameterAdaptationRate) * m_muCr) + (m_parameterAdaptationRate * arithmeticMean(successfulCr));
             m_muF = ((1.0 - m_parameterAdaptationRate) * m_muF) + (m_parameterAdaptationRate * lehmerMean(successfulF));
+            System.out.println(String.format("S_Cr: %d  S_F: %d", successfulCr.size(), successfulF.size()));
             System.out.println(String.format("Old μCR: %.4f    New μCR: %.4f\nOld μF: %.4f    New μF: %.4f",
                     oldMuCr, m_muCr, oldMuF, m_muF));
             truncateArchive();
