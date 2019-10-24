@@ -93,16 +93,15 @@ public class JadeIndividual implements IIndividual, Comparable<JadeIndividual> {
         }
     }
 
-    public void printAttributes() {
+    public String getInfo() {
 
         StringBuilder sb = new StringBuilder();
-        sb.append("BEST: ");
         for (int attrib : m_attributes) {
             sb.append(attrib);
             sb.append(" ");
         }
         sb.append(" Fitness: ");
         sb.append(m_fitness);
-        System.out.println(sb.toString());
+        return sb.toString();
     }
 }

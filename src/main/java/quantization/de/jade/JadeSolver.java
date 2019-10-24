@@ -4,7 +4,6 @@ import org.apache.commons.math3.distribution.CauchyDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
-import org.apache.commons.math3.geometry.Vector;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import quantization.Quantizer;
@@ -216,9 +215,6 @@ public class JadeSolver implements IDESolver {
     private double calculateFitnessForPopulationParallel() {
 
         double avg = 0.0;
-        Stopwatch s = new Stopwatch();
-        s.start();
-
         RunnablePopulationFitness[] workerInfos = new RunnablePopulationFitness[m_workerCount];
         Thread[] workers = new Thread[m_workerCount];
         int threadWorkSize = m_populationSize / m_workerCount;
@@ -241,9 +237,6 @@ public class JadeSolver implements IDESolver {
 
 
         avg /= (double) m_populationSize;
-        s.stop();
-        System.out.println("Calculated population fitness in [ms]: " + s.totalElapsedMilliseconds());
-
         return avg;
     }
 
@@ -366,6 +359,7 @@ public class JadeSolver implements IDESolver {
 
     @Override
     public void train() throws DeException {
+        final String delimiter = "-------------------------------------------";
         if (m_trainingData == null || m_trainingData.length <= 0) {
             throw new DeException("Training data weren't set.");
         }
@@ -388,15 +382,15 @@ public class JadeSolver implements IDESolver {
         int workSize = m_populationSize / m_workerCount;
 
         for (int generation = 0; generation < m_generationCount; generation++) {
+
+            stopwatch.restart();
+            StringBuilder generationLog = new StringBuilder(String.format("%s\nGeneration: %d\n", delimiter, (generation+1)));
             m_currentPopulationSorted = Arrays.copyOf(m_currentPopulation, m_currentPopulation.length);
             Arrays.sort(m_currentPopulationSorted);
-            m_currentPopulationSorted[0].printAttributes();
 
 
             successfulCr.clear();
             successfulF.clear();
-            stopwatch.restart();
-
             JadeIndividual[] nextPopulation = new JadeIndividual[m_populationSize];
 
             for (int workerId = 0; workerId < m_workerCount; workerId++) {
@@ -418,18 +412,30 @@ public class JadeSolver implements IDESolver {
             } catch (InterruptedException ignored) {
             }
 
-            stopwatch.stop();
-            System.out.println("Mutation/Breeding/Selection took: " + stopwatch.toString());
+
+            //System.out.println("Mutation/Breeding/Selection took: " + stopwatch.toString());
             double oldMuCr = m_muCr, oldMuF = m_muF;
             m_muCr = ((1.0 - m_parameterAdaptationRate) * m_muCr) + (m_parameterAdaptationRate * arithmeticMean(successfulCr));
             m_muF = ((1.0 - m_parameterAdaptationRate) * m_muF) + (m_parameterAdaptationRate * lehmerMean(successfulF));
-            System.out.println(String.format("S_Cr: %d  S_F: %d", successfulCr.size(), successfulF.size()));
-            System.out.println(String.format("Old μCR: %.4f    New μCR: %.4f\nOld μF: %.4f    New μF: %.4f",
-                    oldMuCr, m_muCr, oldMuF, m_muF));
+
+            generationLog.append(String.format("|S_Cr| = %d  |S_F| = %d\n", successfulCr.size(), successfulF.size()));
+            generationLog.append(String.format("Old μCR: %.5f    New μCR: %.5f\nOld  μF: %.5f     New μF: %.5f\n",
+                                                oldMuCr, m_muCr, oldMuF, m_muF));
+
+            //System.out.println(String.format("S_Cr: %d  S_F: %d", successfulCr.size(), successfulF.size()));
+//            System.out.println(String.format("Old μCR: %.4f    New μCR: %.4f\nOld μF: %.4f    New μF: %.4f",
+//                    oldMuCr, m_muCr, oldMuF, m_muF));
             truncateArchive();
+            generationLog.append(String.format("Archive size after truncate: %d\n", m_archive.size()));
             m_currentPopulation = nextPopulation;
             avgFitness = calculateFitnessForPopulationParallel();
-            System.out.println(String.format("Generation %d average fitness(COST): %.5f", (generation + 1), avgFitness));
+            stopwatch.stop();
+
+            generationLog.append("Current best: ").append(m_currentPopulationSorted[0].getInfo());
+            generationLog.append(String.format("Average fitness(cost): %.6f\nIteration finished in: %d ms\n", avgFitness, stopwatch.totalElapsedMilliseconds()));
+
+//            System.out.println(String.format("Generation %d average fitness(COST): %.5f", (generation + 1), avgFitness));
+            System.out.println(generationLog.toString());
         }
     }
 
