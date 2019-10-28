@@ -395,6 +395,10 @@ public class JadeSolver implements IDESolver {
             successfulF.clear();
             JadeIndividual[] nextPopulation = new JadeIndividual[m_populationSize];
 
+            // TODO(Moravec): Instead of doing this crazy parallel stuff, separete mutation, breeding and selection
+            //                This mean, do mutation and breeding in one thread. Then calculate fitness of offsprings
+            //                in many threads. Final selection will be again done in single thread.
+            
             for (int workerId = 0; workerId < m_workerCount; workerId++) {
                 int workerFrom = workerId * workSize;
                 int workerTo = (workerId == (m_workerCount - 1)) ? m_populationSize : (workerId * workSize) + workSize;
