@@ -25,7 +25,7 @@ public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
         final String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
-        final int NumberOfBits = 5;
+        final int NumberOfBits = 8;
         final int Dimension = (int) Math.pow(2, NumberOfBits);
         int[] values = Utils.convertU16BytesToInt(Utils.readFileBytes(sourceFile));
 
@@ -35,7 +35,7 @@ public class DataCompressor {
     }
 
     private static void benchmarkLloydMax(final int[] values) {
-        for (int bitCount = 2; bitCount < 3; bitCount++) {
+        for (int bitCount = 2; bitCount < 9; bitCount++) {
             LloydMaxIteration[] solutionHistory = lloydMax(bitCount, values);
             String fileName = String.format("lloyd_max_%dbits.csv", bitCount);
             saveLloydMaxSolutionHistory(solutionHistory, fileName);
@@ -44,16 +44,16 @@ public class DataCompressor {
 
     private static LloydMaxIteration[] lloydMax(final int noOfBits, final int[] values) {
         LloydMaxU16ScalarQuantization quantization = new LloydMaxU16ScalarQuantization(values, noOfBits);
-        return quantization.train(true);
+        return quantization.train(false);
     }
 
     private static void saveLloydMaxSolutionHistory(final LloydMaxIteration[] solutionHistory, String filename) {
         try {
             FileOutputStream os = new FileOutputStream(filename);
             OutputStreamWriter writer = new OutputStreamWriter(os);
-            writer.write("Iteration;Mse\n");
+            writer.write("Iteration;Mse;Psnr\n");
             for (final LloydMaxIteration lmi : solutionHistory) {
-                writer.write(String.format("%d;%.5f\n", lmi.getIteration(), lmi.getMse()));
+                writer.write(String.format("%d;%.5f;%.5f\n", lmi.getIteration(), lmi.getMse(), lmi.getPsnr()));
             }
             writer.flush();
             writer.close();
@@ -65,7 +65,7 @@ public class DataCompressor {
     }
 
     private static void jade(final int dimension, final int[] values) throws IOException {
-        JadeSolver jadeSolver = new JadeSolver(dimension, 5 * dimension, 250, 0.05, 0.1);
+        JadeSolver jadeSolver = new JadeSolver(dimension, 5 * dimension, 1000, 0.05, 0.1);
         jadeSolver.setTrainingData(values);
 
         DeHistory[] solutionHistory = null;

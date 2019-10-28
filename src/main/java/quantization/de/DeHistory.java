@@ -5,11 +5,13 @@ public class DeHistory {
     private int m_iteration = 0;
     private double m_avgCost = 0;
     private double m_bestCost = 0;
+    private double m_psnr = 0;
 
-    public DeHistory(final int it, final double avgCost, final double bestCost) {
+    public DeHistory(final int it, final double avgCost, final double bestCost, final double psnr) {
         m_iteration = it;
         m_avgCost = avgCost;
         m_bestCost = bestCost;
+        m_psnr = psnr;
     }
 
     public double getBestCost() {
@@ -22,6 +24,10 @@ public class DeHistory {
 
     public double getAvgCost() {
         return m_avgCost;
+    }
+
+    public double getPsnr() {
+        return m_psnr;
     }
 
     public void setAvgCost(double avgCost) {

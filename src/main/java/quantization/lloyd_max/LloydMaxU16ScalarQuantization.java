@@ -1,6 +1,8 @@
 package quantization.lloyd_max;
 
+import quantization.Quantizer;
 import quantization.U16;
+import quantization.utilities.Stopwatch;
 import quantization.utilities.Utils;
 
 import java.io.FileNotFoundException;
@@ -148,9 +150,9 @@ public class LloydMaxU16ScalarQuantization {
             printCurrentConfigration();
         }
         currentMse = getCurrentMse();
-        System.out.println(String.format("Current MSE: %f", currentMse));
+        System.out.println(String.format("Initial MSE: %f", currentMse));
         int iter = 0;
-        solutionHistory.add(new LloydMaxIteration(iter++, currentMse, centroids));
+        solutionHistory.add(new LloydMaxIteration(iter++, currentMse, Utils.calculatePsnr(currentMse, U16.Max), centroids));
 
         double dist = 1;
         do {
@@ -163,15 +165,15 @@ public class LloydMaxU16ScalarQuantization {
 
             prevMse = currentMse;
             currentMse = getCurrentMse();
-            solutionHistory.add(new LloydMaxIteration(iter++, currentMse, centroids));
+            solutionHistory.add(new LloydMaxIteration(iter++, currentMse, Utils.calculatePsnr(currentMse, U16.Max), centroids));
             dist = (prevMse - currentMse) / currentMse;
-            System.out.println(String.format("Current MSE: %f", currentMse));
+
+            System.out.print(String.format("\rCurrent MSE: %f", currentMse));
 
         } while (dist > 0.001);
+        System.out.println("\nFinished training.");
 
-        LloydMaxIteration[] result = solutionHistory.toArray(new LloydMaxIteration[0]);
-        return result;
-        //recalculateCentroids2();
+        return solutionHistory.toArray(new LloydMaxIteration[0]);
     }
 
     private void printCurrentConfigration() {

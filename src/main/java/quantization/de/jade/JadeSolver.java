@@ -48,7 +48,7 @@ public class JadeSolver implements IDESolver {
 
     public JadeSolver() {
         //rg = new MersenneTwister();
-        m_workerCount = Runtime.getRuntime().availableProcessors() - 4;
+        m_workerCount = Runtime.getRuntime().availableProcessors() - 2;
         assert (m_workerCount > 0);
     }
 
@@ -386,7 +386,7 @@ public class JadeSolver implements IDESolver {
         for (int generation = 0; generation < m_generationCount; generation++) {
 
             stopwatch.restart();
-            StringBuilder generationLog = new StringBuilder(String.format("%s\nGeneration: %d\n", delimiter, (generation+1)));
+            StringBuilder generationLog = new StringBuilder(String.format("%s\nGeneration: %d\n", delimiter, (generation + 1)));
             m_currentPopulationSorted = Arrays.copyOf(m_currentPopulation, m_currentPopulation.length);
             Arrays.sort(m_currentPopulationSorted);
 
@@ -422,7 +422,7 @@ public class JadeSolver implements IDESolver {
 
             generationLog.append(String.format("|S_Cr| = %d  |S_F| = %d\n", successfulCr.size(), successfulF.size()));
             generationLog.append(String.format("Old μCR: %.5f    New μCR: %.5f\nOld  μF: %.5f     New μF: %.5f\n",
-                                                oldMuCr, m_muCr, oldMuF, m_muF));
+                    oldMuCr, m_muCr, oldMuF, m_muF));
 
             //System.out.println(String.format("S_Cr: %d  S_F: %d", successfulCr.size(), successfulF.size()));
 //            System.out.println(String.format("Old μCR: %.4f    New μCR: %.4f\nOld μF: %.4f    New μF: %.4f",
@@ -438,7 +438,8 @@ public class JadeSolver implements IDESolver {
 
 //            System.out.println(String.format("Generation %d average fitness(COST): %.5f", (generation + 1), avgFitness));
             System.out.println(generationLog.toString());
-            solutionHistory[generation] = new DeHistory(generation, avgFitness, m_currentPopulationSorted[0].getFitness());
+            final double best = m_currentPopulationSorted[0].getFitness();
+            solutionHistory[generation] = new DeHistory(generation, avgFitness, best, Utils.calculatePsnr(best, U16.Max));
         }
         return solutionHistory;
     }
