@@ -213,11 +213,13 @@ public class JadeSolver implements IDESolver {
         return rndIndiv;
     }
 
-
-    private double getIndividualFitness(final JadeIndividual individual) {
-        Quantizer individualQuantizer = new Quantizer(m_minConstraint, m_maxConstraint, individual.getAttributes());
-        double mse = individualQuantizer.getMse(m_trainingData);
-        return mse;
+    private double getMseFromCalculatedFitness(final JadeIndividual[] population) {
+        double mse = 0.0;
+        for (final JadeIndividual individual : population) {
+            assert (individual.hasCachedFitness());
+            mse += individual.getFitness();
+        }
+        return (mse / (double) population.length);
     }
 
     /**
@@ -316,55 +318,6 @@ public class JadeSolver implements IDESolver {
         return prob;
     }
 
-    private void deParallelIteration(final int fromPopIndex, final int toPopIndex, JadeIndividual[] nextPopulation,
-                                     ConcurrentLinkedQueue<Double> successfulCr,
-                                     ConcurrentLinkedQueue<Double> successfulF,
-                                     RandomGenerator threadRg) {
-
-        int pBestUpperLimit = (int) Math.floor(m_populationSize * m_mutationGreediness);
-        UniformIntegerDistribution rndPBestDist =
-                new UniformIntegerDistribution(threadRg, 0, (pBestUpperLimit - 1));
-
-        UniformIntegerDistribution rndIndDist =
-                new UniformIntegerDistribution(threadRg, 0, (m_populationSize - 1));
-
-        UniformIntegerDistribution rndJRandDist = new UniformIntegerDistribution(threadRg, 0, (m_dimension - 1));
-
-        UniformRealDistribution rndCrDist = new UniformRealDistribution(threadRg, 0.0, 1.0);
-
-        UniformIntegerDistribution rndPopArchiveDist =
-                new UniformIntegerDistribution(threadRg, 0, ((m_populationSize - 1) + m_archive.size()));
-
-        NormalDistribution crNormalDistribution = new NormalDistribution(threadRg, m_muCr, 0.1);
-        CauchyDistribution fCauchyDistribution = new CauchyDistribution(threadRg, m_muF, 0.1);
-
-        for (int i = fromPopIndex; i < toPopIndex; i++) {
-            JadeIndividual current = m_currentPopulation[i];
-            current.setCrossoverProbability(generateCrossoverProbability(crNormalDistribution));
-            current.setMutationFactor(generateMutationFactor(fCauchyDistribution));
-
-            JadeIndividual x_p_Best = getRandomFromPBest(rndPBestDist, current);
-            JadeIndividual x_r1 = getRandomFromCurrentPopulation(rndIndDist, current, x_p_Best);
-            JadeIndividual x_r2 = getRandomFromUnion(rndPopArchiveDist, current, x_p_Best, x_r1);
-
-            int[] mutationVector = createMutationVector(current, x_p_Best, x_r1, x_r2);
-            int jRand = rndJRandDist.sample();
-
-            JadeIndividual offspring = current.createOffspring(mutationVector, jRand, rndCrDist);
-            double offspringFitness = getIndividualFitness(offspring);
-
-            // NOTE(Moravec): We are minimalizing!
-            if (offspringFitness <= current.getFitness()) {
-                nextPopulation[i] = offspring;
-                successfulCr.add(current.getCrossoverProbability());
-                successfulF.add(current.getMutationFactor());
-                m_archive.add(current);
-            } else {
-                nextPopulation[i] = current;
-            }
-        }
-    }
-
     @Override
     public DeHistory[] train() throws DeException {
         final String delimiter = "-------------------------------------------";
@@ -446,8 +399,7 @@ public class JadeSolver implements IDESolver {
 
             truncateArchive();
             generationLog.append(String.format("Archive size after truncate: %d\n", m_archive.size()));
-            //m_currentPopulation = offsprings;
-            avgFitness = calculateFitnessForPopulationParallel(m_currentPopulation);
+            avgFitness = getMseFromCalculatedFitness(m_currentPopulation);
             stopwatch.stop();
 
             generationLog.append("Current best: ").append(m_currentPopulationSorted[0].getInfo());
