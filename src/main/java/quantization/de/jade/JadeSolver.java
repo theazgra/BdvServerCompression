@@ -68,7 +68,7 @@ public class JadeSolver implements IDESolver {
         m_mutationGreediness = mutationGreediness;
     }
 
-    private double arithmeticMean(final ConcurrentLinkedQueue<Double> values) {
+    private double arithmeticMean(final ArrayList<Double> values) {
         double sum = 0.0;
         for (double val : values) {
             sum += val;
@@ -80,7 +80,7 @@ public class JadeSolver implements IDESolver {
         return result;
     }
 
-    private double lehmerMean(final ConcurrentLinkedQueue<Double> values) {
+    private double lehmerMean(final ArrayList<Double> values) {
         double numerator = 0.0;
         double denominator = 0.0;
         double value;
@@ -223,17 +223,17 @@ public class JadeSolver implements IDESolver {
     /**
      * Parallelized calculation of fitness values for individuals in current population.
      */
-    private double calculateFitnessForPopulationParallel() {
+    private double calculateFitnessForPopulationParallel(JadeIndividual[] population) {
 
         double avg = 0.0;
         RunnablePopulationFitness[] workerInfos = new RunnablePopulationFitness[m_workerCount];
         Thread[] workers = new Thread[m_workerCount];
-        int threadWorkSize = m_populationSize / m_workerCount;
+        int threadWorkSize = population.length / m_workerCount;
 
         for (int workerId = 0; workerId < m_workerCount; workerId++) {
             int workerFrom = workerId * threadWorkSize;
-            int workerTo = (workerId == (m_workerCount - 1)) ? m_populationSize : (workerId * threadWorkSize) + threadWorkSize;
-            workerInfos[workerId] = new RunnablePopulationFitness(m_trainingData, m_currentPopulation, workerFrom, workerTo);
+            int workerTo = (workerId == (m_workerCount - 1)) ? population.length : (workerId * threadWorkSize) + threadWorkSize;
+            workerInfos[workerId] = new RunnablePopulationFitness(m_trainingData, population, workerFrom, workerTo);
             workers[workerId] = new Thread(workerInfos[workerId]);
             workers[workerId].start();
         }
@@ -247,7 +247,7 @@ public class JadeSolver implements IDESolver {
         }
 
 
-        avg /= (double) m_populationSize;
+        avg /= (double) population.length;
         return avg;
     }
 
@@ -311,9 +311,6 @@ public class JadeSolver implements IDESolver {
             prob = 0.0;
         } else if (prob > 1.0) {
             prob = 1.0;
-        }
-        if (prob < 0.0 || prob > 1.0) {
-            System.err.println(String.format("WTF prob value is: %.5f", prob));
         }
         assert (prob >= 0.0 && prob <= 1.0);
         return prob;
@@ -379,19 +376,20 @@ public class JadeSolver implements IDESolver {
         m_muF = 0.5;
 
         generateInitialPopulation();
-        double avgFitness = calculateFitnessForPopulationParallel();
+        double avgFitness = calculateFitnessForPopulationParallel(m_currentPopulation);
         System.out.println(String.format("Generation %d average fitness(COST): %.5f", 0, avgFitness));
 
-        ConcurrentLinkedQueue<Double> successfulCr = new ConcurrentLinkedQueue<Double>();
-        ConcurrentLinkedQueue<Double> successfulF = new ConcurrentLinkedQueue<Double>();
+        ArrayList<Double> successfulCr = new ArrayList<Double>();
+        ArrayList<Double> successfulF = new ArrayList<Double>();
 
         Stopwatch stopwatch = new Stopwatch();
-        Thread[] workers = new Thread[m_workerCount];
-        RandomGenerator[] rgs = new RandomGenerator[m_workerCount];
-        for (int workerId = 0; workerId < m_workerCount; workerId++) {
-            rgs[workerId] = new MersenneTwister();
-        }
-        int workSize = m_populationSize / m_workerCount;
+        RandomGenerator rg = new MersenneTwister();
+
+        int pBestUpperLimit = (int) Math.floor(m_populationSize * m_mutationGreediness);
+        UniformIntegerDistribution rndPBestDist = new UniformIntegerDistribution(rg, 0, (pBestUpperLimit - 1));
+        UniformIntegerDistribution rndIndDist = new UniformIntegerDistribution(rg, 0, (m_populationSize - 1));
+        UniformIntegerDistribution rndJRandDist = new UniformIntegerDistribution(rg, 0, (m_dimension - 1));
+        UniformRealDistribution rndCrDist = new UniformRealDistribution(rg, 0.0, 1.0);
 
         for (int generation = 0; generation < m_generationCount; generation++) {
 
@@ -400,36 +398,44 @@ public class JadeSolver implements IDESolver {
             m_currentPopulationSorted = Arrays.copyOf(m_currentPopulation, m_currentPopulation.length);
             Arrays.sort(m_currentPopulationSorted);
 
-
             successfulCr.clear();
             successfulF.clear();
-            JadeIndividual[] nextPopulation = new JadeIndividual[m_populationSize];
+            JadeIndividual[] offsprings = new JadeIndividual[m_populationSize];
 
-            // TODO(Moravec): Instead of doing this crazy parallel stuff, separete mutation, breeding and selection
-            //                This mean, do mutation and breeding in one thread. Then calculate fitness of offsprings
-            //                in many threads. Final selection will be again done in single thread.
-            
-            for (int workerId = 0; workerId < m_workerCount; workerId++) {
-                int workerFrom = workerId * workSize;
-                int workerTo = (workerId == (m_workerCount - 1)) ? m_populationSize : (workerId * workSize) + workSize;
+            UniformIntegerDistribution rndPopArchiveDist =
+                    new UniformIntegerDistribution(rg, 0, ((m_populationSize - 1) + m_archive.size()));
 
-                final int rgId = workerId;
-                Runnable workerTask = () -> {
-                    deParallelIteration(workerFrom, workerTo, nextPopulation, successfulCr, successfulF, rgs[rgId]);
-                };
-                workers[workerId] = new Thread(workerTask);
-                workers[workerId].start();
+            NormalDistribution crNormalDistribution = new NormalDistribution(rg, m_muCr, 0.1);
+            CauchyDistribution fCauchyDistribution = new CauchyDistribution(rg, m_muF, 0.1);
+
+            for (int i = 0; i < m_populationSize; i++) {
+                JadeIndividual current = m_currentPopulation[i];
+                current.setCrossoverProbability(generateCrossoverProbability(crNormalDistribution));
+                current.setMutationFactor(generateMutationFactor(fCauchyDistribution));
+
+                JadeIndividual x_p_Best = getRandomFromPBest(rndPBestDist, current);
+                JadeIndividual x_r1 = getRandomFromCurrentPopulation(rndIndDist, current, x_p_Best);
+                JadeIndividual x_r2 = getRandomFromUnion(rndPopArchiveDist, current, x_p_Best, x_r1);
+
+                int[] mutationVector = createMutationVector(current, x_p_Best, x_r1, x_r2);
+                int jRand = rndJRandDist.sample();
+
+                offsprings[i] = current.createOffspring(mutationVector, jRand, rndCrDist);
             }
 
-            try {
-                for (int workerId = 0; workerId < m_workerCount; workerId++) {
-                    workers[workerId].join();
+            calculateFitnessForPopulationParallel(offsprings);
+
+            // NOTE(Moravec): We are minimalizing!
+            for (int i = 0; i < m_populationSize; i++) {
+                if (offsprings[i].getFitness() <= m_currentPopulation[i].getFitness()) {
+                    final JadeIndividual old = m_currentPopulation[i];
+                    m_currentPopulation[i] = offsprings[i];
+                    successfulCr.add(old.getCrossoverProbability());
+                    successfulF.add(old.getMutationFactor());
+                    m_archive.add(old);
                 }
-            } catch (InterruptedException ignored) {
             }
 
-
-            //System.out.println("Mutation/Breeding/Selection took: " + stopwatch.toString());
             double oldMuCr = m_muCr, oldMuF = m_muF;
             m_muCr = ((1.0 - m_parameterAdaptationRate) * m_muCr) + (m_parameterAdaptationRate * arithmeticMean(successfulCr));
             m_muF = ((1.0 - m_parameterAdaptationRate) * m_muF) + (m_parameterAdaptationRate * lehmerMean(successfulF));
@@ -438,17 +444,14 @@ public class JadeSolver implements IDESolver {
             generationLog.append(String.format("Old μCR: %.5f    New μCR: %.5f\nOld  μF: %.5f     New μF: %.5f\n",
                     oldMuCr, m_muCr, oldMuF, m_muF));
 
-            //System.out.println(String.format("S_Cr: %d  S_F: %d", successfulCr.size(), successfulF.size()));
-//            System.out.println(String.format("Old μCR: %.4f    New μCR: %.4f\nOld μF: %.4f    New μF: %.4f",
-//                    oldMuCr, m_muCr, oldMuF, m_muF));
             truncateArchive();
             generationLog.append(String.format("Archive size after truncate: %d\n", m_archive.size()));
-            m_currentPopulation = nextPopulation;
-            avgFitness = calculateFitnessForPopulationParallel();
+            //m_currentPopulation = offsprings;
+            avgFitness = calculateFitnessForPopulationParallel(m_currentPopulation);
             stopwatch.stop();
 
             generationLog.append("Current best: ").append(m_currentPopulationSorted[0].getInfo());
-            generationLog.append(String.format("\nAverage fitness(cost): %.6f\nIteration finished in: %d ms\n", avgFitness, stopwatch.totalElapsedMilliseconds()));
+            generationLog.append(String.format("\nAverage fitness(cost): %.6f\nIteration finished in: %d ms", avgFitness, stopwatch.totalElapsedMilliseconds()));
 
 //            System.out.println(String.format("Generation %d average fitness(COST): %.5f", (generation + 1), avgFitness));
             System.out.println(generationLog.toString());
