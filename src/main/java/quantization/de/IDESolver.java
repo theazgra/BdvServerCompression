@@ -1,6 +1,7 @@
 package quantization.de;
 
 public interface IDESolver {
+
     void setMinimalValueConstraint(final int min);
 
     void setMaximalValueConstraint(final int max);
@@ -9,11 +10,11 @@ public interface IDESolver {
 
     void setGenerationCount(final int generationCount);
 
-    void setDimension(final int dimension);
+    void setDimensionCount(final int dimensionCount);
 
     DeHistory[] train() throws DeException;
 
     void setTrainingData(final int[] data);
 
-    IIndividual getBestSolution();
+    IDEIndividual getBestSolution();
 }
