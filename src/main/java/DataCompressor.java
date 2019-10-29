@@ -25,7 +25,7 @@ public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
         final String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
-        final int NumberOfBits = 2;
+        final int NumberOfBits = 5;
         final int Dimension = (int) Math.pow(2, NumberOfBits);
         int[] values = Utils.convertU16BytesToInt(Utils.readFileBytes(sourceFile));
 
