@@ -1,48 +1,47 @@
 package quantization.de.jade;
 
 import quantization.Quantizer;
-
-import javax.lang.model.element.QualifiedNameable;
+import quantization.de.DEIndividual;
 
 public class RunnablePopulationFitness implements Runnable {
 
-    private double m_mse = 0.0;
-    private final int[] m_testData;
-    private final JadeIndividual[] m_population;
-    private final int m_fromIndex;
-    private final int m_toIndex;
+    private double mse = 0.0;
+    private final int[] testData;
+    private final DEIndividual[] population;
+    private final int fromIndex;
+    private final int toIndex;
 
-    public RunnablePopulationFitness(final int[] testData, final JadeIndividual[] population, final int popFrom, final int popTo) {
-        m_testData = testData;
-        m_population = population;
-        m_fromIndex = popFrom;
-        m_toIndex = popTo;
+    public RunnablePopulationFitness(final int[] testData, final DEIndividual[] population, final int popFrom, final int popTo) {
+        this.testData = testData;
+        this.population = population;
+        this.fromIndex = popFrom;
+        this.toIndex = popTo;
     }
 
     @Override
     public void run() {
         double mse = 0.0;
-        for (int i = m_fromIndex; i < m_toIndex; i++) {
+        for (int i = fromIndex; i < toIndex; i++) {
 
             double indivMse;
-            if (m_population[i].hasCachedFitness()) {
-                indivMse = m_population[i].getFitness();
+            if (population[i].isFitnessCached()) {
+                indivMse = population[i].getFitness();
             } else {
-                Quantizer quantizer = new Quantizer(0, 0xffff, m_population[i].getAttributes());
-                indivMse = quantizer.getMse(m_testData);
+                Quantizer quantizer = new Quantizer(0, 0xffff, population[i].getAttributes());
+                indivMse = quantizer.getMse(testData);
             }
-            m_population[i].setFitness(indivMse);
+            population[i].setFitness(indivMse);
             mse += indivMse;
         }
-        m_mse = mse;
+        this.mse = mse;
     }
 
     public double getTotalMse() {
-        return m_mse;
+        return mse;
     }
 
     public double getAvgMse() {
-        return (m_mse / (double) (m_toIndex - m_fromIndex));
+        return (mse / (double) (toIndex - fromIndex));
     }
 
 }
