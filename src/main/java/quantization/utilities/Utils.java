@@ -3,12 +3,12 @@ package quantization.utilities;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class Utils {
 
-    public static double calculatePsnr(final double mse, final int signalMax)
-    {
-        double psnr =  10.0 * Math.log10((Math.pow(signalMax, 2) / mse));
+    public static double calculatePsnr(final double mse, final int signalMax) {
+        double psnr = 10.0 * Math.log10((Math.pow(signalMax, 2) / mse));
         return psnr;
     }
 
@@ -28,6 +28,16 @@ public class Utils {
                 return true;
         }
         return false;
+    }
+
+    public static double arrayListMax(final ArrayList<Double> array) {
+        double max = Double.MIN_VALUE;
+        for (final double val : array) {
+            if (val > max) {
+                max = val;
+            }
+        }
+        return max;
     }
 
     public static boolean arrayContainsToIndex(final int[] array, final int toIndex, final int element) {
