@@ -160,10 +160,13 @@ public class JadeSolver implements IDESolver {
     private JadeIndividual getRandomFromPBest(UniformIntegerDistribution pBestDistribution,
                                               final JadeIndividual... others) {
         assert (m_currentPopulationSorted != null);
+        int repeat = 0;
 
         int rndIndex = pBestDistribution.sample();
         while (Utils.arrayContains(others, m_currentPopulationSorted[rndIndex])) {
             rndIndex = pBestDistribution.sample();
+            if (++repeat >= 10)
+                System.out.println("Stuck at getRandomFromPBest");
         }
         return m_currentPopulationSorted[rndIndex];
     }
@@ -177,8 +180,12 @@ public class JadeSolver implements IDESolver {
      */
     private JadeIndividual getRandomFromCurrentPopulation(UniformIntegerDistribution rndIndDist, final JadeIndividual... others) {
         JadeIndividual rndIndiv = m_currentPopulation[rndIndDist.sample()];
+        int repeat = 0;
         while (Utils.arrayContains(others, rndIndiv)) {
             rndIndiv = m_currentPopulation[rndIndDist.sample()];
+
+            if (++repeat >= 10)
+                System.out.println("Stuck at getRandomFromCurrentPopulation");
         }
         return rndIndiv;
     }
@@ -193,11 +200,14 @@ public class JadeSolver implements IDESolver {
     private JadeIndividual getRandomFromUnion(UniformIntegerDistribution rndUnionDist,
                                               final JadeIndividual... others) {
 
+        int repeat = 0;
         int rndIndex = rndUnionDist.sample();
         JadeIndividual rndIndiv = (rndIndex >= m_populationSize) ? m_archive.get(rndIndex - m_populationSize) : m_currentPopulation[rndIndex];
         while (Utils.arrayContains(others, rndIndiv)) {
             rndIndex = rndUnionDist.sample();
             rndIndiv = (rndIndex >= m_populationSize) ? m_archive.get(rndIndex - m_populationSize) : m_currentPopulation[rndIndex];
+            if (++repeat >= 10)
+                System.out.println("Stuck at getRandomFromUnion");
         }
 
         return rndIndiv;

@@ -25,7 +25,7 @@ public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
         final String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
-        final int NumberOfBits = 8;
+        final int NumberOfBits = 2;
         final int Dimension = (int) Math.pow(2, NumberOfBits);
         int[] values = Utils.convertU16BytesToInt(Utils.readFileBytes(sourceFile));
 
@@ -65,7 +65,9 @@ public class DataCompressor {
     }
 
     private static void jade(final int dimension, final int[] values) throws IOException {
-        JadeSolver jadeSolver = new JadeSolver(dimension, 5 * dimension, 1000, 0.05, 0.1);
+        int popSize = 5 * dimension;
+        popSize = Math.max(popSize, 100);
+        JadeSolver jadeSolver = new JadeSolver(dimension, popSize, 1000, 0.05, 0.1);
         jadeSolver.setTrainingData(values);
 
         DeHistory[] solutionHistory = null;
