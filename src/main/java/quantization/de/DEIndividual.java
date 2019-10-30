@@ -76,8 +76,8 @@ public class DEIndividual implements IDEIndividual, Comparable<DEIndividual> {
     }
 
     @Override
-    public DEIndividual createOffspring(final int[] mutationVector, final int jRand,
-                                        UniformRealDistribution rndCrDist) {
+    public DEIndividual createOffspringBinominalCrossover(final int[] mutationVector, final int jRand,
+                                                          UniformRealDistribution rndCrDist) {
         assert (m_attributes.length == mutationVector.length);
         DEIndividual offspring = new DEIndividual(m_attributes.length);
         for (int j = 0; j < m_attributes.length; j++) {

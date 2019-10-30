@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 public abstract class DESolver implements IDESolver {
 
-    public static final int MinimalPopulationSize = 5;
+    public static final int MINIMAL_POPULATION_SIZE = 5;
     protected int minConstraint = U16.Min;
     protected int maxConstraint = U16.Max;
     protected int populationSize;
@@ -20,6 +20,7 @@ public abstract class DESolver implements IDESolver {
     protected int dimensionCount;
     protected int[] trainingData;
     protected int threadCount;
+    protected int currentPopulationSize;
 
     protected DEIndividual bestSolution = null;
 
@@ -32,6 +33,7 @@ public abstract class DESolver implements IDESolver {
         this.dimensionCount = dimension;
         this.populationSize = populationSize;
         this.generationCount = generationCount;
+        this.currentPopulationSize = populationSize;
     }
 
     /**
@@ -148,10 +150,10 @@ public abstract class DESolver implements IDESolver {
         return rndIndiv;
     }
 
-    protected int[] createMutationVector(final DEIndividual current,
-                                         final DEIndividual x_p_Best,
-                                         final DEIndividual x_r1,
-                                         final DEIndividual x_r2) {
+    protected int[] createMutationVectorCurrentToPBest(final DEIndividual current,
+                                                       final DEIndividual x_p_Best,
+                                                       final DEIndividual x_r1,
+                                                       final DEIndividual x_r2) {
         int[] mutationVector = new int[dimensionCount];
 
         double mutationFactor = current.getMutationFactor();
@@ -178,7 +180,7 @@ public abstract class DESolver implements IDESolver {
 
     protected double generateMutationFactor(CauchyDistribution dist) {
         double factor = dist.sample();
-        while (factor <= 0.0) {
+        while (factor <= 0.0) { // || Double.isNaN(factor)) {
             factor = dist.sample();
         }
         if (factor > 1.0) {
@@ -205,7 +207,7 @@ public abstract class DESolver implements IDESolver {
     }
 
     protected void assertPopulationSize() throws DeException {
-        if (populationSize < MinimalPopulationSize) {
+        if (populationSize < MINIMAL_POPULATION_SIZE) {
             throw new DeException("Population size is too low. Required population size >= 5.");
         }
     }
@@ -230,6 +232,7 @@ public abstract class DESolver implements IDESolver {
     public void setPopulationSize(int populationSize) throws DeException {
         assertPopulationSize();
         this.populationSize = populationSize;
+        currentPopulationSize = populationSize;
     }
 
     @Override

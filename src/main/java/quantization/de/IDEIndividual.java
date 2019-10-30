@@ -21,5 +21,5 @@ public interface IDEIndividual {
 
     int getAttribute(final int dimension);
 
-    IDEIndividual createOffspring(final int[] mutationVector, final int jRand, UniformRealDistribution rndCrDist);
+    IDEIndividual createOffspringBinominalCrossover(final int[] mutationVector, final int jRand, UniformRealDistribution rndCrDist);
 }
