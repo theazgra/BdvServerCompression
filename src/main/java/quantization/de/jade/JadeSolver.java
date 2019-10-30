@@ -14,7 +14,6 @@ import quantization.utilities.Stopwatch;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
 
 public class JadeSolver extends DESolverWithArchive {
     private double muCr = 0.5;
@@ -37,25 +36,6 @@ public class JadeSolver extends DESolverWithArchive {
         this(dimension, populationSize, generationCount);
         this.parameterAdaptationRate = parameterAdaptationRate;
         this.mutationGreediness = mutationGreediness;
-    }
-
-    /**
-     * Get random individual (different from others) from union of current population and archive.
-     *
-     * @param rndUnionDist Random distribution for the union of current population and archive.
-     * @param others       Other individuals.
-     * @return Random individual from union of current population and archive.
-     */
-    private DEIndividual getRandomFromUnion(UniformIntegerDistribution rndUnionDist,
-                                            final DEIndividual... others) {
-        int rndIndex = rndUnionDist.sample();
-        DEIndividual rndIndiv = (rndIndex >= populationSize) ? archive.get(rndIndex - populationSize) : currentPopulation[rndIndex];
-        while (Utils.arrayContains(others, rndIndiv)) {
-            rndIndex = rndUnionDist.sample();
-            rndIndiv = (rndIndex >= populationSize) ? archive.get(rndIndex - populationSize) : currentPopulation[rndIndex];
-        }
-
-        return rndIndiv;
     }
 
     @Override
@@ -83,6 +63,7 @@ public class JadeSolver extends DESolverWithArchive {
         UniformIntegerDistribution rndIndDist = new UniformIntegerDistribution(rg, 0, (populationSize - 1));
         UniformIntegerDistribution rndJRandDist = new UniformIntegerDistribution(rg, 0, (dimensionCount - 1));
         UniformRealDistribution rndCrDist = new UniformRealDistribution(rg, 0.0, 1.0);
+        DEIndividual[] offsprings = new DEIndividual[populationSize];
 
         for (int generation = 0; generation < generationCount; generation++) {
 
@@ -92,7 +73,7 @@ public class JadeSolver extends DESolverWithArchive {
 
             successfulCr.clear();
             successfulF.clear();
-            DEIndividual[] offsprings = new DEIndividual[populationSize];
+
 
             UniformIntegerDistribution rndPopArchiveDist =
                     new UniformIntegerDistribution(rg, 0, ((populationSize - 1) + archive.size()));
@@ -107,11 +88,11 @@ public class JadeSolver extends DESolverWithArchive {
 
                 DEIndividual x_p_Best = getRandomFromPBest(rndPBestDist, current);
                 DEIndividual x_r1 = getRandomFromCurrentPopulation(rndIndDist, current, x_p_Best);
-                DEIndividual x_r2 = getRandomFromUnion(rndPopArchiveDist, current, x_p_Best, x_r1);
+                DEIndividual x_r2 = getRandomFromPopulationAndArchive(rndPopArchiveDist, current, x_p_Best, x_r1);
 
-                int[] mutationVector = createMutationVector(current, x_p_Best, x_r1, x_r2);
+                int[] mutationVector = createMutationVectorCurrentToPBest(current, x_p_Best, x_r1, x_r2);
                 int jRand = rndJRandDist.sample();
-                offsprings[i] = current.createOffspring(mutationVector, jRand, rndCrDist);
+                offsprings[i] = current.createOffspringBinominalCrossover(mutationVector, jRand, rndCrDist);
             }
 
             calculateFitnessForPopulationParallel(offsprings);
@@ -141,12 +122,13 @@ public class JadeSolver extends DESolverWithArchive {
             stopwatch.stop();
 
             final double currentBestFitness = currentPopulationSorted[0].getFitness();
+            final double avgPsnr = Utils.calculatePsnr(avgFitness, U16.Max);
             generationLog.append("Current best fitness: ").append(currentBestFitness);
             generationLog.append(String.format("\nAverage fitness(cost): %.6f\nIteration finished in: %d ms", avgFitness, stopwatch.totalElapsedMilliseconds()));
 
             System.out.println(generationLog.toString());
 
-            solutionHistory[generation] = new DeHistory(generation, avgFitness, currentBestFitness, Utils.calculatePsnr(currentBestFitness, U16.Max));
+            solutionHistory[generation] = new DeHistory(generation, avgFitness, currentBestFitness, Utils.calculatePsnr(currentBestFitness, U16.Max), avgPsnr);
         }
 
         Arrays.sort(currentPopulationSorted);

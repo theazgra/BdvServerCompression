@@ -1,6 +1,7 @@
 import quantization.de.DeException;
 import quantization.de.DeHistory;
 import quantization.de.jade.JadeSolver;
+import quantization.de.shade.LShadeSolver;
 import quantization.lloyd_max.LloydMaxIteration;
 import quantization.lloyd_max.LloydMaxU16ScalarQuantization;
 import quantization.utilities.Utils;
@@ -24,20 +25,29 @@ class RunnableTest implements Runnable {
 public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
-        final String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
-        final int NumberOfBits = 5;
+        String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
+        int NumberOfBits = 5;
+        String outputDir = "lloyd";
+//        if (args.length >= 3) {
+//            sourceFile = args[0];
+//            NumberOfBits = Integer.parseInt(args[1]);
+//            outputDir = args[2];
+//            System.out.println(String.format("Input: %s, # of bits: %d", sourceFile, NumberOfBits));
+//        }
+
         final int Dimension = (int) Math.pow(2, NumberOfBits);
         int[] values = Utils.convertU16BytesToInt(Utils.readFileBytes(sourceFile));
 
-        //benchmarkLloydMax(values);
+        //benchmarkLloydMax(values, outputDir);
         //lloydMax(NumberOfBits, values);
-        jade(Dimension, values);
+        //jade(Dimension, values);
+        lshade(Dimension, values);
     }
 
-    private static void benchmarkLloydMax(final int[] values) {
+    private static void benchmarkLloydMax(final int[] values, final String dir) {
         for (int bitCount = 2; bitCount < 9; bitCount++) {
             LloydMaxIteration[] solutionHistory = lloydMax(bitCount, values);
-            String fileName = String.format("lloyd_max_%dbits.csv", bitCount);
+            String fileName = String.format("%s/lloyd_max_%dbits.csv", dir, bitCount);
             saveLloydMaxSolutionHistory(solutionHistory, fileName);
         }
     }
@@ -64,9 +74,21 @@ public class DataCompressor {
         }
     }
 
+    private static void lshade(final int dimension, final int[] values) {
+        int popSize = Math.max(5 * dimension, 100);
+        LShadeSolver lShade = new LShadeSolver(dimension, popSize, 500, 10);
+        // lShade.setMutationGreediness(0.05);
+        lShade.setTrainingData(values);
+        try {
+            DeHistory[] lshadeResult = lShade.train();
+        } catch (final DeException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     private static void jade(final int dimension, final int[] values) throws IOException {
-        int popSize = 5 * dimension;
-        popSize = Math.max(popSize, 100);
+        int popSize = Math.max(5 * dimension, 100);
         JadeSolver jadeSolver = new JadeSolver(dimension, popSize, 1000, 0.05, 0.1);
         jadeSolver.setTrainingData(values);
 
@@ -80,9 +102,14 @@ public class DataCompressor {
         if (solutionHistory != null) {
             FileOutputStream os = new FileOutputStream("JadeSolutionHistory.csv");
             OutputStreamWriter writer = new OutputStreamWriter(os);
-            writer.write("Generation;AvgCost;BestCost\n");
+            writer.write("Generation;AvgCost;BestCost;PSNR;BestPSNR\n");
             for (final DeHistory hist : solutionHistory) {
-                writer.write(String.format("%d;%.5f;%.5f\n", hist.getIteration(), hist.getAvgCost(), hist.getBestCost()));
+                writer.write(String.format("%d;%.5f;%.5f;%.5f;%.5f\n",
+                        hist.getIteration(),
+                        hist.getAvgCost(),
+                        hist.getBestCost(),
+                        hist.getAvgPsnr(),
+                        hist.getBestPsnr()));
             }
             writer.flush();
             writer.close();

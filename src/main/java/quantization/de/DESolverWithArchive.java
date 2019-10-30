@@ -1,5 +1,8 @@
 package quantization.de;
 
+import org.apache.commons.math3.distribution.UniformIntegerDistribution;
+import quantization.utilities.Utils;
+
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -7,8 +10,8 @@ public abstract class DESolverWithArchive extends DESolver {
     protected int maxArchiveSize;
     protected ArrayList<DEIndividual> archive;
 
-    protected DESolverWithArchive(int dimension, int populationSize, int generationCount, int maxArchiveSize) {
-        super(dimension, populationSize, generationCount);
+    protected DESolverWithArchive(int dimension, int currentPopulationSize, int generationCount, int maxArchiveSize) {
+        super(dimension, currentPopulationSize, generationCount);
         this.maxArchiveSize = maxArchiveSize;
         archive = new ArrayList<DEIndividual>(maxArchiveSize);
     }
@@ -24,6 +27,26 @@ public abstract class DESolverWithArchive extends DESolver {
             }
         }
         assert (archive.size() <= maxArchiveSize);
+    }
+
+
+    /**
+     * Get random individual (different from others) from union of current population and archive.
+     *
+     * @param rndUnionDist Random distribution for the union of current population and archive.
+     * @param others       Other individuals.
+     * @return Random individual from union of current population and archive.
+     */
+    protected DEIndividual getRandomFromPopulationAndArchive(UniformIntegerDistribution rndUnionDist,
+                                                           final DEIndividual... others) {
+        int rndIndex = rndUnionDist.sample();
+        DEIndividual rndIndiv = (rndIndex >= currentPopulationSize) ? archive.get(rndIndex - currentPopulationSize) : currentPopulation[rndIndex];
+        while (Utils.arrayContains(others, rndIndiv)) {
+            rndIndex = rndUnionDist.sample();
+            rndIndiv = (rndIndex >= currentPopulationSize) ? archive.get(rndIndex - currentPopulationSize) : currentPopulation[rndIndex];
+        }
+
+        return rndIndiv;
     }
 
     public int getMaxArchiveSize() {
