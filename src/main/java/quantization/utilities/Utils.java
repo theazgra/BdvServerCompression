@@ -63,4 +63,12 @@ public class Utils {
         }
         return values;
     }
+
+    public static double arrayListSum(final ArrayList<Double> array) {
+        double sum = 0.0;
+        for (final double val : array) {
+            sum += val;
+        }
+        return sum;
+    }
 }

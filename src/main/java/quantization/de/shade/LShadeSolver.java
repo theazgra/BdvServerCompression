@@ -68,7 +68,7 @@ public class LShadeSolver extends DESolverWithArchive {
         initializeMemory(0.5);
         ArrayList<Double> successfulCr = new ArrayList<Double>();
         ArrayList<Double> successfulF = new ArrayList<Double>();
-        ArrayList<Integer> successfulIndices = new ArrayList<Integer>();
+        ArrayList<Double> absDelta = new ArrayList<Double>();
 
         generateInitialPopulation();
         double avgFitness = calculateFitnessForPopulationParallel(currentPopulation);
@@ -84,7 +84,7 @@ public class LShadeSolver extends DESolverWithArchive {
 
             successfulCr.clear();
             successfulF.clear();
-            successfulIndices.clear();
+            absDelta.clear();
             StringBuilder generationLog = new StringBuilder(String.format("%s\nGeneration: %d\n", delimiter, (generation + 1)));
 
             currentPopulationSorted = createSortedCopyOfCurrentPopulation();
@@ -122,7 +122,7 @@ public class LShadeSolver extends DESolverWithArchive {
 
                     if (offsprings[i].getFitness() < old.getFitness()) {
                         archive.add(old);
-                        successfulIndices.add(i);
+                        absDelta.add(Math.abs(offsprings[i].getFitness() - currentPopulation[i].getFitness()));
                         successfulCr.add(old.getCrossoverProbability());
                         successfulF.add(old.getMutationFactor());
                     }
@@ -131,7 +131,7 @@ public class LShadeSolver extends DESolverWithArchive {
                 }
             }
 
-            updateMemory(successfulIndices, successfulCr, successfulF, offsprings);
+            updateMemory(successfulCr, successfulF, absDelta);
             currentPopulation = nextPopulation;
             applyLinearReductionOfPopulationSize(nfe, maxNfe);
             avgFitness = getMseFromCalculatedFitness(currentPopulation);
@@ -171,25 +171,19 @@ public class LShadeSolver extends DESolverWithArchive {
         return newPopulationSize;
     }
 
-    private void updateMemory(final ArrayList<Integer> successfulIndices,
-                              final ArrayList<Double> successfulCr,
+    private void updateMemory(final ArrayList<Double> successfulCr,
                               final ArrayList<Double> successfulF,
-                              final DEIndividual[] offsprings) {
+                              final ArrayList<Double> absDelta) {
 
         if ((!successfulCr.isEmpty()) && (!successfulF.isEmpty())) {
-            assert ((successfulIndices.size() == successfulCr.size()) && (successfulCr.size() == successfulF.size()));
+            assert ((absDelta.size() == successfulCr.size()) && (successfulCr.size() == successfulF.size()));
 
             int kCount = successfulCr.size();
             double[] weights = new double[kCount];
             for (int k = 0; k < kCount; k++) {
-                final int successfulIndex = successfulIndices.get(k);
-                double numerator = Math.abs(offsprings[successfulIndex].getFitness() - currentPopulation[successfulIndex].getFitness());
 
-                double denominator = 0.0;
-                for (int l = 0; l < kCount; l++) {
-                    denominator += Math.abs(offsprings[successfulIndices.get(l)].getFitness() - currentPopulation[successfulIndices.get(l)].getFitness());
-                }
-
+                final double numerator = absDelta.get(k);
+                final double denominator = Utils.arrayListSum(absDelta);
                 weights[k] = (numerator / denominator);
             }
 
@@ -203,8 +197,19 @@ public class LShadeSolver extends DESolverWithArchive {
             if (memoryIndex >= memorySize) {
                 memoryIndex = 0;
             }
-
         }
+
+//        StringBuilder sb = new StringBuilder();
+//        sb.append("MEMORY F: ");
+//        for (int i = 0; i < memoryF.length; i++) {
+//            sb.append(String.format("%.5f    ", memoryF[i]));
+//        }
+//        sb.append("\n");
+//        sb.append("MEMORY Cr: ");
+//        for (int i = 0; i < memoryCr.length; i++) {
+//            sb.append(String.format("%.5f    ", memoryCr[i]));
+//        }
+//        System.out.println(sb.toString());
     }
 
     public int getMemorySize() {
