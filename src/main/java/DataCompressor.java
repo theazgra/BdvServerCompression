@@ -1,6 +1,8 @@
 import quantization.de.DeException;
 import quantization.de.DeHistory;
+import quantization.de.IDESolver;
 import quantization.de.jade.JadeSolver;
+import quantization.de.shade.ILShadeSolver;
 import quantization.de.shade.LShadeSolver;
 import quantization.lloyd_max.LloydMaxIteration;
 import quantization.lloyd_max.LloydMaxU16ScalarQuantization;
@@ -27,13 +29,14 @@ public class DataCompressor {
 
         String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
         int NumberOfBits = 5;
-        String outputDir = "lloyd";
-//        if (args.length >= 3) {
-//            sourceFile = args[0];
-//            NumberOfBits = Integer.parseInt(args[1]);
-//            outputDir = args[2];
-//            System.out.println(String.format("Input: %s, # of bits: %d", sourceFile, NumberOfBits));
-//        }
+        String output = "lloyd";
+
+        if (args.length >= 3) {
+            sourceFile = args[0];
+            NumberOfBits = Integer.parseInt(args[1]);
+            output = args[2];
+            System.out.println(String.format("Input: %s, #of bits: %d, output to: %s ", sourceFile, NumberOfBits, output));
+        }
 
         final int Dimension = (int) Math.pow(2, NumberOfBits);
         int[] values = Utils.convertU16BytesToInt(Utils.readFileBytes(sourceFile));
@@ -41,7 +44,8 @@ public class DataCompressor {
         //benchmarkLloydMax(values, outputDir);
         //lloydMax(NumberOfBits, values);
         //jade(Dimension, values);
-        lshade(Dimension, values);
+        //lshade(Dimension, values, output);
+        ilshade(values, Dimension, 5 * Dimension, 100, "report.csv");
     }
 
     private static void benchmarkLloydMax(final int[] values, final String dir) {
@@ -74,33 +78,49 @@ public class DataCompressor {
         }
     }
 
-    private static void lshade(final int dimension, final int[] values) {
-        int popSize = Math.max(5 * dimension, 100);
-        LShadeSolver lShade = new LShadeSolver(dimension, popSize, 500, 10);
-        // lShade.setMutationGreediness(0.05);
-        lShade.setTrainingData(values);
-        try {
-            DeHistory[] lshadeResult = lShade.train();
-        } catch (final DeException e) {
-            e.printStackTrace();
-        }
+    private static void lshade(final int[] values, final int dimension,
+                               final int populationSize, final int generationCount,
+                               final String reportFile) {
 
+        startDe(new LShadeSolver(dimension, populationSize, generationCount, 10), values, dimension,
+                generationCount, populationSize, reportFile);
     }
 
-    private static void jade(final int dimension, final int[] values) throws IOException {
-        int popSize = Math.max(5 * dimension, 100);
-        JadeSolver jadeSolver = new JadeSolver(dimension, popSize, 1000, 0.05, 0.1);
-        jadeSolver.setTrainingData(values);
+    private static void ilshade(final int[] values, final int dimension,
+                                final int populationSize, final int generationCount,
+                                final String reportFile) {
+        startDe(new ILShadeSolver(dimension, populationSize, generationCount, 10), values, dimension,
+                generationCount, populationSize, reportFile);
+    }
 
-        DeHistory[] solutionHistory = null;
+    private static void jade(final int[] values, final int dimension,
+                             final int populationSize, final int generationCount,
+                             final String reportFile) {
+        startDe(new JadeSolver(dimension, populationSize, generationCount), values, dimension,
+                generationCount, populationSize, reportFile);
+    }
+
+    private static void startDe(IDESolver solver,
+                                final int[] values, final int dimension, final int generationCount,
+                                final int populationSize, final String reportFile) {
+        solver.setTrainingData(values);
+        solver.setDimensionCount(dimension);
+        solver.setGenerationCount(generationCount);
         try {
-            solutionHistory = jadeSolver.train();
+            solver.setPopulationSize(populationSize);
+            DeHistory[] solution = solver.train();
+            saveDESolution(solution, reportFile);
+            System.out.println("Finished learning...");
         } catch (DeException e) {
             e.printStackTrace();
         }
+    }
 
-        if (solutionHistory != null) {
-            FileOutputStream os = new FileOutputStream("JadeSolutionHistory.csv");
+
+    private static void saveDESolution(final DeHistory[] solutionHistory, final String fileName) {
+
+        try {
+            FileOutputStream os = new FileOutputStream(fileName);
             OutputStreamWriter writer = new OutputStreamWriter(os);
             writer.write("Generation;AvgCost;BestCost;PSNR;BestPSNR\n");
             for (final DeHistory hist : solutionHistory) {
@@ -115,8 +135,12 @@ public class DataCompressor {
             writer.close();
             os.flush();
             os.close();
-        }
 
-        System.out.println("Finished learning...");
+
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
     }
+
+
 }
