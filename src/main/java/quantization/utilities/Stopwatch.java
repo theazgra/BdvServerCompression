@@ -39,6 +39,9 @@ public class Stopwatch {
     }
 
     public String getElapsedTimeString() {
+        if (elapsed == null) {
+            return "No time measured yet.";
+        }
         return String.format("%dH %dMin %d Sec %d Ms", elapsed.toHoursPart(), elapsed.toMinutesPart(), elapsed.toSecondsPart(), elapsed.toMillisPart());
     }
 
