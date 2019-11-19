@@ -1,5 +1,7 @@
 package compression.utilities;
 
+import compression.U16;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -48,7 +50,25 @@ public class Utils {
         return false;
     }
 
-    public static int[] convertU16BytesToInt(final byte[] bytes) {
+
+
+    public static double arrayListSum(final ArrayList<Double> array) {
+        double sum = 0.0;
+        for (final double val : array) {
+            sum += val;
+        }
+        return sum;
+    }
+
+    public static int shortBitsToInt(final short value) {
+        return ((value & 0xff00) | (value & 0x00ff));
+    }
+
+    public static short u16BitsToShort(final int value) {
+        return ((short) value);
+    }
+
+    public static int[] convertU16ByteArrayToIntArray(final byte[] bytes) {
         assert (bytes.length % 2 == 0);
         int[] values = new int[bytes.length / 2];
 
@@ -64,11 +84,16 @@ public class Utils {
         return values;
     }
 
-    public static double arrayListSum(final ArrayList<Double> array) {
-        double sum = 0.0;
-        for (final double val : array) {
-            sum += val;
+    public static int[] convertShortArrayToIntArray(final short[] src) {
+        int[] result = new int[src.length];
+        int intValue;
+        for (int i = 0; i < src.length; i++) {
+            intValue = shortBitsToInt(src[i]);
+            if (intValue < U16.Min || intValue > U16.Max) {
+                throw new RuntimeException("Source value is outside of bounds for 16-bit unsigned integer.");
+            }
+            result[i] = intValue;
         }
-        return sum;
+        return result;
     }
 }

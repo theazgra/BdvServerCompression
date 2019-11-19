@@ -6,6 +6,7 @@ import compression.de.shade.ILShadeSolver;
 import compression.de.shade.LShadeSolver;
 import compression.quantization.scalar.LloydMaxIteration;
 import compression.quantization.scalar.LloydMaxU16ScalarQuantization;
+import compression.quantization.vector.LBGVectorQuantizer;
 import compression.utilities.Utils;
 
 import java.io.FileOutputStream;
@@ -13,48 +14,26 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 
 
-class RunnableTest implements Runnable {
-
-    public long tid = -1;
-
-    @Override
-    public void run() {
-        tid = Thread.currentThread().getId();
-        //System.out.println(tid);
-    }
-}
-
 public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
-//        Configuration c = new Configuration();
-//        final String json = Json.getJsonString(c);
-//        System.out.println(json);
-//        System.out.println(c);
-
-//        final int avaibleThreadCount =  Runtime.getRuntime().availableProcessors();
-//        System.out.println("Avaible processor count: " + avaibleThreadCount);
-
 
         String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
-        int NumberOfBits = 2;
+        int NumberOfBits = 4;
         String output = "lloyd";
 
-//        if (args.length >= 2) {
-//            sourceFile = args[0];
-//            output = args[1];
-//            System.out.println(String.format("Input: %s, #of bits: %d, output to: %s ", sourceFile, NumberOfBits, output));
-//        }
-
         final int Dimension = (int) Math.pow(2, NumberOfBits);
-        int[] values = Utils.convertU16BytesToInt(Utils.readFileBytes(sourceFile));
+        int[] trainValues = Utils.convertU16ByteArrayToIntArray(Utils.readFileBytes(sourceFile));
+
+        LBGVectorQuantizer vq = new LBGVectorQuantizer(trainValues, Dimension, 4, 1);
+        vq.train();
 
         //benchmarkLloydMax(values, output);
         //lloydMax(NumberOfBits, values);
         //lshade(Dimension, values, output);
         //jade(values, Dimension, 5 * Dimension, 500, "JADE-5bits.csv");
         //lshade(values, Dimension, 5 * Dimension, 1000, output);
-        ilshade(values, Dimension, 100, 800, "iL-SHADE-2bits-800it.csv");
+        //ilshade(values, Dimension, 100, 800, "iL-SHADE-2bits-800it.csv");
     }
 
     private static void benchmarkLloydMax(final int[] values, final String dir) {

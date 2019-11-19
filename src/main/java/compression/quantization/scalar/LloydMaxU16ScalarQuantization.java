@@ -16,37 +16,14 @@ public class LloydMaxU16ScalarQuantization {
     private int[] boundaryPoints;
     private double[] pdf;
 
-    private static int shortBitsToInt(final short value) {
-        final int result = ((value & 0xff00) | (value & 0x00ff));
-        return result;
-    }
-
-    private static short u16BitsToShort(final int value) {
-        final short result = (short) value;
-        return result;
-    }
-
-    private static int[] convertToIntArray(final short[] src) {
-        int[] result = new int[src.length];
-        int intValue;
-        for (int i = 0; i < src.length; i++) {
-            intValue = shortBitsToInt(src[i]);
-            if (intValue < U16.Min || intValue > U16.Max) {
-                throw new RuntimeException("Source value is outside of bounds for 16-bit unsigned integer.");
-            }
-            result[i] = intValue;
-        }
-        return result;
-    }
-
     public LloydMaxU16ScalarQuantization(final String trainDataset, final int bitCount) throws FileNotFoundException {
-        trainingData = Utils.convertU16BytesToInt(Utils.readFileBytes(trainDataset));
+        trainingData = Utils.convertU16ByteArrayToIntArray(Utils.readFileBytes(trainDataset));
         this.bitCount = bitCount;
         this.intervalCount = (int) Math.pow(2, this.bitCount);
     }
 
     public LloydMaxU16ScalarQuantization(final short[] trainData, final int bitCount) {
-        trainingData = convertToIntArray(trainData);
+        trainingData = Utils.convertShortArrayToIntArray(trainData);
         this.bitCount = bitCount;
         this.intervalCount = (int) Math.pow(2, this.bitCount);
     }
@@ -195,9 +172,9 @@ public class LloydMaxU16ScalarQuantization {
     public short[] quantize(short[] data) {
         short[] result = new short[data.length];
         for (int i = 0; i < data.length; i++) {
-            final int intRepresentationOfValue = shortBitsToInt(data[i]);
+            final int intRepresentationOfValue = Utils.shortBitsToInt(data[i]);
             final int quantizedValue = quantize(intRepresentationOfValue);
-            final short shortRepresentation = u16BitsToShort(quantizedValue);
+            final short shortRepresentation = Utils.u16BitsToShort(quantizedValue);
             result[i] = shortRepresentation;
         }
         return result;
@@ -214,7 +191,7 @@ public class LloydMaxU16ScalarQuantization {
     public short[] quantizeToShortArray(int[] data) {
         short[] result = new short[data.length];
         for (int i = 0; i < data.length; i++) {
-            result[i] = u16BitsToShort(quantize(data[i]));
+            result[i] = Utils.u16BitsToShort(quantize(data[i]));
         }
         return result;
     }
