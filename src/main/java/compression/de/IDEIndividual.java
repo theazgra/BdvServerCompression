@@ -1,4 +1,4 @@
-package quantization.de;
+package compression.de;
 
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 

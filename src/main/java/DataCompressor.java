@@ -1,12 +1,12 @@
-import quantization.de.DeException;
-import quantization.de.DeHistory;
-import quantization.de.IDESolver;
-import quantization.de.jade.JadeSolver;
-import quantization.de.shade.ILShadeSolver;
-import quantization.de.shade.LShadeSolver;
-import quantization.lloyd_max.LloydMaxIteration;
-import quantization.lloyd_max.LloydMaxU16ScalarQuantization;
-import quantization.utilities.Utils;
+import compression.de.DeException;
+import compression.de.DeHistory;
+import compression.de.IDESolver;
+import compression.de.jade.JadeSolver;
+import compression.de.shade.ILShadeSolver;
+import compression.de.shade.LShadeSolver;
+import compression.quantization.scalar.LloydMaxIteration;
+import compression.quantization.scalar.LloydMaxU16ScalarQuantization;
+import compression.utilities.Utils;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,38 +27,69 @@ class RunnableTest implements Runnable {
 public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
+//        Configuration c = new Configuration();
+//        final String json = Json.getJsonString(c);
+//        System.out.println(json);
+//        System.out.println(c);
+
+//        final int avaibleThreadCount =  Runtime.getRuntime().availableProcessors();
+//        System.out.println("Avaible processor count: " + avaibleThreadCount);
+
+
         String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
-        int NumberOfBits = 5;
+        int NumberOfBits = 2;
         String output = "lloyd";
 
-        if (args.length >= 3) {
-            sourceFile = args[0];
-            NumberOfBits = Integer.parseInt(args[1]);
-            output = args[2];
-            System.out.println(String.format("Input: %s, #of bits: %d, output to: %s ", sourceFile, NumberOfBits, output));
-        }
+//        if (args.length >= 2) {
+//            sourceFile = args[0];
+//            output = args[1];
+//            System.out.println(String.format("Input: %s, #of bits: %d, output to: %s ", sourceFile, NumberOfBits, output));
+//        }
 
         final int Dimension = (int) Math.pow(2, NumberOfBits);
         int[] values = Utils.convertU16BytesToInt(Utils.readFileBytes(sourceFile));
 
-        //benchmarkLloydMax(values, outputDir);
+        //benchmarkLloydMax(values, output);
         //lloydMax(NumberOfBits, values);
-        //jade(Dimension, values);
         //lshade(Dimension, values, output);
-        ilshade(values, Dimension, 5 * Dimension, 100, "report.csv");
+        //jade(values, Dimension, 5 * Dimension, 500, "JADE-5bits.csv");
+        //lshade(values, Dimension, 5 * Dimension, 1000, output);
+        ilshade(values, Dimension, 100, 800, "iL-SHADE-2bits-800it.csv");
     }
 
     private static void benchmarkLloydMax(final int[] values, final String dir) {
-        for (int bitCount = 2; bitCount < 9; bitCount++) {
-            LloydMaxIteration[] solutionHistory = lloydMax(bitCount, values);
+        for (int bitCount = 8; bitCount < 9; bitCount++) {
+            LloydMaxIteration[] solutionHistory = lloydMax(bitCount, values, dir);
             String fileName = String.format("%s/lloyd_max_%dbits.csv", dir, bitCount);
             saveLloydMaxSolutionHistory(solutionHistory, fileName);
         }
     }
 
-    private static LloydMaxIteration[] lloydMax(final int noOfBits, final int[] values) {
+    private static LloydMaxIteration[] lloydMax(final int noOfBits, final int[] values, final String dir) {
         LloydMaxU16ScalarQuantization quantization = new LloydMaxU16ScalarQuantization(values, noOfBits);
-        return quantization.train(false);
+        LloydMaxIteration[] trainHistory = quantization.train(false);
+
+        short[] quantized = quantization.quantizeToShortArray(values);
+        byte[] buffer = new byte[quantized.length * 2];
+
+        for (int i = 0, j = 0; i < quantized.length; i++) {
+            final short s = quantized[i];
+            buffer[j++] = (byte) ((s >> 8) & 0xff);
+            buffer[j++] = (byte) (s & 0xff);
+        }
+
+        FileOutputStream dumpStream = null;
+        try {
+            dumpStream = new FileOutputStream(String.format("%s/quantizedValues%d.data", dir, noOfBits), true);
+            dumpStream.write(buffer);
+            dumpStream.flush();
+            dumpStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        return trainHistory;
     }
 
     private static void saveLloydMaxSolutionHistory(final LloydMaxIteration[] solutionHistory, String filename) {

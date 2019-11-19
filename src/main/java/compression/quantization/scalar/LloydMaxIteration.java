@@ -1,4 +1,4 @@
-package quantization.lloyd_max;
+package compression.quantization.scalar;
 
 import java.util.Arrays;
 

@@ -1,4 +1,4 @@
-package quantization;
+package compression.quantization.scalar;
 
 public class Quantizer implements Runnable {
     private int[] m_centroids;

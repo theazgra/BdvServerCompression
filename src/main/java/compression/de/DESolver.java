@@ -1,12 +1,12 @@
-package quantization.de;
+package compression.de;
 
+import compression.U16;
+import compression.de.jade.RunnablePopulationFitness;
+import compression.utilities.Utils;
 import org.apache.commons.math3.distribution.CauchyDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
-import quantization.U16;
-import quantization.de.jade.RunnablePopulationFitness;
-import quantization.utilities.Utils;
 
 import java.util.Arrays;
 
@@ -29,6 +29,10 @@ public abstract class DESolver implements IDESolver {
 
     public DESolver(final int dimension, final int populationSize, final int generationCount) {
         threadCount = Runtime.getRuntime().availableProcessors() - 1;
+        if (threadCount > 12)
+            threadCount = 12;
+
+        threadCount = 4;
         assert (threadCount > 1);
         this.dimensionCount = dimension;
         this.populationSize = populationSize;
@@ -194,8 +198,10 @@ public abstract class DESolver implements IDESolver {
         double prob = dist.sample();
 
         // NOTE(Moravec): Sometimes dist.sample() returns NaN...
-        while (Double.isNaN(prob))
+        while (Double.isNaN(prob)) {
             prob = dist.sample();
+        }
+
 
         if (prob < 0.0) {
             prob = 0.0;

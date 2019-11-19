@@ -1,16 +1,19 @@
-package quantization.de.jade;
+package compression.de.jade;
 
+import compression.U16;
+import compression.de.DEIndividual;
+import compression.de.DESolverWithArchive;
+import compression.de.DeException;
+import compression.de.DeHistory;
+import compression.utilities.Utils;
 import org.apache.commons.math3.distribution.CauchyDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import quantization.U16;
-import quantization.de.*;
-import quantization.utilities.Means;
-import quantization.utilities.Utils;
-import quantization.utilities.Stopwatch;
+import compression.utilities.Means;
+import compression.utilities.Stopwatch;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -1,4 +1,4 @@
-package quantization.de;
+package compression.de;
 
 public class DeHistory {
 

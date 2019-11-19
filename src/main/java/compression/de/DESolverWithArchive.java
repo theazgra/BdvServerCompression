@@ -1,7 +1,7 @@
-package quantization.de;
+package compression.de;
 
+import compression.utilities.Utils;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
-import quantization.utilities.Utils;
 
 import java.util.ArrayList;
 import java.util.Random;

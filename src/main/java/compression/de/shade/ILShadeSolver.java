@@ -1,61 +1,33 @@
-package quantization.de.shade;
+package compression.de.shade;
 
-import org.apache.commons.math3.distribution.CauchyDistribution;
-import org.apache.commons.math3.distribution.NormalDistribution;
+import compression.U16;
+import compression.de.DeException;
+import compression.de.DeHistory;
+import compression.utilities.Means;
+import compression.utilities.Utils;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import quantization.U16;
-import quantization.de.DEIndividual;
-import quantization.de.DESolverWithArchive;
-import quantization.de.DeException;
-import quantization.de.DeHistory;
-import quantization.utilities.Means;
-import quantization.utilities.Stopwatch;
-import quantization.utilities.Utils;
+import compression.de.DEIndividual;
+import compression.utilities.Stopwatch;
 
 import java.util.ArrayList;
 
-public class LShadeSolver extends DESolverWithArchive {
-    protected int memorySize;
-    protected int memoryIndex = 0;
-    protected double[] memoryCr;
-    protected double[] memoryF;
+public class ILShadeSolver extends LShadeSolver {
 
-    protected double maxMutationGreediness = 0.1;
+    private double currentMutationGreediness;
+    private double minMutationGreediness = 0.1;
 
-    protected int minimalPopulationSize = MINIMAL_POPULATION_SIZE;
+    public ILShadeSolver(int dimension, int populationSize, int generationCount, int memorySize) {
+        super(dimension, populationSize, generationCount, memorySize);
 
-    public LShadeSolver(int dimension, int populationSize, int generationCount, int memorySize) {
-        super(dimension, populationSize, generationCount, populationSize);
-        this.memorySize = memorySize;
+        maxMutationGreediness = 0.2;
+        minMutationGreediness = 0.1;
+        currentMutationGreediness = maxMutationGreediness;
     }
 
-    protected void initializeMemory(final double initialCrValue, final double initialFValue) {
-        memoryIndex = 0;
-        memoryCr = new double[memorySize];
-        memoryF = new double[memorySize];
-        for (int memIndex = 0; memIndex < memorySize; memIndex++) {
-            memoryCr[memIndex] = initialCrValue;
-            memoryF[memIndex] = initialFValue;
-        }
-    }
-
-
-    protected double generateCrossoverProbability(final int memIndex) {
-        double memCr = memoryCr[memIndex];
-        if (Double.isNaN(memCr)) {
-            return 0.0;
-        } else {
-            return generateCrossoverProbability(new NormalDistribution(memCr, 0.1));
-        }
-    }
-
-    protected double generateMutationFactor(final int memIndex) {
-        return generateMutationFactor(new CauchyDistribution(memoryF[memIndex], 0.1));
-    }
-
+    @SuppressWarnings("DuplicatedCode")
     @Override
     public DeHistory[] train() throws DeException {
         final String delimiter = "-------------------------------------------";
@@ -64,7 +36,7 @@ public class LShadeSolver extends DESolverWithArchive {
         DeHistory[] solutionHistory = new DeHistory[generationCount];
 
         RandomGenerator rg = new MersenneTwister();
-        initializeMemory(0.5, 0.5);
+        initializeMemory(0.8, 0.5);
         ArrayList<Double> successfulCr = new ArrayList<Double>();
         ArrayList<Double> successfulF = new ArrayList<Double>();
         ArrayList<Double> absDelta = new ArrayList<Double>();
@@ -84,21 +56,25 @@ public class LShadeSolver extends DESolverWithArchive {
             successfulCr.clear();
             successfulF.clear();
             absDelta.clear();
-            StringBuilder generationLog = new StringBuilder(String.format("%s\nGeneration: %d\n", delimiter, (generation + 1)));
+            StringBuilder generationLog = new StringBuilder(String.format("%s\niL-SHADE\nGeneration: %d\n", delimiter, (generation + 1)));
 
             currentPopulationSorted = createSortedCopyOfCurrentPopulation();
             DEIndividual[] offsprings = new DEIndividual[currentPopulationSize];
 
             UniformIntegerDistribution rndPopArchiveDist =
                     new UniformIntegerDistribution(rg, 0, ((currentPopulationSize - 1) + archive.size()));
-            int pBestUpperLimit = (int) Math.floor(currentPopulationSize * maxMutationGreediness);
+            int pBestUpperLimit = (int) Math.floor(currentPopulationSize * currentMutationGreediness);
             UniformIntegerDistribution rndPBestDist = new UniformIntegerDistribution(rg, 0, (pBestUpperLimit - 1));
             UniformIntegerDistribution rndIndDist = new UniformIntegerDistribution(rg, 0, (currentPopulationSize - 1));
 
             for (int i = 0; i < currentPopulationSize; i++) {
                 int randomMemIndex = memoryIndexDist.sample();
-                currentPopulation[i].setCrossoverProbability(generateCrossoverProbability(randomMemIndex));
-                currentPopulation[i].setMutationFactor(generateMutationFactor(randomMemIndex));
+                if (randomMemIndex == (memorySize - 1)) {
+                    memoryCr[randomMemIndex] = 0.9;
+                    memoryF[randomMemIndex] = 0.9;
+                }
+                currentPopulation[i].setCrossoverProbability(iLShadeGenerateCrossoverProbability(randomMemIndex, generation));
+                currentPopulation[i].setMutationFactor(iLShadeGenerateMutationFactor(randomMemIndex, generation));
 
                 DEIndividual x_p_Best = getRandomFromPBest(rndPBestDist, currentPopulation[i]);
                 DEIndividual x_r1 = getRandomFromCurrentPopulation(rndIndDist, currentPopulation[i], x_p_Best);
@@ -110,8 +86,8 @@ public class LShadeSolver extends DESolverWithArchive {
 
             calculateFitnessForPopulationParallel(offsprings);
             nfe += currentPopulationSize;
-            DEIndividual[] nextPopulation = new DEIndividual[currentPopulationSize];
 
+            DEIndividual[] nextPopulation = new DEIndividual[currentPopulationSize];
             // NOTE(Moravec): We are minimalizing!
             for (int i = 0; i < currentPopulationSize; i++) {
                 final DEIndividual old = currentPopulation[i];
@@ -133,6 +109,8 @@ public class LShadeSolver extends DESolverWithArchive {
             currentPopulation = nextPopulation;
             applyLinearReductionOfPopulationSize(nfe, maxNfe);
             truncateArchive();
+            updateMutationGreediness(nfe, maxNfe);
+
             avgFitness = getMseFromCalculatedFitness(currentPopulation);
 
             // NOTE(Moravec): After LRPS the population is sorted according.
@@ -143,8 +121,8 @@ public class LShadeSolver extends DESolverWithArchive {
 
             stopwatch.stop();
 
-            generationLog.append(String.format("Archive size after truncate: %d\n", archive.size()));
             generationLog.append(String.format("Current population size: %d\n", currentPopulationSize));
+            generationLog.append(String.format("Mutation greediness: %.5f\n", currentMutationGreediness));
             generationLog.append(String.format("Current best fitness: %.5f Current PSNR: %.5f dB", currentBestFitness, psnr));
             generationLog.append(String.format("\nAvg. cost(after LPSR): %.6f\nAvg. PSNR (after LPSR): %.6f dB\nIteration finished in: %d ms", avgFitness, avgPsnr, stopwatch.totalElapsedMilliseconds()));
             System.out.println(generationLog.toString());
@@ -153,88 +131,67 @@ public class LShadeSolver extends DESolverWithArchive {
         return solutionHistory;
     }
 
-    protected void applyLinearReductionOfPopulationSize(final int nfe, final int maxNfe) {
-        final int oldPopulationSize = currentPopulationSize;
-        currentPopulationSize = getNewPopulationSize(nfe, maxNfe);
-        maxArchiveSize = currentPopulationSize;
-        if (currentPopulationSize < oldPopulationSize) {
-            DEIndividual[] reducedPopulation = new DEIndividual[currentPopulationSize];
-            System.arraycopy(currentPopulationSorted, 0, reducedPopulation, 0, currentPopulationSize);
-            currentPopulation = reducedPopulation;
+    private double iLShadeGenerateCrossoverProbability(final int memIndex, final int currentGeneration) {
+        double cr = generateCrossoverProbability(memIndex);
+        if ((double) currentGeneration < (0.25 * (double) generationCount)) {
+            cr = Math.max(cr, 0.5);
+        } else if ((double) currentGeneration < (0.5 * (double) generationCount)) {
+            cr = Math.max(cr, 0.25);
         }
+        return cr;
     }
 
-    private int getNewPopulationSize(final int nfe, final int maxNfe) {
-        int newPopulationSize = (int) Math.round(((((double) minimalPopulationSize - (double) populationSize) / (double) maxNfe) * (double) nfe) + (double) populationSize);
-        return newPopulationSize;
-    }
 
-    protected double[] calculateLehmerWeihts(final ArrayList<Double> absDelta) {
-        int kCount = absDelta.size();
-        double[] weights = new double[kCount];
-        for (int k = 0; k < kCount; k++) {
-
-            final double numerator = absDelta.get(k);
-            final double denominator = Utils.arrayListSum(absDelta);
-            weights[k] = (numerator / denominator);
+    private double iLShadeGenerateMutationFactor(final int memIndex, final int currentGeneration) {
+        double f = generateMutationFactor(memIndex);
+        if ((double) currentGeneration < (0.25 * (double) generationCount)) {
+            f = Math.max(f, 0.7);
+        } else if ((double) currentGeneration < (0.5 * (double) generationCount)) {
+            f = Math.max(f, 0.8);
+        } else if ((double) currentGeneration < (0.75 * (double) generationCount)) {
+            f = Math.max(f, 0.9);
         }
-        return weights;
+        return f;
     }
 
+    private void updateMutationGreediness(final int nfes, final int maxNfes) {
+        currentMutationGreediness = (((maxMutationGreediness - minMutationGreediness) / (double) maxNfes) * nfes) + minMutationGreediness;
+    }
+
+    @Override
     protected void updateMemory(final ArrayList<Double> successfulCr,
                                 final ArrayList<Double> successfulF,
                                 final ArrayList<Double> absDelta) {
 
         if ((!successfulCr.isEmpty()) && (!successfulF.isEmpty())) {
             assert ((absDelta.size() == successfulCr.size()) && (successfulCr.size() == successfulF.size()));
+
             double[] weights = calculateLehmerWeihts(absDelta);
 
             if ((Double.isNaN(memoryCr[memoryIndex])) || (Utils.arrayListMax(successfulCr) == 0)) {
                 memoryCr[memoryIndex] = Double.NaN;
             } else {
-                memoryCr[memoryIndex] = Means.weightedLehmerMean(successfulCr, weights);
+                memoryCr[memoryIndex] = ((Means.weightedLehmerMean(successfulCr, weights) + memoryCr[memoryIndex]) / 2.0);
             }
-            memoryF[memoryIndex] = Means.weightedLehmerMean(successfulF, weights);
+            memoryF[memoryIndex] = ((Means.weightedLehmerMean(successfulF, weights) + memoryF[memoryIndex]) / 2.0);
             ++memoryIndex;
             if (memoryIndex >= memorySize) {
                 memoryIndex = 0;
             }
         }
-
-//        StringBuilder sb = new StringBuilder();
-//        sb.append("MEMORY F: ");
-//        for (int i = 0; i < memoryF.length; i++) {
-//            sb.append(String.format("%.5f    ", memoryF[i]));
-//        }
-//        sb.append("\n");
-//        sb.append("MEMORY Cr: ");
-//        for (int i = 0; i < memoryCr.length; i++) {
-//            sb.append(String.format("%.5f    ", memoryCr[i]));
-//        }
-//        System.out.println(sb.toString());
     }
 
-    public int getMemorySize() {
-        return memorySize;
+    public double getMinMutationGreediness() {
+        return minMutationGreediness;
     }
 
-    public void setMemorySize(final int memorySize) {
-        this.memorySize = memorySize;
+    public void setMinMutationGreediness(double minMutationGreediness) {
+        this.minMutationGreediness = minMutationGreediness;
     }
 
-    public void setMaxMutationGreediness(final double maxMutationGreediness) {
-        this.maxMutationGreediness = maxMutationGreediness;
-    }
-
-    public double getMaxMutationGreediness() {
-        return maxMutationGreediness;
-    }
-
-    public int getMinimalPopulationSize() {
-        return minimalPopulationSize;
-    }
-
-    public void setMinimalPopulationSize(int minimalPopulationSize) {
-        this.minimalPopulationSize = minimalPopulationSize;
+    @Override
+    public void setMaxMutationGreediness(double maxMutationGreediness) {
+        super.setMaxMutationGreediness(maxMutationGreediness);
+        currentMutationGreediness = maxMutationGreediness;
     }
 }

@@ -1,7 +1,7 @@
-package quantization.de.jade;
+package compression.de.jade;
 
-import quantization.Quantizer;
-import quantization.de.DEIndividual;
+import compression.quantization.scalar.Quantizer;
+import compression.de.DEIndividual;
 
 public class RunnablePopulationFitness implements Runnable {
 

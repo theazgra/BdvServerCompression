@@ -1,4 +1,4 @@
-package quantization.utilities;
+package compression.utilities;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

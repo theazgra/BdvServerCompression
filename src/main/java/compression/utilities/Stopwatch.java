@@ -1,8 +1,7 @@
-package quantization.utilities;
+package compression.utilities;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 
 public class Stopwatch {
 

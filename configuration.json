@@ -1,0 +1,14 @@
+{
+    "methodName": "jade",
+    "dataFile": "D:\\tmp\\server-dump\\initial-load.bin",
+    "reportFile": "result.csv",
+    "dimension": 32,
+    "populationSize": 100,
+    "archiveSize": 100,
+    "minimalPopulationSize": 5,
+    "iterationCount": 1000,
+    "threadCount": 12,
+    "parameterAdaptationRate": 0.05,
+    "mutationGreediness": 0.1,
+    "memorySize": 10
+}

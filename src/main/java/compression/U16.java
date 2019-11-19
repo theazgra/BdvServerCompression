@@ -1,4 +1,4 @@
-package quantization;
+package compression;
 
 public class U16 {
     public static final int Min = 0x0;

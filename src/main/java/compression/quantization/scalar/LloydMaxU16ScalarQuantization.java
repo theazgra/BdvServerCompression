@@ -1,9 +1,7 @@
-package quantization.lloyd_max;
+package compression.quantization.scalar;
 
-import quantization.Quantizer;
-import quantization.U16;
-import quantization.utilities.Stopwatch;
-import quantization.utilities.Utils;
+import compression.U16;
+import compression.utilities.Utils;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -151,6 +149,7 @@ public class LloydMaxU16ScalarQuantization {
         }
         currentMse = getCurrentMse();
         System.out.println(String.format("Initial MSE: %f", currentMse));
+        double psnr;
         int iter = 0;
         solutionHistory.add(new LloydMaxIteration(iter++, currentMse, Utils.calculatePsnr(currentMse, U16.Max), centroids));
 
@@ -165,14 +164,16 @@ public class LloydMaxU16ScalarQuantization {
 
             prevMse = currentMse;
             currentMse = getCurrentMse();
-            solutionHistory.add(new LloydMaxIteration(iter++, currentMse, Utils.calculatePsnr(currentMse, U16.Max), centroids));
+            psnr = Utils.calculatePsnr(currentMse, U16.Max);
+            solutionHistory.add(new LloydMaxIteration(iter++, currentMse, psnr, centroids));
             dist = (prevMse - currentMse) / currentMse;
 
-            System.out.print(String.format("\rCurrent MSE: %f", currentMse));
+            System.out.print(String.format("\rCurrent MSE: %.4f PSNR: %.4f dB", currentMse, psnr));
 
-        } while (dist > 0.001);
+        } while (dist > 0.0005);
         System.out.println("\nFinished training.");
 
+        printCurrentConfigration();
         return solutionHistory.toArray(new LloydMaxIteration[0]);
     }
 
@@ -210,5 +211,12 @@ public class LloydMaxU16ScalarQuantization {
         return result;
     }
 
+    public short[] quantizeToShortArray(int[] data) {
+        short[] result = new short[data.length];
+        for (int i = 0; i < data.length; i++) {
+            result[i] = u16BitsToShort(quantize(data[i]));
+        }
+        return result;
+    }
 }
 
