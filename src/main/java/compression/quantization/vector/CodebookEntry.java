@@ -17,6 +17,23 @@ public class CodebookEntry {
         trainingVectorsDistances = new ArrayList<>();
     }
 
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj instanceof CodebookEntry) {
+            final CodebookEntry ceObj = (CodebookEntry) obj;
+            if (vector.size() != ceObj.vector.size()) {
+                return false;
+            }
+            for (int i = 0; i < vector.size(); i++) {
+                if (!vector.get(i).equals(ceObj.vector.get(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return super.equals(obj);
+    }
+
     public double getAverageDistortion() {
         assert (trainingVectors.size() == trainingVectorsDistances.size());
 //        // TODO(Moravec): Is this correct way of doing it?

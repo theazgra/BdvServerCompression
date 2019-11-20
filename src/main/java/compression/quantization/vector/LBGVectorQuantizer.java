@@ -73,27 +73,29 @@ public class LBGVectorQuantizer {
             assert (codebook.size() == k);
             ArrayList<CodebookEntry> newCodebook = new ArrayList<>(k * 2);
             // Create perturbation vector.
-            ArrayList<ArrayList<Integer>> entries = new ArrayList<>(k);
-            for (final CodebookEntry entry : codebook) {
-                entries.add(entry.getVector());
-            }
             ArrayList<Double> prtV = getPerturbationVector();
 
-            // TODO(Moravec): Make sure that when we are splitting entry we don't end up creating two same entries.
+            // TODO(Moravec):   Make sure that when we are splitting entry we don't end up creating two same entries.
+            //                  The problem happens when we try to split Vector full of zeroes.
             // Split each entry in codebook with fixed perturbation vector.
             for (final CodebookEntry entryToSplit : codebook) {
 
                 ArrayList<Integer> left = new ArrayList<>(prtV.size());
                 ArrayList<Integer> right = new ArrayList<>(prtV.size());
                 for (int j = 0; j < prtV.size(); j++) {
+
                     final int rVal = (int) Math.round(entryToSplit.getVector().get(j) * (1.0 + prtV.get(j)));
                     final int lVal = (int) Math.round(entryToSplit.getVector().get(j) * (1.0 - prtV.get(j)));
-                    assert (rVal >= 0 && lVal >= 0);
+
+                    assert (rVal >= 0 && lVal >= 0) : "Vector value are negative!";
                     right.add(rVal);
                     left.add(lVal);
                 }
-                newCodebook.add(new CodebookEntry(right));
-                newCodebook.add(new CodebookEntry(left));
+                final CodebookEntry rightEntry = new CodebookEntry(right);
+                final CodebookEntry leftEntry = new CodebookEntry(left);
+                assert (!rightEntry.equals(leftEntry)) : "Split entry to two same entries!";
+                newCodebook.add(rightEntry);
+                newCodebook.add(leftEntry);
             }
             codebook = newCodebook;
             assert (codebook.size() == (k * 2));
