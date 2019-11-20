@@ -12,6 +12,11 @@ import compression.utilities.Utils;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 public class DataCompressor {
@@ -24,9 +29,24 @@ public class DataCompressor {
 
         final int Dimension = (int) Math.pow(2, NumberOfBits);
         int[] trainValues = Utils.convertU16ByteArrayToIntArray(Utils.readFileBytes(sourceFile));
+        int[] part;
+        {
+//            int[] shuffled = null;
+//            List<Integer> trainValueList = IntStream.of(trainValues).boxed().collect(Collectors.toList());
+//            Collections.shuffle(trainValueList);
+//            Integer[] tmp = new Integer[trainValues.length];
+//            trainValueList.toArray(tmp);
+//            shuffled = ArrayUtils.toPrimitive(tmp);
+//            final int partSize = shuffled.length / 2;
+//            part = Arrays.copyOf(shuffled, partSize);
+            final int partSize = trainValues.length / 2;
+            part = Arrays.copyOf(trainValues, partSize);
+        }
+
 
         LBGVectorQuantizer vq = new LBGVectorQuantizer(trainValues, Dimension, 4, 1);
-        vq.train();
+        //LBGVectorQuantizer vq = new LBGVectorQuantizer(part, Dimension, 4, 1);
+        vq.findOptimalCodebook();
 
         //benchmarkLloydMax(values, output);
         //lloydMax(NumberOfBits, values);
