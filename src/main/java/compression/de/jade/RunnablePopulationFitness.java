@@ -1,6 +1,6 @@
 package compression.de.jade;
 
-import compression.quantization.scalar.Quantizer;
+import compression.quantization.scalar.ScalarQuantizer;
 import compression.de.DEIndividual;
 
 public class RunnablePopulationFitness implements Runnable {
@@ -27,7 +27,7 @@ public class RunnablePopulationFitness implements Runnable {
             if (population[i].isFitnessCached()) {
                 indivMse = population[i].getFitness();
             } else {
-                Quantizer quantizer = new Quantizer(0, 0xffff, population[i].getAttributes());
+                ScalarQuantizer quantizer = new ScalarQuantizer(0, 0xffff, population[i].getAttributes());
                 indivMse = quantizer.getMse(testData);
             }
             population[i].setFitness(indivMse);

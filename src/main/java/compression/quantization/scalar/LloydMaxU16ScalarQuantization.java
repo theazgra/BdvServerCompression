@@ -3,6 +3,7 @@ package compression.quantization.scalar;
 import compression.U16;
 import compression.utilities.Utils;
 
+import javax.naming.LinkLoopException;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
@@ -170,6 +171,7 @@ public class LloydMaxU16ScalarQuantization {
     }
 
     public short[] quantize(short[] data) {
+        // TODO(Moravec): Resolve this duplicate.
         short[] result = new short[data.length];
         for (int i = 0; i < data.length; i++) {
             final int intRepresentationOfValue = Utils.shortBitsToInt(data[i]);
@@ -194,6 +196,10 @@ public class LloydMaxU16ScalarQuantization {
             result[i] = Utils.u16BitsToShort(quantize(data[i]));
         }
         return result;
+    }
+
+    public int[] getCentroids() {
+        return centroids;
     }
 }
 
