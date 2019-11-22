@@ -4,6 +4,7 @@ import compression.de.IDESolver;
 import compression.de.jade.JadeSolver;
 import compression.de.shade.ILShadeSolver;
 import compression.de.shade.LShadeSolver;
+import compression.quantization.QuantizationValueCache;
 import compression.quantization.scalar.LloydMaxIteration;
 import compression.quantization.scalar.LloydMaxU16ScalarQuantization;
 import compression.quantization.vector.LBGVectorQuantizer;
@@ -21,6 +22,11 @@ import java.util.stream.IntStream;
 
 public class DataCompressor {
     public static void main(String[] args) throws IOException {
+
+        QuantizationValueCache cache = new QuantizationValueCache("D:\\tmp\\bdv_cache");
+        int[] centroids = new int[]{0, 125, 355, 400, 500, 700, 2550, 4000, 10000, 50000, 0xffff};
+        cache.saveQuantizationValue("test.bin", centroids);
+        int[] read = cache.readCachedValues("test.bin", centroids.length);
 
 
         String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
