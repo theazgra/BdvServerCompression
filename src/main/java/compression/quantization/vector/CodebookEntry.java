@@ -17,6 +17,14 @@ public class CodebookEntry {
         trainingVectorsDistances = new ArrayList<>();
     }
 
+    public boolean isZeroVector() {
+        for (Integer val : vector) {
+            if (val != 0)
+                return false;
+        }
+        return true;
+    }
+
     @Override
     public boolean equals(final Object obj) {
         if (obj instanceof CodebookEntry) {

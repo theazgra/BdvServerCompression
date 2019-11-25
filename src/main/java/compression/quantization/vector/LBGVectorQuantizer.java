@@ -1,12 +1,15 @@
 package compression.quantization.vector;
 
+import compression.U16;
+
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Random;
 
 public class LBGVectorQuantizer {
     private final double EPSILON = 0.005;
-    private final double PERTURBATION_FACTOR_MIN = 0.001; //     0.1 %
-    private final double PERTURBATION_FACTOR_MAX = 0.200; //    20.0 %
+    private final double PERTURBATION_FACTOR_MIN = 0.10;
+    private final double PERTURBATION_FACTOR_MAX = 0.60;
     private final int vectorWidth;
     private final int vectorHeight;
     private final int codebookSize;
@@ -33,8 +36,9 @@ public class LBGVectorQuantizer {
     public void findOptimalCodebook() {
         initializeTrainingVectors();
         ArrayList<CodebookEntry> codebook = initializeCodebook();
-        System.out.println("FINISHED");
-        //LBG(codebook);
+        System.out.println("Got initial codebook. Improving codebook...");
+        LBG(codebook, EPSILON * 0.1);
+        System.out.println("Improved codebook.");
     }
 
     private void initializeTrainingVectors() {
@@ -50,16 +54,27 @@ public class LBGVectorQuantizer {
     }
 
     private ArrayList<Double> getPerturbationVector() {
+        return getPerturbationVector(PERTURBATION_FACTOR_MIN, PERTURBATION_FACTOR_MAX);
+    }
+
+
+    private ArrayList<Double> getPerturbationVector(final double minPerturbationFactor, final double maxPerturbationFactor) {
         final int vecSize = (vectorWidth * vectorHeight);
         ArrayList<Double> prt = new ArrayList<>(vecSize);
         for (int i = 0; i < vecSize; i++) {
-            final double rnd = PERTURBATION_FACTOR_MIN +
-                    ((PERTURBATION_FACTOR_MAX - PERTURBATION_FACTOR_MIN) * random.nextDouble());
+            final double rnd = minPerturbationFactor +
+                    ((maxPerturbationFactor - minPerturbationFactor) * random.nextDouble());
             prt.add(rnd);
         }
         return prt;
     }
 
+    private void assertThatNewCodebookEntryIsOriginal(final ArrayList<CodebookEntry> codebook, final CodebookEntry newEntry) {
+
+        for (final CodebookEntry entry : codebook) {
+            assert !(newEntry.equals(entry)) : "New entry is not original";
+        }
+    }
 
     private ArrayList<CodebookEntry> initializeCodebook() {
         ArrayList<CodebookEntry> codebook = new ArrayList<>(codebookSize);
@@ -73,27 +88,45 @@ public class LBGVectorQuantizer {
             assert (codebook.size() == k);
             ArrayList<CodebookEntry> newCodebook = new ArrayList<>(k * 2);
             // Create perturbation vector.
-            ArrayList<Double> prtV = getPerturbationVector();
+
 
             // TODO(Moravec):   Make sure that when we are splitting entry we don't end up creating two same entries.
             //                  The problem happens when we try to split Vector full of zeroes.
             // Split each entry in codebook with fixed perturbation vector.
             for (final CodebookEntry entryToSplit : codebook) {
+                ArrayList<Double> prtV = getPerturbationVector(0.2, 0.8);
+
+                // We always want to carry zero vector to next iteration.
+                if (entryToSplit.isZeroVector()) {
+                    newCodebook.add(entryToSplit);
+
+                    ArrayList<Integer> rndEntryValues = new ArrayList<>(prtV.size());
+                    for (int j = 0; j < prtV.size(); j++) {
+                        final int value = (int) Math.floor(U16.Max * prtV.get(j));
+                        assert (value >= 0) : "rVal value is negative!";
+                        rndEntryValues.add(value);
+                    }
+                    newCodebook.add(new CodebookEntry(rndEntryValues));
+                    continue;
+                }
 
                 ArrayList<Integer> left = new ArrayList<>(prtV.size());
                 ArrayList<Integer> right = new ArrayList<>(prtV.size());
                 for (int j = 0; j < prtV.size(); j++) {
-
-                    final int rVal = (int) Math.round(entryToSplit.getVector().get(j) * (1.0 + prtV.get(j)));
                     final int lVal = (int) Math.round(entryToSplit.getVector().get(j) * (1.0 - prtV.get(j)));
+                    final int rVal = (int) Math.round(entryToSplit.getVector().get(j) * (1.0 + prtV.get(j)));
 
-                    assert (rVal >= 0 && lVal >= 0) : "Vector value are negative!";
-                    right.add(rVal);
+                    assert (rVal >= 0) : "rVal value is negative!";
+                    assert (lVal >= 0) : "lVal value is negative!";
+
                     left.add(lVal);
+                    right.add(rVal);
                 }
+                // NOTE(Moravec):   Maybe we just create one new entry and bring the "original" one to the next iteration
+                //                  as stated in Sayood's book (p. 302)
                 final CodebookEntry rightEntry = new CodebookEntry(right);
                 final CodebookEntry leftEntry = new CodebookEntry(left);
-                assert (!rightEntry.equals(leftEntry)) : "Split entry to two same entries!";
+                assert (!rightEntry.equals(leftEntry)) : "Entry was split to two identical entries!";
                 newCodebook.add(rightEntry);
                 newCodebook.add(leftEntry);
             }
@@ -113,6 +146,10 @@ public class LBGVectorQuantizer {
     }
 
     private void LBG(ArrayList<CodebookEntry> codebook) {
+        LBG(codebook, EPSILON);
+    }
+
+    private void LBG(ArrayList<CodebookEntry> codebook, final double epsilon) {
 
         double previousDistortion = Double.POSITIVE_INFINITY;
 
@@ -147,7 +184,7 @@ public class LBGVectorQuantizer {
             // Step 3
             double dist = (previousDistortion - avgDistortion) / avgDistortion;
             System.out.println(String.format("It: %d Distortion: %.5f", iteration++, dist));
-            if (dist < EPSILON) {
+            if (dist < epsilon) {
                 break;
             }
             previousDistortion = avgDistortion;
@@ -190,7 +227,9 @@ public class LBGVectorQuantizer {
         // Find biggest partition.
         CodebookEntry biggestPartition = emptyEntry;
         for (final CodebookEntry entry : codebook) {
-            if (entry.getTrainingVectors().size() > biggestPartition.getTrainingVectors().size()) {
+            // NOTE(Moravec):   We can not select random training vector from zero vector
+            //                  because we would just create another zero vector most likely.
+            if ((!entry.isZeroVector()) && (entry.getTrainingVectors().size() > biggestPartition.getTrainingVectors().size())) {
                 biggestPartition = entry;
             }
         }

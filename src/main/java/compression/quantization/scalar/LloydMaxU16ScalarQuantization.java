@@ -63,7 +63,7 @@ public class LloydMaxU16ScalarQuantization {
     }
 
     private void recalculateCentroids() {
-        // TODO(Moravec): We cann't create floating points in here because we are trying to quantize to integer values.
+        // NOTE(Moravec): We cann't create floating points in here because we are trying to quantize to integer values.
 
         double numerator = 0.0;
         double denominator = 0.0;

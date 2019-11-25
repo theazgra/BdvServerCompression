@@ -23,14 +23,13 @@ import java.util.stream.IntStream;
 public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
-        QuantizationValueCache cache = new QuantizationValueCache("D:\\tmp\\bdv_cache");
-        int[] centroids = new int[]{0, 125, 355, 400, 500, 700, 2550, 4000, 10000, 50000, 0xffff};
-        cache.saveQuantizationValue("test.bin", centroids);
-        int[] read = cache.readCachedValues("test.bin", centroids.length);
-
+//        QuantizationValueCache cache = new QuantizationValueCache("D:\\tmp\\bdv_cache");
+//        int[] centroids = new int[]{0, 125, 355, 400, 500, 700, 2550, 4000, 10000, 50000, 0xffff};
+//        cache.saveQuantizationValue("test.bin", centroids);
+//        int[] read = cache.readCachedValues("test.bin", centroids.length);
 
         String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
-        int NumberOfBits = 4;
+        int NumberOfBits = 8;
         String output = "lloyd";
 
         final int Dimension = (int) Math.pow(2, NumberOfBits);
@@ -50,7 +49,7 @@ public class DataCompressor {
         }
 
 
-        LBGVectorQuantizer vq = new LBGVectorQuantizer(trainValues, Dimension, 4, 1);
+        LBGVectorQuantizer vq = new LBGVectorQuantizer(part, Dimension, 4, 1);
         //LBGVectorQuantizer vq = new LBGVectorQuantizer(part, Dimension, 4, 1);
         vq.findOptimalCodebook();
 
