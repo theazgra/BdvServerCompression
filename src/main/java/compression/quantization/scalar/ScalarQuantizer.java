@@ -2,14 +2,11 @@ package compression.quantization.scalar;
 
 import compression.utilities.Utils;
 
-public class ScalarQuantizer implements Runnable {
+public class ScalarQuantizer {
     private final int min;
     private final int max;
     private int[] centroids;
     private int[] boundaryPoints;
-    private double mse = 0.0;
-
-    private int[] trainData = null;
 
     public ScalarQuantizer(final int min, final int max, final int[] centroids) {
         this.centroids = centroids;
@@ -55,22 +52,6 @@ public class ScalarQuantizer implements Runnable {
             mse += Math.pow(((double) data[i] - (double) quantizedValue), 2);
         }
         mse /= (double) data.length;
-        return mse;
-    }
-
-    public void setThreadTrainData(final int[] data) {
-        trainData = data;
-    }
-
-    @Override
-    public void run() {
-        if (trainData == null) {
-            throw new RuntimeException("Train data weren't set.");
-        }
-        mse = getMse(trainData);
-    }
-
-    public double getMse() {
         return mse;
     }
 }

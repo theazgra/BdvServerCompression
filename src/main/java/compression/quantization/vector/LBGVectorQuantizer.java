@@ -35,7 +35,7 @@ public class LBGVectorQuantizer {
 
     public void findOptimalCodebook() {
         initializeTrainingVectors();
-        ArrayList<CodebookEntry> codebook = initializeCodebook();
+        ArrayList<LearningCodebookEntry> codebook = initializeCodebook();
         System.out.println("Got initial codebook. Improving codebook...");
         LBG(codebook, EPSILON * 0.1);
         System.out.println("Improved codebook.");
@@ -69,31 +69,31 @@ public class LBGVectorQuantizer {
         return prt;
     }
 
-    private void assertThatNewCodebookEntryIsOriginal(final ArrayList<CodebookEntry> codebook, final CodebookEntry newEntry) {
+    private void assertThatNewCodebookEntryIsOriginal(final ArrayList<LearningCodebookEntry> codebook, final LearningCodebookEntry newEntry) {
 
-        for (final CodebookEntry entry : codebook) {
+        for (final LearningCodebookEntry entry : codebook) {
             assert !(newEntry.equals(entry)) : "New entry is not original";
         }
     }
 
-    private ArrayList<CodebookEntry> initializeCodebook() {
-        ArrayList<CodebookEntry> codebook = new ArrayList<>(codebookSize);
+    private ArrayList<LearningCodebookEntry> initializeCodebook() {
+        ArrayList<LearningCodebookEntry> codebook = new ArrayList<>(codebookSize);
         // Initialize first codebook entry as average of training vectors
         int k = 1;
-        ArrayList<Integer> initialEntry = CodebookEntry.vectorMean(trainingVectors);
-        codebook.add(new CodebookEntry(initialEntry));
+        ArrayList<Integer> initialEntry = LearningCodebookEntry.vectorMean(trainingVectors);
+        codebook.add(new LearningCodebookEntry(initialEntry));
 
         while (k != codebookSize) {
 
             assert (codebook.size() == k);
-            ArrayList<CodebookEntry> newCodebook = new ArrayList<>(k * 2);
+            ArrayList<LearningCodebookEntry> newCodebook = new ArrayList<>(k * 2);
             // Create perturbation vector.
 
 
             // TODO(Moravec):   Make sure that when we are splitting entry we don't end up creating two same entries.
             //                  The problem happens when we try to split Vector full of zeroes.
             // Split each entry in codebook with fixed perturbation vector.
-            for (final CodebookEntry entryToSplit : codebook) {
+            for (final LearningCodebookEntry entryToSplit : codebook) {
                 ArrayList<Double> prtV = getPerturbationVector(0.2, 0.8);
 
                 // We always want to carry zero vector to next iteration.
@@ -106,15 +106,15 @@ public class LBGVectorQuantizer {
                         assert (value >= 0) : "rVal value is negative!";
                         rndEntryValues.add(value);
                     }
-                    newCodebook.add(new CodebookEntry(rndEntryValues));
+                    newCodebook.add(new LearningCodebookEntry(rndEntryValues));
                     continue;
                 }
 
                 ArrayList<Integer> left = new ArrayList<>(prtV.size());
                 ArrayList<Integer> right = new ArrayList<>(prtV.size());
                 for (int j = 0; j < prtV.size(); j++) {
-                    final int lVal = (int) Math.round(entryToSplit.getVector().get(j) * (1.0 - prtV.get(j)));
-                    final int rVal = (int) Math.round(entryToSplit.getVector().get(j) * (1.0 + prtV.get(j)));
+                    final int lVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 - prtV.get(j)));
+                    final int rVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 + prtV.get(j)));
 
                     assert (rVal >= 0) : "rVal value is negative!";
                     assert (lVal >= 0) : "lVal value is negative!";
@@ -124,8 +124,8 @@ public class LBGVectorQuantizer {
                 }
                 // NOTE(Moravec):   Maybe we just create one new entry and bring the "original" one to the next iteration
                 //                  as stated in Sayood's book (p. 302)
-                final CodebookEntry rightEntry = new CodebookEntry(right);
-                final CodebookEntry leftEntry = new CodebookEntry(left);
+                final LearningCodebookEntry rightEntry = new LearningCodebookEntry(right);
+                final LearningCodebookEntry leftEntry = new LearningCodebookEntry(left);
                 assert (!rightEntry.equals(leftEntry)) : "Entry was split to two identical entries!";
                 newCodebook.add(rightEntry);
                 newCodebook.add(leftEntry);
@@ -145,11 +145,11 @@ public class LBGVectorQuantizer {
         return euclidDistance(entry, vector);
     }
 
-    private void LBG(ArrayList<CodebookEntry> codebook) {
+    private void LBG(ArrayList<LearningCodebookEntry> codebook) {
         LBG(codebook, EPSILON);
     }
 
-    private void LBG(ArrayList<CodebookEntry> codebook, final double epsilon) {
+    private void LBG(ArrayList<LearningCodebookEntry> codebook, final double epsilon) {
 
         double previousDistortion = Double.POSITIVE_INFINITY;
 
@@ -159,9 +159,9 @@ public class LBGVectorQuantizer {
             // Step 1
             for (final ArrayList<Integer> trainingVec : trainingVectors) {
                 double minDist = Double.POSITIVE_INFINITY;
-                CodebookEntry closestEntry = null;
-                for (CodebookEntry entry : codebook) {
-                    double entryDistance = vectorDistance(entry.getVector(), trainingVec);
+                LearningCodebookEntry closestEntry = null;
+                for (LearningCodebookEntry entry : codebook) {
+                    double entryDistance = vectorDistance(entry.getVectorAsArrayList(), trainingVec);
                     if (entryDistance < minDist) {
                         minDist = entryDistance;
                         closestEntry = entry;
@@ -176,7 +176,7 @@ public class LBGVectorQuantizer {
 
             // Step 2
             double avgDistortion = 0;
-            for (CodebookEntry entry : codebook) {
+            for (LearningCodebookEntry entry : codebook) {
                 avgDistortion += entry.getAverageDistortion();
             }
             avgDistortion /= (double) codebook.size();
@@ -190,7 +190,7 @@ public class LBGVectorQuantizer {
             previousDistortion = avgDistortion;
 
             // Step 4
-            for (CodebookEntry entry : codebook) {
+            for (LearningCodebookEntry entry : codebook) {
                 entry.calculateCentroid();
                 entry.clearTrainingData();
             }
@@ -198,12 +198,12 @@ public class LBGVectorQuantizer {
     }
 
 
-    private void fixEmptyEntries(final ArrayList<CodebookEntry> codebook) {
+    private void fixEmptyEntries(final ArrayList<LearningCodebookEntry> codebook) {
         final int originalSize = codebook.size();
-        final ArrayList<CodebookEntry> fixedCodebook = new ArrayList<>(originalSize);
+        final ArrayList<LearningCodebookEntry> fixedCodebook = new ArrayList<>(originalSize);
 
-        CodebookEntry emptyEntry = null;
-        for (final CodebookEntry potentionallyEmptyEntry : codebook) {
+        LearningCodebookEntry emptyEntry = null;
+        for (final LearningCodebookEntry potentionallyEmptyEntry : codebook) {
             if (potentionallyEmptyEntry.getTrainingVectors().size() == 0) {
                 emptyEntry = potentionallyEmptyEntry;
             }
@@ -211,7 +211,7 @@ public class LBGVectorQuantizer {
         while (emptyEntry != null) {
             fixSingleEmptyEntry(codebook, emptyEntry);
             emptyEntry = null;
-            for (final CodebookEntry potentionallyEmptyEntry : codebook) {
+            for (final LearningCodebookEntry potentionallyEmptyEntry : codebook) {
                 if (potentionallyEmptyEntry.getTrainingVectors().size() == 0) {
                     emptyEntry = potentionallyEmptyEntry;
                 }
@@ -219,14 +219,14 @@ public class LBGVectorQuantizer {
         }
     }
 
-    private void fixSingleEmptyEntry(ArrayList<CodebookEntry> codebook, final CodebookEntry emptyEntry) {
+    private void fixSingleEmptyEntry(ArrayList<LearningCodebookEntry> codebook, final LearningCodebookEntry emptyEntry) {
         System.out.println("****** FOUND EMPTY ENTRY ******");
         // Remove empty entry from codebook.
         codebook.remove(emptyEntry);
 
         // Find biggest partition.
-        CodebookEntry biggestPartition = emptyEntry;
-        for (final CodebookEntry entry : codebook) {
+        LearningCodebookEntry biggestPartition = emptyEntry;
+        for (final LearningCodebookEntry entry : codebook) {
             // NOTE(Moravec):   We can not select random training vector from zero vector
             //                  because we would just create another zero vector most likely.
             if ((!entry.isZeroVector()) && (entry.getTrainingVectors().size() > biggestPartition.getTrainingVectors().size())) {
@@ -238,7 +238,7 @@ public class LBGVectorQuantizer {
 
         // Choose random trainingVector from biggest partition and set it as new entry.
         int randomIndex = new Random().nextInt(biggestPartition.getTrainingVectors().size());
-        CodebookEntry newEntry = new CodebookEntry(biggestPartition.getTrainingVectors().get(randomIndex));
+        LearningCodebookEntry newEntry = new LearningCodebookEntry(biggestPartition.getTrainingVectors().get(randomIndex));
         // Add new entry to the codebook.
         codebook.add(newEntry);
         // Remove that vector from training vectors of biggest partition
@@ -250,8 +250,8 @@ public class LBGVectorQuantizer {
         newEntry.clearTrainingData();
 
         for (final ArrayList<Integer> trVec : trainingVectors) {
-            double originalPartitionDist = vectorDistance(biggestPartition.getVector(), trVec);
-            double newEntryDist = vectorDistance(newEntry.getVector(), trVec);
+            double originalPartitionDist = vectorDistance(biggestPartition.getVectorAsArrayList(), trVec);
+            double newEntryDist = vectorDistance(newEntry.getVectorAsArrayList(), trVec);
             if (originalPartitionDist < newEntryDist) {
                 biggestPartition.addTrainingVector(trVec, originalPartitionDist);
             } else {
