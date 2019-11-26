@@ -1,6 +1,7 @@
 package compression.quantization.vector;
 
 import compression.U16;
+import compression.utilities.Utils;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -33,12 +34,16 @@ public class LBGVectorQuantizer {
 
     }
 
-    public void findOptimalCodebook() {
+    public LBGResult findOptimalCodebook() {
         initializeTrainingVectors();
         ArrayList<LearningCodebookEntry> codebook = initializeCodebook();
         System.out.println("Got initial codebook. Improving codebook...");
-        LBG(codebook, EPSILON * 0.1);
-        System.out.println("Improved codebook.");
+        LBG(codebook, EPSILON * 0.01);
+        final double finalMse = averageMse(codebook);
+        final double psnr = Utils.calculatePsnr(finalMse, U16.Max);
+        System.out.println(String.format("Improved codebook, final average MSE: %.4f PSNR: %.4f (dB)", finalMse, psnr));
+        LBGResult result = new LBGResult(learningCodebookToCodebook(codebook), finalMse, psnr);
+        return result;
     }
 
     private void initializeTrainingVectors() {
@@ -52,6 +57,27 @@ public class LBGVectorQuantizer {
             trainingVectors.add(vecEntry);
         }
     }
+
+    private CodebookEntry[] learningCodebookToCodebook(final ArrayList<LearningCodebookEntry> learningCodebook) {
+        CodebookEntry[] codebook = new CodebookEntry[learningCodebook.size()];
+        for (int i = 0; i < codebook.length; i++) {
+            codebook[i] = new CodebookEntry(learningCodebook.get(i).getVector());
+        }
+        return codebook;
+    }
+
+    private double averageMse(final ArrayList<LearningCodebookEntry> codebook) {
+        VectorQuantizer quantizer = new VectorQuantizer(learningCodebookToCodebook(codebook));
+        final int[] quantizedData = quantizer.quantize(trainingData);
+
+        double mse = 0.0;
+        for (int i = 0; i < trainingData.length; i++) {
+            mse += Math.pow((trainingData[i] - quantizedData[i]), 2);
+        }
+        final double avgMse = mse / (double) trainingData.length;
+        return avgMse;
+    }
+
 
     private ArrayList<Double> getPerturbationVector() {
         return getPerturbationVector(PERTURBATION_FACTOR_MIN, PERTURBATION_FACTOR_MAX);
@@ -135,7 +161,10 @@ public class LBGVectorQuantizer {
             System.out.println(String.format("Split from %d -> %d", k, k * 2));
             k *= 2;
             // Execute LBG Algorithm on current codebook to improve it.
+            System.out.println("Improving current codebook...");
             LBG(codebook);
+            final double avgMse = averageMse(codebook);
+            System.out.println(String.format("Average MSE: %.4f", avgMse));
         }
         return codebook;
     }

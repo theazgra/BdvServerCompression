@@ -1,3 +1,4 @@
+import com.google.gson.internal.$Gson$Preconditions;
 import compression.de.DeException;
 import compression.de.DeHistory;
 import compression.de.IDESolver;
@@ -7,12 +8,15 @@ import compression.de.shade.LShadeSolver;
 import compression.quantization.QuantizationValueCache;
 import compression.quantization.scalar.LloydMaxIteration;
 import compression.quantization.scalar.LloydMaxU16ScalarQuantization;
+import compression.quantization.vector.CodebookEntry;
+import compression.quantization.vector.LBGResult;
 import compression.quantization.vector.LBGVectorQuantizer;
 import compression.utilities.Utils;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -24,34 +28,40 @@ public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
 //        QuantizationValueCache cache = new QuantizationValueCache("D:\\tmp\\bdv_cache");
+//        if (!cache.areVectorQuantizationValueCached("initial_load.bin", 3, 4, 1)) {
+//            CodebookEntry[] codebook = new CodebookEntry[]{
+//                    new CodebookEntry(new int[]{0, 100, 200, 300}),
+//                    new CodebookEntry(new int[]{1212, 5223, 6651, 12300}),
+//                    new CodebookEntry(new int[]{25436, 33333, 44856, 0xffff})
+//            };
+//            cache.saveQuantizationValues("initial_load.bin", codebook);
+//        } else {
+//            CodebookEntry[] codebook = cache.readCachedValues("initial_load.bin", 3, 4, 1);
+//            int l = codebook.length;
+//        }
+
+
 //        int[] centroids = new int[]{0, 125, 355, 400, 500, 700, 2550, 4000, 10000, 50000, 0xffff};
 //        cache.saveQuantizationValue("test.bin", centroids);
 //        int[] read = cache.readCachedValues("test.bin", centroids.length);
 
         String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
-        int NumberOfBits = 8;
+        int NumberOfBits = 3;
         String output = "lloyd";
 
         final int Dimension = (int) Math.pow(2, NumberOfBits);
         int[] trainValues = Utils.convertU16ByteArrayToIntArray(Utils.readFileBytes(sourceFile));
         int[] part;
         {
-//            int[] shuffled = null;
-//            List<Integer> trainValueList = IntStream.of(trainValues).boxed().collect(Collectors.toList());
-//            Collections.shuffle(trainValueList);
-//            Integer[] tmp = new Integer[trainValues.length];
-//            trainValueList.toArray(tmp);
-//            shuffled = ArrayUtils.toPrimitive(tmp);
-//            final int partSize = shuffled.length / 2;
-//            part = Arrays.copyOf(shuffled, partSize);
             final int partSize = trainValues.length / 2;
             part = Arrays.copyOf(trainValues, partSize);
         }
 
 
-        LBGVectorQuantizer vq = new LBGVectorQuantizer(part, Dimension, 4, 1);
-        //LBGVectorQuantizer vq = new LBGVectorQuantizer(part, Dimension, 4, 1);
-        vq.findOptimalCodebook();
+//        LBGVectorQuantizer vq = new LBGVectorQuantizer(trainValues, Dimension, 4, 1);
+//        vq.findOptimalCodebook();
+
+        benchmarkLBG(trainValues, "LBG_VectorQuantizer.csv");
 
         //benchmarkLloydMax(values, output);
         //lloydMax(NumberOfBits, values);
@@ -59,6 +69,37 @@ public class DataCompressor {
         //jade(values, Dimension, 5 * Dimension, 500, "JADE-5bits.csv");
         //lshade(values, Dimension, 5 * Dimension, 1000, output);
         //ilshade(values, Dimension, 100, 800, "iL-SHADE-2bits-800it.csv");
+    }
+
+    private static void appendLineToFile(final String fileName, final String line) {
+        try {
+            FileOutputStream os = new FileOutputStream(fileName, true);
+            OutputStreamWriter writer = new OutputStreamWriter(os);
+            writer.write(line);
+            writer.write('\n');
+            writer.flush();
+            writer.close();
+            os.flush();
+            os.close();
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void benchmarkLBG(final int[] values, final String fileName) {
+
+        //TODO: Try different vector sizes, maybe 2 then try different shapes, like box etc.
+        appendLineToFile(fileName, "CodebookSize;MSE;PSNR");
+
+        for (int bitCount = 2; bitCount < 9; bitCount++) {
+            final int codebookSize = (int) (Math.pow(2, bitCount));
+            System.out.println("Testing vector quantizer with codebook size of " + codebookSize);
+            LBGVectorQuantizer lbg = new LBGVectorQuantizer(values, codebookSize, 4, 1);
+            final LBGResult result = lbg.findOptimalCodebook();
+
+            appendLineToFile(fileName, String.format("%d;%.5f;%.5f\n", result.getCodebookSize(),
+                    result.getAverageMse(), result.getPsnr()));
+        }
     }
 
     private static void benchmarkLloydMax(final int[] values, final String dir) {

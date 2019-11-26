@@ -13,11 +13,27 @@ public class VectorQuantizer {
         quantizedVectorSize = codebook[0].getVector().length;
     }
 
+    public int[] quantize(int[] data) {
+        assert (data.length % quantizedVectorSize == 0) : "Wrong vector size";
+        int[] result = new int[data.length];
+        int[] originalDataBuffer = new int[quantizedVectorSize];
+
+        for (int i = 0; i < (data.length / 4); ++i) {
+            System.arraycopy(data, (i * quantizedVectorSize), originalDataBuffer, 0, quantizedVectorSize);
+
+            // Find the closest codebook entry
+            final CodebookEntry closestEntry = findClosestCodebookEntry(originalDataBuffer, VectorDistanceMetric.Euclidean);
+
+            System.arraycopy(closestEntry.getVector(), 0, result, (i * quantizedVectorSize), quantizedVectorSize);
+        }
+        return result;
+    }
+
     public short[] quantize(short[] data) {
         short[] result = new short[data.length];
         int[] originalDataBuffer = new int[quantizedVectorSize];
 
-        for (int i = 0; i < data.length; i++) {
+        for (int i = 0; i < data.length; ++i) {
 
             for (int j = 0; j < quantizedVectorSize; j++) {
                 originalDataBuffer[j] = data[((i * quantizedVectorSize) + j)];
