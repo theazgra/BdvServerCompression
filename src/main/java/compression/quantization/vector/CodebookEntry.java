@@ -2,10 +2,16 @@ package compression.quantization.vector;
 
 public class CodebookEntry {
 
-    int[] vector;
+    final int[] vector;
+    final int width;
+    final int height;
 
     public CodebookEntry(final int[] codebook) {
+
         this.vector = codebook;
+        // TODO(Moravec): Pass this in costructor.
+        this.width = codebook.length;
+        this.height = 1;
     }
 
     public boolean isZeroVector() {
@@ -33,6 +39,13 @@ public class CodebookEntry {
         return super.equals(obj);
     }
 
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
 
     public int[] getVector() {
         return vector;
