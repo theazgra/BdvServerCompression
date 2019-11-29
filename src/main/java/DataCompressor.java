@@ -61,7 +61,7 @@ public class DataCompressor {
 //        LBGVectorQuantizer vq = new LBGVectorQuantizer(trainValues, Dimension, 4, 1);
 //        vq.findOptimalCodebook();
 
-        benchmarkLBG(trainValues, "LBG_VectorQuantizer.csv");
+        benchmarkLBG(trainValues, "LBG_VectorQuantizerVec2.csv");
 
         //benchmarkLloydMax(values, output);
         //lloydMax(NumberOfBits, values);
@@ -91,10 +91,10 @@ public class DataCompressor {
         //TODO: Try different vector sizes, maybe 2 then try different shapes, like box etc.
         appendLineToFile(fileName, "CodebookSize;MSE;PSNR");
 
-        for (int bitCount = 2; bitCount < 9; bitCount++) {
+        for (int bitCount = 2; bitCount < 8; bitCount++) {
             final int codebookSize = (int) (Math.pow(2, bitCount));
             System.out.println("Testing vector quantizer with codebook size of " + codebookSize);
-            LBGVectorQuantizer lbg = new LBGVectorQuantizer(values, codebookSize, 4, 1);
+            LBGVectorQuantizer lbg = new LBGVectorQuantizer(values, codebookSize, 2, 1);
             final LBGResult result = lbg.findOptimalCodebook();
 
             appendLineToFile(fileName, String.format("%d;%.5f;%.5f\n", result.getCodebookSize(),
