@@ -1,4 +1,7 @@
 import com.google.gson.internal.$Gson$Preconditions;
+import compression.data.Chunk3D;
+import compression.data.V3i;
+import compression.data.V3l;
 import compression.de.DeException;
 import compression.de.DeHistory;
 import compression.de.IDESolver;
@@ -26,6 +29,10 @@ import java.util.stream.IntStream;
 
 public class DataCompressor {
     public static void main(String[] args) throws IOException {
+
+        final int[] data = new int[3 * 3 * 3];
+        final Chunk3D src = new Chunk3D(new V3i(3), new V3l(0), data);
+        final ArrayList<Chunk3D> chunks = src.divideIntoChunks(new V3i(2));
 
 //        QuantizationValueCache cache = new QuantizationValueCache("D:\\tmp\\bdv_cache");
 //        if (!cache.areVectorQuantizationValueCached("initial_load.bin", 3, 4, 1)) {
