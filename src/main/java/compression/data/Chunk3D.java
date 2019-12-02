@@ -2,8 +2,6 @@ package compression.data;
 
 import compression.utilities.Utils;
 
-import java.util.ArrayList;
-
 public class Chunk3D {
     private final int[] data;
 
@@ -17,15 +15,13 @@ public class Chunk3D {
         assert (data.length == (dims.getX() * dims.getY() * dims.getZ())) : "Wrong box data.";
     }
 
-    public Chunk3D(final V3i dims, final int[] data) {
-        this(dims, new V3l(0), data);
-
+    public Chunk3D(final V3i chunkDdims, final V3l offset, final short[] data) {
+        this(chunkDdims, offset, Utils.convertShortArrayToIntArray(data));
     }
 
-    public Chunk3D(final V3i dims, final short[] data) {
-        this(dims, new V3l(0), Utils.convertShortArrayToIntArray(data));
+    public Chunk3D(final V3i chunkDdims, final V3l offset) {
+        this(chunkDdims, offset, new int[chunkDdims.getX() * chunkDdims.getY() * chunkDdims.getZ()]);
     }
-
 
     /**
      * Calculate the index inside data array.
@@ -100,42 +96,36 @@ public class Chunk3D {
         final int ySize = dims.getY();
         final int zSize = dims.getZ();
 
-        final int xChunkCount = (int) Math.ceil(xSize / (double) chunkDims.getX());
-        final int yChunkCount = (int) Math.ceil(ySize / (double) chunkDims.getY());
-        final int zChunkCount = (int) Math.ceil(zSize / (double) chunkDims.getZ());
-        final int chunkCount = xChunkCount * yChunkCount * zChunkCount;
+        final int chunkCount = getRequiredChunkCount(chunkDims);
+
         Chunk3D[] chunks = new Chunk3D[chunkCount];
         int chunkIndex = 0;
         for (int chunkZOffset = 0; chunkZOffset < zSize; chunkZOffset += chunkDims.getZ()) {
             for (int chunkYOffset = 0; chunkYOffset < ySize; chunkYOffset += chunkDims.getY()) {
                 for (int chunkXOffset = 0; chunkXOffset < xSize; chunkXOffset += chunkDims.getX()) {
-                    chunks[chunkIndex++] = copyChunkFromBox(chunkDims, new V3i(chunkXOffset, chunkYOffset, chunkZOffset));
+                    chunks[chunkIndex++] = copyToChunk(chunkDims, new V3i(chunkXOffset, chunkYOffset, chunkZOffset));
                 }
             }
         }
         return chunks;
     }
 
-    public void reconstructFromChunks(final Chunk3D[] chunks) {
-        assert (chunks.length > 0) : "No chunks in reconstruct";
-        final V3i chunkDims = chunks[0].getDims();
-        final int xSize = dims.getX();
-        final int ySize = dims.getY();
-        final int zSize = dims.getZ();
-        assert assertCorrectChunkCount(chunkDims, chunks.length) : "Wrong chunk count in reconstruct";
-
-
-    }
-
-    private boolean assertCorrectChunkCount(final V3i chunkDims, final int receivedChunkCount) {
+    private int getRequiredChunkCount(final V3i chunkDims) {
         final int xChunkCount = (int) Math.ceil(dims.getX() / (double) chunkDims.getX());
         final int yChunkCount = (int) Math.ceil(dims.getY() / (double) chunkDims.getY());
         final int zChunkCount = (int) Math.ceil(dims.getZ() / (double) chunkDims.getZ());
         final int expectedChunkCount = xChunkCount * yChunkCount * zChunkCount;
-        if (receivedChunkCount != expectedChunkCount) {
-            return false;
-        } else {
-            return true;
+        return expectedChunkCount;
+    }
+
+    public void reconstructFromChunks(final Chunk3D[] chunks) {
+        assert (chunks.length > 0) : "No chunks in reconstruct";
+        final V3i chunkDims = chunks[0].getDims();
+
+        assert (getRequiredChunkCount(chunkDims) == chunks.length) : "Wrong chunk count in reconstruct";
+
+        for (final Chunk3D chunk : chunks) {
+            copyFromChunk(chunk);
         }
     }
 
@@ -144,16 +134,40 @@ public class Chunk3D {
         return (((x >= 0) && (x < dims.getX())) && (y >= 0) && (y < dims.getY()) && (z >= 0) && (z < dims.getZ()));
     }
 
-    private Chunk3D copyChunkFromBox(final V3i chunkDims, final V3i chunkOffsets) {
+    private void copyFromChunk(final Chunk3D chunk) {
+
+        final V3i chunkDims = chunk.getDims();
+        final V3l localOffset = chunk.getOffset();
+        int dstX, dstY, dstZ;
+
+        for (int chunkX = 0; chunkX < chunkDims.getX(); chunkX++) {
+            dstX = (int) localOffset.getX() + chunkX;
+            for (int chunkY = 0; chunkY < chunkDims.getY(); chunkY++) {
+                dstY = (int) localOffset.getY() + chunkY;
+                for (int chunkZ = 0; chunkZ < chunkDims.getZ(); chunkZ++) {
+                    dstZ = (int) localOffset.getZ() + chunkZ;
+
+                    // NOTE(Moravec):   Negating this expression!
+                    //                  If dst coordinates are NOT outside bounds, copy the value.
+                    if (!(dstX >= dims.getX() || dstY >= dims.getY() || dstZ >= dims.getZ())) {
+                        setValueAt(dstX, dstY, dstZ, chunk.getValueAt(chunkX, chunkY, chunkZ));
+                    }
+                }
+            }
+        }
+    }
+
+    private Chunk3D copyToChunk(final V3i chunkDims, final V3i chunkOffset) {
         int[] chunkData = new int[(int) (chunkDims.getX() * chunkDims.getY() * chunkDims.getZ())];
         final int FILL_VALUE = 0;
         int srcX, srcY, srcZ;
+
         for (int x = 0; x < chunkDims.getX(); x++) {
-            srcX = chunkOffsets.getX() + x;
+            srcX = chunkOffset.getX() + x;
             for (int y = 0; y < chunkDims.getY(); y++) {
-                srcY = chunkOffsets.getY() + y;
+                srcY = chunkOffset.getY() + y;
                 for (int z = 0; z < chunkDims.getZ(); z++) {
-                    srcZ = chunkOffsets.getZ() + z;
+                    srcZ = chunkOffset.getZ() + z;
                     final int dstIndex = computeIndex(x, y, z, chunkDims);
 
                     if (isInside(srcX, srcY, srcZ)) {
@@ -168,8 +182,9 @@ public class Chunk3D {
         }
 
 
-        final V3l chunkOffset = offset.add(chunkOffsets);
-        final Chunk3D chunk = new Chunk3D(chunkDims, chunkOffset, chunkData);
+        // NOTE(Moravec):   We will save only local offset inside current box, which will be used
+        //                  to reconstruct the original box.
+        final Chunk3D chunk = new Chunk3D(chunkDims, chunkOffset.toV3l(), chunkData);
         return chunk;
     }
 

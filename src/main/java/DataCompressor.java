@@ -19,52 +19,38 @@ import compression.utilities.Utils;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.*;
 
 
 public class DataCompressor {
-    static void test(int x, int y, int z) {
-        final int xSize = 2;
-        final int ySize = 2;
-        final int zSize = 3;
-        final int index = (x * (ySize * zSize)) + (y * zSize) + z;
-        System.out.println(String.format("%d;%d;%d -> %d", x, y, z, index));
+    static int[] getRandomData(int len) {
+        Random r = new Random();
+        int[] data = new int[len];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = r.nextInt(20000);
+        }
+        return data;
     }
 
     public static void main(String[] args) throws IOException {
 
-//        test(0,0,0);
-//        test(0,0,1);
-//        test(0,0,2);
-//        test(0,1,0);
-//        test(0,1,1);
-//        test(0,1,2);
-//        test(1,0,0);
-//        test(1,0,1);
-//        test(1,0,2);
-//        test(1,1,0);
-//        test(1,1,1);
-//        test(1,1,2);
-//        test(2,0,0);
-//        test(2,0,1);
-//        test(2,0,2);
-//        test(2,1,0);
-//        test(2,1,1);
-//        test(2,1,2);
-        final int xs = 16;
-        final int ys = 14;
+        final int xs = 11;
+        final int ys = 16;
         final int zs = 16;
-        final int[] data = new int[xs * ys * zs];
+        final int[] data = getRandomData(xs * ys * zs);
         final Chunk3D src = new Chunk3D(new V3i(xs, ys, zs), new V3l(0), data);
-        final Chunk3D[] chunks = src.divideIntoChunks(new V3i(2));
+        final Chunk3D[] chunks = src.divideIntoChunks(new V3i(4));
+
+        final Chunk3D reconstructed = new Chunk3D(new V3i(xs, ys, zs), new V3l(0));
+        reconstructed.reconstructFromChunks(chunks);
+
+        if (src.equals(reconstructed)) {
+            System.out.println("Reconstruction successful.");
+        } else {
+            System.out.println("Reconstruction failed !!!");
+        }
 
         if (chunks.length > 0) {
-            System.out.println("Received Chunk count: " + chunks.length);
             return;
         }
 

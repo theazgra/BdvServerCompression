@@ -50,4 +50,8 @@ public class V3i {
         }
 
     }
+
+    public V3l toV3l() {
+        return new V3l(x, y, z);
+    }
 }
