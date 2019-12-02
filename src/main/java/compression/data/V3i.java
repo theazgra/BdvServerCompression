@@ -39,4 +39,15 @@ public class V3i {
     public String toString() {
         return String.format("[%d;%d;%d]", x, y, z);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof V3i) {
+            final V3i other = (V3i) obj;
+            return ((x == other.x) && (y == other.y) && (z == other.z));
+        } else {
+            return super.equals(obj);
+        }
+
+    }
 }

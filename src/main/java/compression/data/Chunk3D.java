@@ -6,50 +6,26 @@ import java.util.ArrayList;
 
 public class Chunk3D {
     private final int[] data;
-    private final int xSize;
-    private final int ySize;
-    private final int zSize;
 
-    private long xOffset = 0;
-    private long yOffset = 0;
-    private long zOffset = 0;
+    private final V3i dims;
+    private final V3l offset;
+
+    public Chunk3D(final V3i dims, final V3l offset, final int[] data) {
+        this.dims = dims;
+        this.data = data;
+        this.offset = offset;
+        assert (data.length == (dims.getX() * dims.getY() * dims.getZ())) : "Wrong box data.";
+    }
 
     public Chunk3D(final V3i dims, final int[] data) {
-        this.xSize = (int) dims.getX();
-        this.ySize = (int) dims.getY();
-        this.zSize = (int) dims.getZ();
-        this.data = data;
+        this(dims, new V3l(0), data);
+
     }
 
     public Chunk3D(final V3i dims, final short[] data) {
-        this(dims, Utils.convertShortArrayToIntArray(data));
+        this(dims, new V3l(0), Utils.convertShortArrayToIntArray(data));
     }
 
-    public Chunk3D(final V3i dims, final V3l offset, final int[] data) {
-        this(dims, data);
-        this.xOffset = offset.getX();
-        this.yOffset = offset.getY();
-        this.zOffset = offset.getZ();
-    }
-
-    public Chunk3D(final int xSize, final int ySize, final int zSize, final int[] data) {
-        this.data = data;
-        this.xSize = xSize;
-        this.ySize = ySize;
-        this.zSize = zSize;
-
-        assert (data.length == (xSize * ySize * zSize)) : "Wrong box data.";
-    }
-
-    public Chunk3D(final int xSize, final int ySize, final int zSize, final short[] data) {
-        this(xSize, ySize, zSize, Utils.convertShortArrayToIntArray(data));
-    }
-
-    public void setOffsets(final long xOffset, final long yOffset, final long zOffset) {
-        this.xOffset = xOffset;
-        this.yOffset = yOffset;
-        this.zOffset = zOffset;
-    }
 
     /**
      * Calculate the index inside data array.
@@ -60,10 +36,9 @@ public class Chunk3D {
      * @return Index inside data array.
      */
     private int computeIndex(final int x, final int y, final int z) {
-        if (((x < 0) || (x >= xSize)) || (y < 0) || (y >= ySize) || (z < 0) || (z >= zSize)) {
-            throw new IndexOutOfBoundsException("One of index x,y,z is out of bounds of the 3D box");
-        }
-
+        assert (x >= 0 && x < dims.getX()) : "Index X out of bounds.";
+        assert (y >= 0 && y < dims.getY()) : "Index Y out of bounds.";
+        assert (z >= 0 && z < dims.getZ()) : "Index Z out of bounds.";
         /// NOTE    In higher dimensions, the last dimension specified is the fastest changing on disk.
         //          So if we have a four dimensional dataset A, then the first element on disk would be A[0][0][0][0],
         //          the second A[0][0][0][1], the third A[0][0][0][2], and so on.
@@ -71,21 +46,10 @@ public class Chunk3D {
 
 
         /*
-            (row*colCount) + col
-            (x * (xSize+ySize)) + (y * ySize) + z
-            0*(2*2)+0*2+0=0
-            0*(2*2)+0*2+1=1
-            0*(2*2)+1*2+0=2
-            0*(2*2)+1*2+1=3
-            1*(2*2)+0*2+0=4
-            1*(2*2)+0*2+1=5
-            1*(2*2)+1*2+0=6
-            1*(2*2)+1*2+1=7
-            3D 2x2x2 box
             0           1           2           3           4           5           6           7
             A[0][0][0]  A[0][0][1]  A[0][1][0]  A[0][1][1]  A[1][0][0]  A[1][0][1]  A[1][1][0]  A[1][1][1]
          */
-        final int index = (x * (ySize * zSize)) + (y * zSize) + z;
+        final int index = (x * (dims.getY() * dims.getZ())) + (y * dims.getZ()) + z;
         assert (index < data.length) : "Index calculation is wrong";
         return index;
     }
@@ -117,60 +81,67 @@ public class Chunk3D {
         data[computeIndex(x, y, z)] = value;
     }
 
-    public int getXSize() {
-        return xSize;
+    public V3i getDims() {
+        return dims;
     }
 
-    public int getYSize() {
-        return ySize;
-    }
-
-    public int getZSize() {
-        return zSize;
-    }
-
-    public long getXOffset() {
-        return xOffset;
-    }
-
-    public long getYOffset() {
-        return yOffset;
-    }
-
-    public long getZOffset() {
-        return zOffset;
+    public V3l getOffset() {
+        return offset;
     }
 
     @Override
     public String toString() {
-        return String.format("3D box [%dx%dx%d] %d values", xSize, ySize, zSize, data.length);
+        return String.format("3D box %s %d values", dims.toString(), data.length);
     }
 
     public Chunk3D[] divideIntoChunks(final V3i chunkDims) {
 
-        final int a = (int) Math.ceil(xSize / (double) chunkDims.getX());
-        final int b = (int) Math.ceil(ySize / (double) chunkDims.getY());
-        final int c = (int) Math.ceil(zSize / (double) chunkDims.getZ());
-        final int chunkCount = a * b * c;
+        final int xSize = dims.getX();
+        final int ySize = dims.getY();
+        final int zSize = dims.getZ();
+
+        final int xChunkCount = (int) Math.ceil(xSize / (double) chunkDims.getX());
+        final int yChunkCount = (int) Math.ceil(ySize / (double) chunkDims.getY());
+        final int zChunkCount = (int) Math.ceil(zSize / (double) chunkDims.getZ());
+        final int chunkCount = xChunkCount * yChunkCount * zChunkCount;
         Chunk3D[] chunks = new Chunk3D[chunkCount];
         int chunkIndex = 0;
         for (int chunkZOffset = 0; chunkZOffset < zSize; chunkZOffset += chunkDims.getZ()) {
-
             for (int chunkYOffset = 0; chunkYOffset < ySize; chunkYOffset += chunkDims.getY()) {
-
                 for (int chunkXOffset = 0; chunkXOffset < xSize; chunkXOffset += chunkDims.getX()) {
-
                     chunks[chunkIndex++] = copyChunkFromBox(chunkDims, new V3i(chunkXOffset, chunkYOffset, chunkZOffset));
-
                 }
             }
         }
         return chunks;
     }
 
+    public void reconstructFromChunks(final Chunk3D[] chunks) {
+        assert (chunks.length > 0) : "No chunks in reconstruct";
+        final V3i chunkDims = chunks[0].getDims();
+        final int xSize = dims.getX();
+        final int ySize = dims.getY();
+        final int zSize = dims.getZ();
+        assert assertCorrectChunkCount(chunkDims, chunks.length) : "Wrong chunk count in reconstruct";
+
+
+    }
+
+    private boolean assertCorrectChunkCount(final V3i chunkDims, final int receivedChunkCount) {
+        final int xChunkCount = (int) Math.ceil(dims.getX() / (double) chunkDims.getX());
+        final int yChunkCount = (int) Math.ceil(dims.getY() / (double) chunkDims.getY());
+        final int zChunkCount = (int) Math.ceil(dims.getZ() / (double) chunkDims.getZ());
+        final int expectedChunkCount = xChunkCount * yChunkCount * zChunkCount;
+        if (receivedChunkCount != expectedChunkCount) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
 
     private boolean isInside(final int x, final int y, final int z) {
-        return (((x >= 0) && (x < xSize)) && (y >= 0) && (y < ySize) && (z >= 0) && (z < zSize));
+        return (((x >= 0) && (x < dims.getX())) && (y >= 0) && (y < dims.getY()) && (z >= 0) && (z < dims.getZ()));
     }
 
     private Chunk3D copyChunkFromBox(final V3i chunkDims, final V3i chunkOffsets) {
@@ -197,10 +168,29 @@ public class Chunk3D {
         }
 
 
-        final Chunk3D chunk = new Chunk3D(chunkDims, chunkData);
-        chunk.setOffsets(xOffset + chunkOffsets.getX(),
-                yOffset + chunkOffsets.getY(),
-                zOffset + chunkOffsets.getZ());
+        final V3l chunkOffset = offset.add(chunkOffsets);
+        final Chunk3D chunk = new Chunk3D(chunkDims, chunkOffset, chunkData);
         return chunk;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Chunk3D) {
+            final Chunk3D otherChunk = (Chunk3D) obj;
+            if (data.length != otherChunk.data.length) {
+                return false;
+            } else if (!(offset.equals(otherChunk.offset))) {
+                return false;
+            } else {
+                for (int i = 0; i < data.length; i++) {
+                    if (data[i] != otherChunk.data[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        } else {
+            return super.equals(obj);
+        }
     }
 }
