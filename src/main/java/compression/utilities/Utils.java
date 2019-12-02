@@ -51,7 +51,6 @@ public class Utils {
     }
 
 
-
     public static double arrayListSum(final ArrayList<Double> array) {
         double sum = 0.0;
         for (final double val : array) {
@@ -93,6 +92,19 @@ public class Utils {
                 throw new RuntimeException("Source value is outside of bounds for 16-bit unsigned integer.");
             }
             result[i] = intValue;
+        }
+        return result;
+    }
+
+    public static short[] convertIntArrayToShortArray(final int[] src) {
+        short[] result = new short[src.length];
+
+        short shortValue;
+        for (int i = 0; i < src.length; i++) {
+            if (src[i] < 0 || src[i] > U16.Max) {
+                throw new RuntimeException("Source value is outside of bounds for 16-bit unsigned integer.");
+            }
+            result[i] = (short) src[i];
         }
         return result;
     }

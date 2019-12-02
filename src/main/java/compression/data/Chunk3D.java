@@ -208,4 +208,18 @@ public class Chunk3D {
             return super.equals(obj);
         }
     }
+
+    public int[] getData() {
+        return data;
+    }
+
+    public short[] getDataAsShort() {
+        return Utils.convertIntArrayToShortArray(data);
+    }
+
+    public void zeroData() {
+        for (int i = 0; i < data.length; i++) {
+            data[i] = 0;
+        }
+    }
 }
