@@ -28,11 +28,45 @@ import java.util.stream.IntStream;
 
 
 public class DataCompressor {
+    static void test(int x, int y, int z) {
+        final int xSize = 2;
+        final int ySize = 2;
+        final int zSize = 3;
+        final int index = (x * (ySize * zSize)) + (y * zSize) + z;
+        System.out.println(String.format("%d;%d;%d -> %d", x, y, z, index));
+    }
+
     public static void main(String[] args) throws IOException {
 
-        final int[] data = new int[3 * 3 * 3];
-        final Chunk3D src = new Chunk3D(new V3i(3), new V3l(0), data);
-        final ArrayList<Chunk3D> chunks = src.divideIntoChunks(new V3i(2));
+//        test(0,0,0);
+//        test(0,0,1);
+//        test(0,0,2);
+//        test(0,1,0);
+//        test(0,1,1);
+//        test(0,1,2);
+//        test(1,0,0);
+//        test(1,0,1);
+//        test(1,0,2);
+//        test(1,1,0);
+//        test(1,1,1);
+//        test(1,1,2);
+//        test(2,0,0);
+//        test(2,0,1);
+//        test(2,0,2);
+//        test(2,1,0);
+//        test(2,1,1);
+//        test(2,1,2);
+        final int xs = 16;
+        final int ys = 14;
+        final int zs = 16;
+        final int[] data = new int[xs * ys * zs];
+        final Chunk3D src = new Chunk3D(new V3i(xs, ys, zs), new V3l(0), data);
+        final Chunk3D[] chunks = src.divideIntoChunks(new V3i(2));
+
+        if (chunks.length > 0) {
+            System.out.println("Received Chunk count: " + chunks.length);
+            return;
+        }
 
 //        QuantizationValueCache cache = new QuantizationValueCache("D:\\tmp\\bdv_cache");
 //        if (!cache.areVectorQuantizationValueCached("initial_load.bin", 3, 4, 1)) {

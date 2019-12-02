@@ -34,4 +34,9 @@ public class V3i {
     public V3i sub(final V3i other) {
         return new V3i(x - other.x, y - other.y, z - other.z);
     }
+
+    @Override
+    public String toString() {
+        return String.format("[%d;%d;%d]", x, y, z);
+    }
 }

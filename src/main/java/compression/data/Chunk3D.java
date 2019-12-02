@@ -14,8 +14,6 @@ public class Chunk3D {
     private long yOffset = 0;
     private long zOffset = 0;
 
-    private boolean[] readFrom;
-
     public Chunk3D(final V3i dims, final int[] data) {
         this.xSize = (int) dims.getX();
         this.ySize = (int) dims.getY();
@@ -25,7 +23,6 @@ public class Chunk3D {
 
     public Chunk3D(final V3i dims, final short[] data) {
         this(dims, Utils.convertShortArrayToIntArray(data));
-        readFrom = new boolean[data.length];
     }
 
     public Chunk3D(final V3i dims, final V3l offset, final int[] data) {
@@ -88,8 +85,7 @@ public class Chunk3D {
             0           1           2           3           4           5           6           7
             A[0][0][0]  A[0][0][1]  A[0][1][0]  A[0][1][1]  A[1][0][0]  A[1][0][1]  A[1][1][0]  A[1][1][1]
          */
-        // xSize * ySize
-        final int index = (x * (xSize * ySize)) + (y * ySize) + z;
+        final int index = (x * (ySize * zSize)) + (y * zSize) + z;
         assert (index < data.length) : "Index calculation is wrong";
         return index;
     }
@@ -108,7 +104,7 @@ public class Chunk3D {
             throw new IndexOutOfBoundsException("One of index x,y,z is out of bounds of the 3D box");
         }
 
-        final int index = ((x * (chunkDims.getX() * chunkDims.getY())) + (y * chunkDims.getY()) + z);
+        final int index = (x * (chunkDims.getY() * chunkDims.getZ())) + (y * chunkDims.getZ()) + z;
         return index;
     }
 
@@ -150,36 +146,31 @@ public class Chunk3D {
         return String.format("3D box [%dx%dx%d] %d values", xSize, ySize, zSize, data.length);
     }
 
-    public ArrayList<Chunk3D> divideIntoChunks(final V3i chunkDims) {
-        ArrayList<Chunk3D> chunks = new ArrayList<Chunk3D>();
+    public Chunk3D[] divideIntoChunks(final V3i chunkDims) {
+
+        final int a = (int) Math.ceil(xSize / (double) chunkDims.getX());
+        final int b = (int) Math.ceil(ySize / (double) chunkDims.getY());
+        final int c = (int) Math.ceil(zSize / (double) chunkDims.getZ());
+        final int chunkCount = a * b * c;
+        Chunk3D[] chunks = new Chunk3D[chunkCount];
+        int chunkIndex = 0;
         for (int chunkZOffset = 0; chunkZOffset < zSize; chunkZOffset += chunkDims.getZ()) {
 
             for (int chunkYOffset = 0; chunkYOffset < ySize; chunkYOffset += chunkDims.getY()) {
 
                 for (int chunkXOffset = 0; chunkXOffset < xSize; chunkXOffset += chunkDims.getX()) {
 
-                    chunks.add(copyChunkFromBox(chunkDims, new V3i(chunkXOffset, chunkYOffset, chunkZOffset)));
+                    chunks[chunkIndex++] = copyChunkFromBox(chunkDims, new V3i(chunkXOffset, chunkYOffset, chunkZOffset));
 
                 }
             }
         }
-        // TODO(Moravec): We are missing some values when creating chunks, this has to be resolved.
-        assertReadFromAll();
         return chunks;
     }
 
-    private void assertReadFromAll() {
-        for (int i = 0; i < readFrom.length; i++) {
-            if (!readFrom[i]) {
-                System.out.println(toString() + String.format(" Did not read from index %d", i));
-            }
-        }
-    }
 
     private boolean isInside(final int x, final int y, final int z) {
-
-        return ((x < xSize) && (y < ySize) && (z < zSize));
-        //return (((x >= 0) && (x < xSize)) && (y >= 0) && (y < ySize) && (z >= 0) && (z < zSize));
+        return (((x >= 0) && (x < xSize)) && (y >= 0) && (y < ySize) && (z >= 0) && (z < zSize));
     }
 
     private Chunk3D copyChunkFromBox(final V3i chunkDims, final V3i chunkOffsets) {
@@ -196,9 +187,9 @@ public class Chunk3D {
 
                     if (isInside(srcX, srcY, srcZ)) {
                         final int srcIndex = computeIndex(srcX, srcY, srcZ);
-                        readFrom[srcIndex] = true;
                         chunkData[dstIndex] = data[srcIndex];
                     } else {
+                        // NOTE(Moravec): This make sense only when FILL_VALUE != 0
                         chunkData[dstIndex] = FILL_VALUE;
                     }
                 }
