@@ -1,5 +1,6 @@
 import com.google.gson.internal.$Gson$Preconditions;
 import compression.data.Chunk3D;
+import compression.data.ChunkIO;
 import compression.data.V3i;
 import compression.data.V3l;
 import compression.de.DeException;
@@ -33,6 +34,8 @@ public class DataCompressor {
     }
 
     public static void main(String[] args) throws IOException {
+
+        Chunk3D[] loadedChunks = ChunkIO.loadChunks("D:\\tmp\\server-dump\\chunks.bin");
 
         final int xs = 11;
         final int ys = 16;
