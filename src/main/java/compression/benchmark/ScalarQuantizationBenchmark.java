@@ -149,7 +149,7 @@ public class ScalarQuantizationBenchmark {
     }
 
     private void saveQTrainLog(final String filename, final QTrainIteration[] trainingLog) {
-        final String CSV_HEADER = "It;AvgMSE;BestMSE;AvgPSNR;BestPSNR";
+        final String CSV_HEADER = "It;AvgMSE;BestMSE;AvgPSNR;BestPSNR\n";
         try {
             FileOutputStream fileStream = new FileOutputStream(filename);
             OutputStreamWriter writer = new OutputStreamWriter(fileStream);
