@@ -38,7 +38,7 @@ public class ScalarQuantizer {
 
     public int quantize(final int value) {
         for (int intervalId = 1; intervalId <= centroids.length; intervalId++) {
-            if ((value >= boundaryPoints[intervalId - 1]) && (value < boundaryPoints[intervalId])) {
+            if ((value >= boundaryPoints[intervalId - 1]) && (value <= boundaryPoints[intervalId])) {
                 return centroids[intervalId - 1];
             }
         }
