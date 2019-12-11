@@ -130,4 +130,38 @@ public class Utils {
         }
         return result;
     }
+
+    public static int[] getAbsoluteDifference(final short[] original, final short[] transformed) {
+        assert (original.length == transformed.length) : "Array lengths doesn't match";
+
+        int[] difference = new int[original.length];
+        for (int i = 0; i < original.length; i++) {
+            difference[i] = Math.abs((int) original[i] - (int) transformed[i]);
+        }
+        return difference;
+    }
+
+    public static int[] getSquaredDifference(final short[] original, final short[] transformed) {
+        assert (original.length == transformed.length) : "Array lengths doesn't match";
+
+        int[] difference = new int[original.length];
+        for (int i = 0; i < original.length; i++) {
+            difference[i] = (int) Math.pow(((int) original[i] - (int) transformed[i]), 2);
+        }
+        return difference;
+    }
+
+    public static byte[] convertIntArrayToByteArray(final int[] data) {
+        byte[] buffer = new byte[data.length * 4];
+
+        int j = 0;
+        for (final int v : data) {
+
+            buffer[j++] = (byte) ((v >>> 24) & 0xFF);
+            buffer[j++] = (byte) ((v >>> 16) & 0xFF);
+            buffer[j++] = (byte) ((v >>> 8) & 0xFF);
+            buffer[j++] = (byte) (v & 0xFF);
+        }
+        return buffer;
+    }
 }

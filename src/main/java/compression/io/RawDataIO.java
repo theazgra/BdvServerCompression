@@ -6,6 +6,7 @@ import compression.utilities.Utils;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class RawDataIO {
     /**
@@ -44,9 +45,18 @@ public class RawDataIO {
         return image;
     }
 
-    public static void writeImageU16(final String rawFile, final ImageU16 image) throws Exception {
-        FileOutputStream fileStream = new FileOutputStream(rawFile, false);
+    public static void writeImageU16(final String rawFile, final ImageU16 image) throws IOException {
         byte[] buffer = Utils.convertShortArrayToByteArray(image.getData());
+        writeBytesToFile(rawFile, buffer);
+    }
+
+    public static void writeDataI32(String rawFile, int[] differenceData) throws IOException {
+        byte[] buffer = Utils.convertIntArrayToByteArray(differenceData);
+        writeBytesToFile(rawFile, buffer);
+    }
+
+    private static void writeBytesToFile(String rawFile, byte[] buffer) throws IOException {
+        FileOutputStream fileStream = new FileOutputStream(rawFile, false);
         fileStream.write(buffer, 0, buffer.length);
         fileStream.flush();
         fileStream.close();

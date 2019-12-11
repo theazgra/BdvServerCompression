@@ -1,45 +1,29 @@
-import compression.data.ImageU16;
+import compression.benchmark.ScalarQuantizationBenchmark;
 import compression.data.V3i;
-import compression.de.DeException;
-import compression.de.DeHistory;
-import compression.de.IDESolver;
-import compression.de.jade.JadeSolver;
-import compression.de.shade.ILShadeSolver;
-import compression.de.shade.LShadeSolver;
-import compression.io.RawDataIO;
-import compression.quantization.scalar.LloydMaxIteration;
-import compression.quantization.scalar.LloydMaxU16ScalarQuantization;
-import compression.quantization.vector.LBGResult;
-import compression.quantization.vector.LBGVectorQuantizer;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.util.Random;
 
 
 public class DataCompressor {
-    static int[] getRandomData(int len) {
-        Random r = new Random();
-        int[] data = new int[len];
-        for (int i = 0; i < data.length; i++) {
-            data[i] = r.nextInt(20000);
-        }
-        return data;
-    }
+//    static int[] getRandomData(int len) {
+//        Random r = new Random();
+//        int[] data = new int[len];
+//        for (int i = 0; i < data.length; i++) {
+//            data[i] = r.nextInt(20000);
+//        }
+//        return data;
+//    }
 
     public static void main(String[] args) throws IOException {
 
-        ImageU16 img = null;
-        try {
-            img = RawDataIO.loadImageU16("D:\\tmp\\tiff_data\\fused_tp_10_ch_1_16bit.raw", new V3i(1041, 996, 946), 359 - 1);
+        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
+                "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit.raw",
+                "D:\\biology\\benchmark\\scalar",
+                358,
+                358,
+                new V3i(1041,996,946));
 
-            RawDataIO.writeImageU16("D:\\tmp\\tiff_data\\fused_tp_10_ch_1_16bit_p359.raw", img);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        sqBenchmark.startBenchmark();
 
 
         /*
@@ -91,7 +75,7 @@ public class DataCompressor {
         //ilshade(values, Dimension, 100, 800, "iL-SHADE-2bits-800it.csv");
         */
     }
-
+    /*
     private static void appendLineToFile(final String fileName, final String line) {
         try {
             FileOutputStream os = new FileOutputStream(fileName, true);
@@ -239,5 +223,5 @@ public class DataCompressor {
         }
     }
 
-
+     */
 }
