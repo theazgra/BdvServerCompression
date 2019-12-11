@@ -4,7 +4,9 @@ import compression.U16;
 import compression.de.DEIndividual;
 import compression.de.DESolverWithArchive;
 import compression.de.DeException;
-import compression.de.DeHistory;
+import compression.quantization.QTrainIteration;
+import compression.utilities.Means;
+import compression.utilities.Stopwatch;
 import compression.utilities.Utils;
 import org.apache.commons.math3.distribution.CauchyDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -12,8 +14,6 @@ import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import compression.utilities.Means;
-import compression.utilities.Stopwatch;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,9 +42,9 @@ public class JadeSolver extends DESolverWithArchive {
     }
 
     @Override
-    public DeHistory[] train() throws DeException {
+    public QTrainIteration[] train() throws DeException {
         final String delimiter = "-------------------------------------------";
-        DeHistory[] solutionHistory = new DeHistory[generationCount];
+        QTrainIteration[] solutionHistory = new QTrainIteration[generationCount];
         if (trainingData == null || trainingData.length <= 0) {
             throw new DeException("Training data weren't set.");
         }
@@ -131,7 +131,7 @@ public class JadeSolver extends DESolverWithArchive {
 
             System.out.println(generationLog.toString());
 
-            solutionHistory[generation] = new DeHistory(generation, avgFitness, currentBestFitness, Utils.calculatePsnr(currentBestFitness, U16.Max), avgPsnr);
+            solutionHistory[generation] = new QTrainIteration(generation, avgFitness, currentBestFitness, Utils.calculatePsnr(currentBestFitness, U16.Max), avgPsnr);
         }
 
         Arrays.sort(currentPopulationSorted);

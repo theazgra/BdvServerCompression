@@ -1,5 +1,7 @@
 package compression.de;
 
+import compression.quantization.QTrainIteration;
+
 public interface IDESolver {
 
     void setMinimalValueConstraint(final int min);
@@ -12,7 +14,7 @@ public interface IDESolver {
 
     void setDimensionCount(final int dimensionCount);
 
-    DeHistory[] train() throws DeException;
+    QTrainIteration[] train() throws DeException;
 
     void setTrainingData(final int[] data);
 

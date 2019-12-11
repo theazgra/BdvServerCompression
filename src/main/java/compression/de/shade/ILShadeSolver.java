@@ -2,7 +2,7 @@ package compression.de.shade;
 
 import compression.U16;
 import compression.de.DeException;
-import compression.de.DeHistory;
+import compression.quantization.QTrainIteration;
 import compression.utilities.Means;
 import compression.utilities.Utils;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
@@ -29,11 +29,11 @@ public class ILShadeSolver extends LShadeSolver {
 
     @SuppressWarnings("DuplicatedCode")
     @Override
-    public DeHistory[] train() throws DeException {
+    public QTrainIteration[] train() throws DeException {
         final String delimiter = "-------------------------------------------";
         int maxNfe = (populationSize * generationCount);
         int nfe = 0;
-        DeHistory[] solutionHistory = new DeHistory[generationCount];
+        QTrainIteration[] solutionHistory = new QTrainIteration[generationCount];
 
         RandomGenerator rg = new MersenneTwister();
         initializeMemory(0.8, 0.5);
@@ -42,7 +42,7 @@ public class ILShadeSolver extends LShadeSolver {
         ArrayList<Double> absDelta = new ArrayList<Double>();
 
         generateInitialPopulation();
-        double avgFitness = calculateFitnessForPopulationParallel(currentPopulation);
+        double averageMSE = calculateFitnessForPopulationParallel(currentPopulation);
 
         UniformIntegerDistribution memoryIndexDist = new UniformIntegerDistribution(rg, 0, (memorySize - 1));
         UniformIntegerDistribution jRandDist = new UniformIntegerDistribution(rg, 0, (dimensionCount - 1));
@@ -111,20 +111,21 @@ public class ILShadeSolver extends LShadeSolver {
             truncateArchive();
             updateMutationGreediness(nfe, maxNfe);
 
-            avgFitness = getMseFromCalculatedFitness(currentPopulation);
+            averageMSE = getMseFromCalculatedFitness(currentPopulation);
 
             // NOTE(Moravec): After LRPS the population is sorted according.
-            final double currentBestFitness = currentPopulation[0].getFitness();
-            final double psnr = Utils.calculatePsnr(currentBestFitness, U16.Max);
-            final double avgPsnr = Utils.calculatePsnr(avgFitness, U16.Max);
-            solutionHistory[generation] = new DeHistory(generation, avgFitness, currentBestFitness, psnr, avgPsnr);
+            final double bestMSE = currentPopulation[0].getFitness();
+            final double bestPSNR = Utils.calculatePsnr(bestMSE, U16.Max);
+            final double averagePSNR = Utils.calculatePsnr(averageMSE, U16.Max);
+
+            solutionHistory[generation] = new QTrainIteration(generation, averageMSE, bestMSE, averagePSNR, bestPSNR);
 
             stopwatch.stop();
 
             generationLog.append(String.format("Current population size: %d\n", currentPopulationSize));
             generationLog.append(String.format("Mutation greediness: %.5f\n", currentMutationGreediness));
-            generationLog.append(String.format("Current best fitness: %.5f Current PSNR: %.5f dB", currentBestFitness, psnr));
-            generationLog.append(String.format("\nAvg. cost(after LPSR): %.6f\nAvg. PSNR (after LPSR): %.6f dB\nIteration finished in: %d ms", avgFitness, avgPsnr, stopwatch.totalElapsedMilliseconds()));
+            generationLog.append(String.format("Current best fitness: %.5f Current PSNR: %.5f dB", bestMSE, bestPSNR));
+            generationLog.append(String.format("\nAvg. cost(after LPSR): %.6f\nAvg. PSNR (after LPSR): %.6f dB\nIteration finished in: %d ms", averageMSE, averagePSNR, stopwatch.totalElapsedMilliseconds()));
             System.out.println(generationLog.toString());
         }
 
