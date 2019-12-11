@@ -17,6 +17,8 @@ public class Utils {
     public static byte[] readFileBytes(final String path) throws FileNotFoundException {
         FileInputStream fileStream = new FileInputStream(path);
         try {
+//            final byte[] bytes = IOUtils.toByteArray(fileStream);
+//            return bytes;
             return fileStream.readAllBytes();
         } catch (IOException e) {
             e.printStackTrace();
@@ -74,13 +76,33 @@ public class Utils {
         int index = 0;
         for (int i = 0; i < bytes.length; i += 2) {
             final int value = (int) (((bytes[i] & 0xff) << 8) | (bytes[i + 1] & 0xff));
-            if (value > 0) {
-                values[index++] = value;
-                continue;
-            }
             values[index++] = value;
         }
         return values;
+    }
+
+    public static short[] convertU16ByteArrayToShortArray(final byte[] bytes) {
+        assert (bytes.length % 2 == 0);
+        short[] values = new short[bytes.length / 2];
+
+        int index = 0;
+        for (int i = 0; i < bytes.length; i += 2) {
+            final short value = (short) (((bytes[i] & 0xff) << 8) | (bytes[i + 1] & 0xff));
+            values[index++] = value;
+        }
+        return values;
+    }
+
+    public static byte[] convertShortArrayToByteArray(final short[] data) {
+        byte[] buffer = new byte[data.length * 2];
+
+        int j = 0;
+        for (final short s : data) {
+            buffer[j++] = (byte) ((s >> 8) & 0xff);
+            buffer[j++] = (byte) (s & 0xff);
+        }
+
+        return buffer;
     }
 
     public static int[] convertShortArrayToIntArray(final short[] src) {

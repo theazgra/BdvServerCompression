@@ -1,26 +1,21 @@
-import com.google.gson.internal.$Gson$Preconditions;
-import compression.data.Chunk3D;
-import compression.data.ChunkIO;
+import compression.data.ImageU16;
 import compression.data.V3i;
-import compression.data.V3l;
 import compression.de.DeException;
 import compression.de.DeHistory;
 import compression.de.IDESolver;
 import compression.de.jade.JadeSolver;
 import compression.de.shade.ILShadeSolver;
 import compression.de.shade.LShadeSolver;
-import compression.quantization.QuantizationValueCache;
+import compression.io.RawDataIO;
 import compression.quantization.scalar.LloydMaxIteration;
 import compression.quantization.scalar.LloydMaxU16ScalarQuantization;
-import compression.quantization.vector.CodebookEntry;
 import compression.quantization.vector.LBGResult;
 import compression.quantization.vector.LBGVectorQuantizer;
-import compression.utilities.Utils;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.util.*;
+import java.util.Random;
 
 
 public class DataCompressor {
@@ -35,6 +30,19 @@ public class DataCompressor {
 
     public static void main(String[] args) throws IOException {
 
+        ImageU16 img = null;
+        try {
+            img = RawDataIO.loadImageU16("D:\\tmp\\tiff_data\\fused_tp_10_ch_1_16bit.raw", new V3i(1041, 996, 946), 359 - 1);
+
+            RawDataIO.writeImageU16("D:\\tmp\\tiff_data\\fused_tp_10_ch_1_16bit_p359.raw", img);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+
+        /*
         Chunk3D[] loadedChunks = ChunkIO.loadChunks("D:\\tmp\\server-dump\\chunks.bin");
 
         final int xs = 11;
@@ -56,24 +64,6 @@ public class DataCompressor {
         if (chunks.length > 0) {
             return;
         }
-
-//        QuantizationValueCache cache = new QuantizationValueCache("D:\\tmp\\bdv_cache");
-//        if (!cache.areVectorQuantizationValueCached("initial_load.bin", 3, 4, 1)) {
-//            CodebookEntry[] codebook = new CodebookEntry[]{
-//                    new CodebookEntry(new int[]{0, 100, 200, 300}),
-//                    new CodebookEntry(new int[]{1212, 5223, 6651, 12300}),
-//                    new CodebookEntry(new int[]{25436, 33333, 44856, 0xffff})
-//            };
-//            cache.saveQuantizationValues("initial_load.bin", codebook);
-//        } else {
-//            CodebookEntry[] codebook = cache.readCachedValues("initial_load.bin", 3, 4, 1);
-//            int l = codebook.length;
-//        }
-
-
-//        int[] centroids = new int[]{0, 125, 355, 400, 500, 700, 2550, 4000, 10000, 50000, 0xffff};
-//        cache.saveQuantizationValue("test.bin", centroids);
-//        int[] read = cache.readCachedValues("test.bin", centroids.length);
 
         String sourceFile = "D:\\tmp\\server-dump\\initial_load.bin";
         int NumberOfBits = 3;
@@ -99,6 +89,7 @@ public class DataCompressor {
         //jade(values, Dimension, 5 * Dimension, 500, "JADE-5bits.csv");
         //lshade(values, Dimension, 5 * Dimension, 1000, output);
         //ilshade(values, Dimension, 100, 800, "iL-SHADE-2bits-800it.csv");
+        */
     }
 
     private static void appendLineToFile(final String fileName, final String line) {
