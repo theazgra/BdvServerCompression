@@ -97,8 +97,7 @@ public class Chunk2D {
         final int xChunkCount = (int) Math.ceil(dims.getX() / (double) chunkDims.getX());
         final int yChunkCount = (int) Math.ceil(dims.getY() / (double) chunkDims.getY());
 
-        final int expectedChunkCount = xChunkCount * yChunkCount;
-        return expectedChunkCount;
+        return (xChunkCount * yChunkCount);
     }
 
     public void reconstructFromChunks(final Chunk2D[] chunks) {
@@ -153,8 +152,7 @@ public class Chunk2D {
 
         // NOTE(Moravec):   We will save only local offset inside current box, which will be used
         //                  to reconstruct the original box.
-        final Chunk2D chunk = new Chunk2D(chunkDims, chunkOffset.toV2l(), chunkData);
-        return chunk;
+        return new Chunk2D(chunkDims, chunkOffset.toV2l(), chunkData);
     }
 
     @Override
