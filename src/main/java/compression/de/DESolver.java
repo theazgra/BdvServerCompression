@@ -28,12 +28,11 @@ public abstract class DESolver implements IDESolver {
     protected DEIndividual[] currentPopulationSorted;
 
     public DESolver(final int dimension, final int populationSize, final int generationCount) {
-        threadCount = Runtime.getRuntime().availableProcessors() - 1;
-        if (threadCount > 12)
-            threadCount = 12;
-
+        //threadCount = Runtime.getRuntime().availableProcessors() - 1;
+        // NOTE(Moravec): Let's go with 4 threads for now.
         threadCount = 4;
-        assert (threadCount > 1);
+        //assert (threadCount > 1);
+
         this.dimensionCount = dimension;
         this.populationSize = populationSize;
         this.generationCount = generationCount;

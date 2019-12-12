@@ -23,6 +23,8 @@ public class DataCompressor {
                 358,
                 new V3i(1041,996,946));
 
+        sqBenchmark.setUseDiffEvolution(true);
+
         sqBenchmark.startBenchmark();
 
 
