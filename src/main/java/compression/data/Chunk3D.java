@@ -31,7 +31,7 @@ public class Chunk3D {
      * @param z Zero based z coordinate.
      * @return Index inside data array.
      */
-    private int computeIndex(final int x, final int y, final int z) {
+    private int index(final int x, final int y, final int z) {
         assert (x >= 0 && x < dims.getX()) : "Index X out of bounds.";
         assert (y >= 0 && y < dims.getY()) : "Index Y out of bounds.";
         assert (z >= 0 && z < dims.getZ()) : "Index Z out of bounds.";
@@ -59,7 +59,7 @@ public class Chunk3D {
      * @param chunkDims Chunk dimensions.
      * @return Index inside chunk dimension data array.
      */
-    private int computeIndex(final int x, final int y, final int z, final V3i chunkDims) {
+    private int index(final int x, final int y, final int z, final V3i chunkDims) {
         if (((x < 0) || (x >= chunkDims.getX())) || (y < 0) || (y >= chunkDims.getY()) || (z < 0) || (z >= chunkDims.getZ())) {
             throw new IndexOutOfBoundsException("One of index x,y,z is out of bounds of the 3D box");
         }
@@ -70,11 +70,11 @@ public class Chunk3D {
 
 
     public int getValueAt(final int x, final int y, final int z) {
-        return data[computeIndex(x, y, z)];
+        return data[index(x, y, z)];
     }
 
     public void setValueAt(final int x, final int y, final int z, final int value) {
-        data[computeIndex(x, y, z)] = value;
+        data[index(x, y, z)] = value;
     }
 
     public V3i getDims() {
@@ -140,12 +140,12 @@ public class Chunk3D {
         final V3l localOffset = chunk.getOffset();
         int dstX, dstY, dstZ;
 
-        for (int chunkX = 0; chunkX < chunkDims.getX(); chunkX++) {
-            dstX = (int) localOffset.getX() + chunkX;
+        for (int chunkZ = 0; chunkZ < chunkDims.getZ(); chunkZ++) {
+            dstZ = (int) localOffset.getZ() + chunkZ;
             for (int chunkY = 0; chunkY < chunkDims.getY(); chunkY++) {
                 dstY = (int) localOffset.getY() + chunkY;
-                for (int chunkZ = 0; chunkZ < chunkDims.getZ(); chunkZ++) {
-                    dstZ = (int) localOffset.getZ() + chunkZ;
+                for (int chunkX = 0; chunkX < chunkDims.getX(); chunkX++) {
+                    dstX = (int) localOffset.getX() + chunkX;
 
                     // NOTE(Moravec):   Negating this expression!
                     //                  If dst coordinates are NOT outside bounds, copy the value.
@@ -162,21 +162,15 @@ public class Chunk3D {
         final int FILL_VALUE = 0;
         int srcX, srcY, srcZ;
 
-        for (int x = 0; x < chunkDims.getX(); x++) {
-            srcX = chunkOffset.getX() + x;
+        for (int z = 0; z < chunkDims.getZ(); z++) {
+            srcZ = chunkOffset.getZ() + z;
             for (int y = 0; y < chunkDims.getY(); y++) {
                 srcY = chunkOffset.getY() + y;
-                for (int z = 0; z < chunkDims.getZ(); z++) {
-                    srcZ = chunkOffset.getZ() + z;
-                    final int dstIndex = computeIndex(x, y, z, chunkDims);
-
-                    if (isInside(srcX, srcY, srcZ)) {
-                        final int srcIndex = computeIndex(srcX, srcY, srcZ);
-                        chunkData[dstIndex] = data[srcIndex];
-                    } else {
-                        // NOTE(Moravec): This make sense only when FILL_VALUE != 0
-                        chunkData[dstIndex] = FILL_VALUE;
-                    }
+                for (int x = 0; x < chunkDims.getX(); x++) {
+                    srcX = chunkOffset.getX() + x;
+                    chunkData[index(x, y, z, chunkDims)] = isInside(srcX, srcY, srcZ) ?
+                            data[index(srcX, srcY, srcZ)] :
+                            FILL_VALUE;
                 }
             }
         }

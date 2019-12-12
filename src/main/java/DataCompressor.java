@@ -1,35 +1,36 @@
-import compression.benchmark.ScalarQuantizationBenchmark;
+import compression.data.Chunk3D;
 import compression.data.V3i;
+import compression.data.V3l;
 
 import java.io.IOException;
+import java.util.Random;
 
 
 public class DataCompressor {
-//    static int[] getRandomData(int len) {
-//        Random r = new Random();
-//        int[] data = new int[len];
-//        for (int i = 0; i < data.length; i++) {
-//            data[i] = r.nextInt(20000);
-//        }
-//        return data;
-//    }
+    static int[] getRandomData(int len) {
+        Random r = new Random();
+        int[] data = new int[len];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = r.nextInt(20000);
+        }
+        return data;
+    }
 
     public static void main(String[] args) throws IOException {
 
-        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
-                "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit.raw",
-                "D:\\biology\\benchmark\\scalar",
-                358,
-                358,
-                new V3i(1041,996,946));
+//        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
+//                "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit.raw",
+//                "D:\\biology\\benchmark\\scalar",
+//                358,
+//                358,
+//                new V3i(1041, 996, 946));
+//
+//        sqBenchmark.setUseDiffEvolution(true);
+//
+//        sqBenchmark.startBenchmark();
 
-        sqBenchmark.setUseDiffEvolution(true);
 
-        sqBenchmark.startBenchmark();
-
-
-        /*
-        Chunk3D[] loadedChunks = ChunkIO.loadChunks("D:\\tmp\\server-dump\\chunks.bin");
+        //Chunk3D[] loadedChunks = ChunkIO.loadChunks("D:\\tmp\\server-dump\\chunks.bin");
 
         final int xs = 11;
         final int ys = 16;
@@ -46,6 +47,7 @@ public class DataCompressor {
         } else {
             System.out.println("Reconstruction failed !!!");
         }
+        /*
 
         if (chunks.length > 0) {
             return;
