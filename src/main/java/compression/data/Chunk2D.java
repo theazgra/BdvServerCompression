@@ -30,7 +30,7 @@ public class Chunk2D {
      * @param y Zero based y coordinate.
      * @return Index inside data array.
      */
-    private int computeIndex(final int x, final int y) {
+    private int index(final int x, final int y) {
         assert (x >= 0 && x < dims.getX()) : "Index X out of bounds.";
         assert (y >= 0 && y < dims.getY()) : "Index Y out of bounds.";
 
@@ -45,7 +45,7 @@ public class Chunk2D {
      * @param chunkDims Chunk dimensions.
      * @return Index inside chunk dimension data array.
      */
-    private int computeIndex(final int x, final int y, final V2i chunkDims) {
+    private int index(final int x, final int y, final V2i chunkDims) {
         if (((x < 0) || (x >= chunkDims.getX())) || (y < 0) || (y >= chunkDims.getY())) {
             throw new IndexOutOfBoundsException("One of index x,y is out of bounds of the 2D shape");
         }
@@ -55,11 +55,11 @@ public class Chunk2D {
 
 
     public int getValueAt(final int x, final int y) {
-        return data[computeIndex(x, y)];
+        return data[index(x, y)];
     }
 
     public void setValueAt(final int x, final int y, final int value) {
-        data[computeIndex(x, y)] = value;
+        data[index(x, y)] = value;
     }
 
     public V2i getDims() {
@@ -146,8 +146,8 @@ public class Chunk2D {
             srcY = chunkOffset.getY() + y;
             for (int x = 0; x < chunkDims.getX(); x++) {
                 srcX = chunkOffset.getX() + x;
-                final int dstIndex = computeIndex(x, y, chunkDims);
-                chunkData[dstIndex] = isInside(srcX, srcY) ? data[computeIndex(srcX, srcY)] : FILL_VALUE;
+                final int dstIndex = index(x, y, chunkDims);
+                chunkData[dstIndex] = isInside(srcX, srcY) ? data[index(srcX, srcY)] : FILL_VALUE;
             }
         }
 
