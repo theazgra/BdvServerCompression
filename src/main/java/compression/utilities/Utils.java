@@ -93,17 +93,6 @@ public class Utils {
         return values;
     }
 
-    public static byte[] convertShortArrayToByteArray(final short[] data) {
-        byte[] buffer = new byte[data.length * 2];
-
-        int j = 0;
-        for (final short s : data) {
-            buffer[j++] = (byte) ((s >> 8) & 0xff);
-            buffer[j++] = (byte) (s & 0xff);
-        }
-
-        return buffer;
-    }
 
     public static int[] convertShortArrayToIntArray(final short[] src) {
         int[] result = new int[src.length];
@@ -136,7 +125,7 @@ public class Utils {
 
         int[] difference = new int[original.length];
         for (int i = 0; i < original.length; i++) {
-            difference[i] = Math.abs((int) original[i] - (int) transformed[i]);
+            difference[i] = Math.abs(shortBitsToInt(original[i]) - shortBitsToInt(transformed[i]));
         }
         return difference;
     }
@@ -146,9 +135,20 @@ public class Utils {
 
         int[] difference = new int[original.length];
         for (int i = 0; i < original.length; i++) {
-            difference[i] = (int) Math.pow(((int) original[i] - (int) transformed[i]), 2);
+            difference[i] = (int) Math.pow((shortBitsToInt(original[i]) - shortBitsToInt(transformed[i])), 2);
         }
         return difference;
+    }
+
+    public static byte[] convertShortArrayToByteArray(final short[] data) {
+        byte[] buffer = new byte[data.length * 2];
+        int j = 0;
+        for (final short s : data) {
+            // NOTE(Moravec): Use little endian.
+            buffer[j++] = (byte) (s & 0xff);
+            buffer[j++] = (byte) ((s >> 8) & 0xff);
+        }
+        return buffer;
     }
 
     public static byte[] convertIntArrayToByteArray(final int[] data) {
@@ -156,11 +156,11 @@ public class Utils {
 
         int j = 0;
         for (final int v : data) {
-
-            buffer[j++] = (byte) ((v >>> 24) & 0xFF);
-            buffer[j++] = (byte) ((v >>> 16) & 0xFF);
-            buffer[j++] = (byte) ((v >>> 8) & 0xFF);
+            // NOTE(Moravec): Use little endian.
             buffer[j++] = (byte) (v & 0xFF);
+            buffer[j++] = (byte) ((v >>> 8) & 0xFF);
+            buffer[j++] = (byte) ((v >>> 16) & 0xFF);
+            buffer[j++] = (byte) ((v >>> 24) & 0xFF);
         }
         return buffer;
     }
