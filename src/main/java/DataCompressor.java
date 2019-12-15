@@ -1,4 +1,6 @@
 import compression.data.*;
+import compression.io.RawDataIO;
+import compression.quantization.vector.LBGVectorQuantizer;
 
 import java.io.IOException;
 import java.util.Random;
@@ -8,20 +10,23 @@ public class DataCompressor {
 
 
     public static void main(String[] args) throws IOException {
-        //test2DChunking();
-        test3DChunking();
-//                ImageU16 img = null;
-//
-//                try {
-//                    img = RawDataIO.loadImageU16("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
-//                                                 new V3i(1041, 996, 946),
-//                                                 351);
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                    img = null;
-//                }
-//                Chunk2D imageChunk =  img.as2dChunk();
-//                int[][] imageVectors = imageChunk.divideIntoVectors(4);
+        //        test2DChunking();
+        //        test3DChunking();
+        ImageU16 img = null;
+
+        try {
+            img = RawDataIO.loadImageU16("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
+                                         new V3i(1041, 996, 946),
+                                         351);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        Chunk2D imageChunk = img.as2dChunk();
+        int[][] imageVectors = imageChunk.divideIntoVectors(4);
+
+        LBGVectorQuantizer vectorQuantizer = new LBGVectorQuantizer(imageVectors, 128, 4);
         //imageChunk.di
 
 

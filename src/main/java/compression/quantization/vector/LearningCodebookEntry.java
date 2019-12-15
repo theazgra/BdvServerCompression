@@ -5,10 +5,11 @@ import compression.utilities.Utils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class LearningCodebookEntry extends CodebookEntry {
     private ArrayList<Double> trainingVectorsDistances;
-    private ArrayList<ArrayList<Integer>> trainingVectors;
+    private ArrayList<int[]> trainingVectors;
 
     public LearningCodebookEntry(int[] codebook) {
         super(codebook);
@@ -22,10 +23,10 @@ public class LearningCodebookEntry extends CodebookEntry {
 
     public double getAverageDistortion() {
         assert (trainingVectors.size() == trainingVectorsDistances.size());
-//        // TODO(Moravec): Is this correct way of doing it?
-//        if (trainingVectors.size() == 0) {
-//            return 0.0;
-//        }
+        //        // TODO(Moravec): Is this correct way of doing it?
+        //        if (trainingVectors.size() == 0) {
+        //            return 0.0;
+        //        }
         double totalDistortion = Utils.arrayListSum(trainingVectorsDistances);
         return (totalDistortion / (double) trainingVectors.size());
     }
@@ -35,15 +36,15 @@ public class LearningCodebookEntry extends CodebookEntry {
     }
 
 
-    public ArrayList<ArrayList<Integer>> getTrainingVectors() {
+    public ArrayList<int[]> getTrainingVectors() {
         return trainingVectors;
     }
 
-    public void setTrainingVectors(ArrayList<ArrayList<Integer>> trainingVectors) {
+    public void setTrainingVectors(ArrayList<int[]> trainingVectors) {
         this.trainingVectors = trainingVectors;
     }
 
-    public void addTrainingVector(final ArrayList<Integer> trainingVec, final double vecDist) {
+    public void addTrainingVector(final int[] trainingVec, final double vecDist) {
         trainingVectors.add(trainingVec);
         trainingVectorsDistances.add(vecDist);
     }
@@ -56,7 +57,7 @@ public class LearningCodebookEntry extends CodebookEntry {
     public void calculateCentroid() {
         // If we dont have any training vectors we cannot recalculate the centroid.
         if (trainingVectors.size() > 0) {
-            ArrayList<Integer> mean = vectorMean(trainingVectors);
+            ArrayList<Integer> mean = vectorMean2(trainingVectors.stream(), trainingVectors.get(0).length);
             assert (mean.size() == vector.length) : "Mismatched collection sizes";
             for (int i = 0; i < vector.length; i++) {
                 vector[i] = mean.get(i);
@@ -64,22 +65,39 @@ public class LearningCodebookEntry extends CodebookEntry {
         }
     }
 
-    public static ArrayList<Integer> vectorMean(final ArrayList<ArrayList<Integer>> vectors) {
-        final int vectorSize = vectors.get(0).size();
+    public static ArrayList<Integer> vectorMean2(final Stream<int[]> vectorStream, final int vectorSize) {
         double[] vectorSum = new double[vectorSize];
+        final int vectourCount = (int) vectorStream.count();
 
-        for (ArrayList<Integer> quantizationVector : vectors) {
+        vectorStream.forEach(vector -> {
             for (int i = 0; i < vectorSize; i++) {
-                vectorSum[i] += (double) quantizationVector.get(i);
+                vectorSum[i] += (double) vector[i];
             }
-        }
+        });
 
         ArrayList<Integer> average = new ArrayList<>(vectorSize);
         for (double sum : vectorSum) {
-            average.add((int) Math.round(sum / (double) vectors.size()));
+            average.add((int) Math.round(sum / (double) vectourCount));
         }
         return average;
     }
+
+    //    public static ArrayList<Integer> vectorMean(final int[][] vectors) {
+    //        final int vectorSize = vectors[0].length;
+    //        double[] vectorSum = new double[vectorSize];
+    //
+    //        for (final int[] vector : vectors) {
+    //            for (int vecIndex = 0; vecIndex < vectorSize; vecIndex++) {
+    //                vectorSum[vecIndex] += (double) vector[vecIndex];
+    //            }
+    //        }
+    //
+    //        ArrayList<Integer> average = new ArrayList<>(vectorSize);
+    //        for (double sum : vectorSum) {
+    //            average.add((int) Math.round(sum / (double) vectors.length));
+    //        }
+    //        return average;
+    //    }
 
     public void removeTrainingVectorAndDistance(int index) {
         trainingVectors.remove(index);

@@ -3,39 +3,32 @@ package compression.quantization.vector;
 import compression.U16;
 import compression.utilities.Utils;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 public class LBGVectorQuantizer {
     private final double EPSILON = 0.005;
     private final double PERTURBATION_FACTOR_MIN = 0.10;
     private final double PERTURBATION_FACTOR_MAX = 0.60;
-    private final int vectorWidth;
-    private final int vectorHeight;
+    private final int vectorSize;
     private final int codebookSize;
-    private final int[] trainingData;
+    private final int[][] trainingVectors;
+
     private Random random = new Random();
 
-    private ArrayList<ArrayList<Integer>> trainingVectors;
+    public LBGVectorQuantizer(final int[][] trainingVectors, final int codebookSize, final int vectorSize) {
 
-    public LBGVectorQuantizer(final int[] trainingData, final int codeblockSize, final int vecWidth, final int vecHeight) {
-        // NOTE(Moravec): This supports only `line` vector quantization, later we want to support blocks and boxes.
-        assert (vecHeight == 1);
+        assert (trainingVectors.length > 0) : "No training vectors provided";
+        assert (trainingVectors[0].length == vectorSize) : "Training vector is different from provided vectorSize";
 
-        // NOTE(Moravec): Also trainingData.length must be multiple of vecWidth.
-        assert ((trainingData.length % vecWidth) == 0);
-
-        this.vectorHeight = vecHeight;
-        this.vectorWidth = vecWidth;
-        this.codebookSize = codeblockSize;
-        this.trainingData = trainingData;
-
-
+        this.trainingVectors = trainingVectors;
+        this.vectorSize = vectorSize;
+        this.codebookSize = codebookSize;
     }
 
+    // TODO(Moravec): Maybe return QTrainIteration somehow?
     public LBGResult findOptimalCodebook() {
-        initializeTrainingVectors();
         ArrayList<LearningCodebookEntry> codebook = initializeCodebook();
         System.out.println("Got initial codebook. Improving codebook...");
         LBG(codebook, EPSILON * 0.01);
@@ -44,18 +37,6 @@ public class LBGVectorQuantizer {
         System.out.println(String.format("Improved codebook, final average MSE: %.4f PSNR: %.4f (dB)", finalMse, psnr));
         LBGResult result = new LBGResult(learningCodebookToCodebook(codebook), finalMse, psnr);
         return result;
-    }
-
-    private void initializeTrainingVectors() {
-        final int initialCodebookSize = trainingData.length / vectorWidth;
-        trainingVectors = new ArrayList<>(initialCodebookSize);
-        for (int cbEntry = 0; cbEntry < initialCodebookSize; cbEntry++) {
-            ArrayList<Integer> vecEntry = new ArrayList<>(vectorWidth);
-            for (int i = 0; i < vectorWidth; i++) {
-                vecEntry.add(trainingData[(cbEntry * vectorWidth) + i]);
-            }
-            trainingVectors.add(vecEntry);
-        }
     }
 
     private CodebookEntry[] learningCodebookToCodebook(final ArrayList<LearningCodebookEntry> learningCodebook) {
@@ -68,14 +49,17 @@ public class LBGVectorQuantizer {
 
     private double averageMse(final ArrayList<LearningCodebookEntry> codebook) {
         VectorQuantizer quantizer = new VectorQuantizer(learningCodebookToCodebook(codebook));
-        final int[] quantizedData = quantizer.quantize(trainingData);
+        final int[][] quantizedVectors = quantizer.quantize(trainingVectors);
 
         double mse = 0.0;
-        for (int i = 0; i < trainingData.length; i++) {
-            mse += Math.pow((trainingData[i] - quantizedData[i]), 2);
+
+        for (int vecIndex = 0; vecIndex < quantizedVectors.length; vecIndex++) {
+            for (int vecValIndex = 0; vecValIndex < vectorSize; vecValIndex++) {
+                mse += Math.pow((trainingVectors[vecIndex][vecValIndex] - quantizedVectors[vecIndex][vecValIndex]), 2);
+            }
         }
-        final double avgMse = mse / (double) trainingData.length;
-        return avgMse;
+        mse /= (double) (trainingVectors.length * vectorSize);
+        return mse;
     }
 
 
@@ -84,18 +68,19 @@ public class LBGVectorQuantizer {
     }
 
 
-    private ArrayList<Double> getPerturbationVector(final double minPerturbationFactor, final double maxPerturbationFactor) {
-        final int vecSize = (vectorWidth * vectorHeight);
-        ArrayList<Double> prt = new ArrayList<>(vecSize);
-        for (int i = 0; i < vecSize; i++) {
-            final double rnd = minPerturbationFactor +
-                    ((maxPerturbationFactor - minPerturbationFactor) * random.nextDouble());
+    private ArrayList<Double> getPerturbationVector(final double minPerturbationFactor,
+            final double maxPerturbationFactor) {
+        ArrayList<Double> prt = new ArrayList<>(vectorSize);
+        for (int i = 0; i < vectorSize; i++) {
+            final double rnd =
+                    minPerturbationFactor + ((maxPerturbationFactor - minPerturbationFactor) * random.nextDouble());
             prt.add(rnd);
         }
         return prt;
     }
 
-    private void assertThatNewCodebookEntryIsOriginal(final ArrayList<LearningCodebookEntry> codebook, final LearningCodebookEntry newEntry) {
+    private void assertThatNewCodebookEntryIsOriginal(final ArrayList<LearningCodebookEntry> codebook,
+            final LearningCodebookEntry newEntry) {
 
         for (final LearningCodebookEntry entry : codebook) {
             assert !(newEntry.equals(entry)) : "New entry is not original";
@@ -106,7 +91,7 @@ public class LBGVectorQuantizer {
         ArrayList<LearningCodebookEntry> codebook = new ArrayList<>(codebookSize);
         // Initialize first codebook entry as average of training vectors
         int k = 1;
-        ArrayList<Integer> initialEntry = LearningCodebookEntry.vectorMean(trainingVectors);
+        ArrayList<Integer> initialEntry = LearningCodebookEntry.vectorMean2(Arrays.stream(trainingVectors), vectorSize);
         codebook.add(new LearningCodebookEntry(initialEntry));
 
         while (k != codebookSize) {
@@ -148,7 +133,8 @@ public class LBGVectorQuantizer {
                     left.add(lVal);
                     right.add(rVal);
                 }
-                // NOTE(Moravec):   Maybe we just create one new entry and bring the "original" one to the next iteration
+                // NOTE(Moravec):   Maybe we just create one new entry and bring the "original" one to the next
+                //  iteration
                 //                  as stated in Sayood's book (p. 302)
                 final LearningCodebookEntry rightEntry = new LearningCodebookEntry(right);
                 final LearningCodebookEntry leftEntry = new LearningCodebookEntry(left);
@@ -170,7 +156,7 @@ public class LBGVectorQuantizer {
     }
 
 
-    private double vectorDistance(final ArrayList<Integer> entry, final ArrayList<Integer> vector) {
+    private double vectorDistance(final int[] entry, final int[] vector) {
         return euclidDistance(entry, vector);
     }
 
@@ -186,11 +172,11 @@ public class LBGVectorQuantizer {
         while (true) {
 
             // Step 1
-            for (final ArrayList<Integer> trainingVec : trainingVectors) {
+            for (final int[] trainingVec : trainingVectors) {
                 double minDist = Double.POSITIVE_INFINITY;
                 LearningCodebookEntry closestEntry = null;
                 for (LearningCodebookEntry entry : codebook) {
-                    double entryDistance = vectorDistance(entry.getVectorAsArrayList(), trainingVec);
+                    double entryDistance = vectorDistance(entry.getVector(), trainingVec);
                     if (entryDistance < minDist) {
                         minDist = entryDistance;
                         closestEntry = entry;
@@ -232,9 +218,9 @@ public class LBGVectorQuantizer {
         final ArrayList<LearningCodebookEntry> fixedCodebook = new ArrayList<>(originalSize);
 
         LearningCodebookEntry emptyEntry = null;
-        for (final LearningCodebookEntry potentionallyEmptyEntry : codebook) {
-            if (potentionallyEmptyEntry.getTrainingVectors().size() == 0) {
-                emptyEntry = potentionallyEmptyEntry;
+        for (final LearningCodebookEntry potentiallyEmptyEntry : codebook) {
+            if (potentiallyEmptyEntry.getTrainingVectors().size() == 0) {
+                emptyEntry = potentiallyEmptyEntry;
             }
         }
         while (emptyEntry != null) {
@@ -248,7 +234,8 @@ public class LBGVectorQuantizer {
         }
     }
 
-    private void fixSingleEmptyEntry(ArrayList<LearningCodebookEntry> codebook, final LearningCodebookEntry emptyEntry) {
+    private void fixSingleEmptyEntry(ArrayList<LearningCodebookEntry> codebook,
+            final LearningCodebookEntry emptyEntry) {
         System.out.println("****** FOUND EMPTY ENTRY ******");
         // Remove empty entry from codebook.
         codebook.remove(emptyEntry);
@@ -267,20 +254,21 @@ public class LBGVectorQuantizer {
 
         // Choose random trainingVector from biggest partition and set it as new entry.
         int randomIndex = new Random().nextInt(biggestPartition.getTrainingVectors().size());
-        LearningCodebookEntry newEntry = new LearningCodebookEntry(biggestPartition.getTrainingVectors().get(randomIndex));
+        LearningCodebookEntry newEntry =
+                new LearningCodebookEntry(biggestPartition.getTrainingVectors().get(randomIndex));
         // Add new entry to the codebook.
         codebook.add(newEntry);
         // Remove that vector from training vectors of biggest partition
         biggestPartition.removeTrainingVectorAndDistance(randomIndex);
 
         // Redistribute biggest partition training vectors
-        final ArrayList<ArrayList<Integer>> trainingVectors = (ArrayList<ArrayList<Integer>>) biggestPartition.getTrainingVectors().clone();
+        final ArrayList<int[]> partionVectors = (ArrayList<int[]>) biggestPartition.getTrainingVectors().clone();
         biggestPartition.clearTrainingData();
         newEntry.clearTrainingData();
 
-        for (final ArrayList<Integer> trVec : trainingVectors) {
-            double originalPartitionDist = vectorDistance(biggestPartition.getVectorAsArrayList(), trVec);
-            double newEntryDist = vectorDistance(newEntry.getVectorAsArrayList(), trVec);
+        for (final int[] trVec : partionVectors) {
+            double originalPartitionDist = vectorDistance(biggestPartition.getVector(), trVec);
+            double newEntryDist = vectorDistance(newEntry.getVector(), trVec);
             if (originalPartitionDist < newEntryDist) {
                 biggestPartition.addTrainingVector(trVec, originalPartitionDist);
             } else {
@@ -292,21 +280,18 @@ public class LBGVectorQuantizer {
         assert (newEntry.getTrainingVectors().size() > 0) : "New entry is empty";
     }
 
-    private int euclidDistance(final ArrayList<Integer> x, final ArrayList<Integer> y) {
+    private int euclidDistance(final int[] x, final int[] y) {
+        assert (x.length == y.length) : "Array sizes doesn't match";
         double distance = 0;
-        for (int i = 0; i < x.size(); i++) {
-            distance += Math.pow((x.get(i) - y.get(i)), 2);
+        for (int i = 0; i < x.length; i++) {
+            distance += Math.pow((x[i] - y[i]), 2);
         }
         return (int) Math.sqrt(distance);
     }
 
 
-    public int getVectorWidth() {
-        return vectorWidth;
-    }
-
-    public int getVectorHeight() {
-        return vectorHeight;
+    public int getVectorSize() {
+        return vectorSize;
     }
 
     public int getCodebookSize() {

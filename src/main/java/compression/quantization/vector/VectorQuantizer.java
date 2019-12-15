@@ -5,49 +5,43 @@ import compression.utilities.TypeConverter;
 public class VectorQuantizer {
 
     private final CodebookEntry[] codebook;
-    private final int quantizedVectorSize;
+    private final int vectorSize;
 
     public VectorQuantizer(final CodebookEntry[] codebook) {
         this.codebook = codebook;
-        quantizedVectorSize = codebook[0].getVector().length;
+        vectorSize = codebook[0].getVector().length;
     }
 
-    public int[] quantize(int[] data) {
-        assert (data.length % quantizedVectorSize == 0) : "Wrong vector size";
-        int[] result = new int[data.length];
-        int[] originalDataBuffer = new int[quantizedVectorSize];
+    public int[][] quantize(final int[][] dataVectors) {
+        assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
+        int[][] result = new int[dataVectors.length][vectorSize];
 
-        for (int i = 0; i < (data.length / 4); ++i) {
-            System.arraycopy(data, (i * quantizedVectorSize), originalDataBuffer, 0, quantizedVectorSize);
-
-            // Find the closest codebook entry
-            final CodebookEntry closestEntry = findClosestCodebookEntry(originalDataBuffer, VectorDistanceMetric.Euclidean);
-
-            System.arraycopy(closestEntry.getVector(), 0, result, (i * quantizedVectorSize), quantizedVectorSize);
+        for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
+            final CodebookEntry closestEntry = findClosestCodebookEntry(dataVectors[vectorIndex],
+                                                                        VectorDistanceMetric.Euclidean);
+            result[vectorIndex] = closestEntry.getVector();
         }
+
         return result;
     }
 
-    public short[] quantize(short[] data) {
-        short[] result = new short[data.length];
-        int[] originalDataBuffer = new int[quantizedVectorSize];
+    public short[][] quantize(short[][] dataVectors) {
+        assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
+        short[][] result = new short[dataVectors.length][vectorSize];
 
-        for (int i = 0; i < data.length; ++i) {
+        for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
+            final CodebookEntry closestEntry =
+                    findClosestCodebookEntry(TypeConverter.shortArrayToIntArray(dataVectors[vectorIndex]),
+                                                                        VectorDistanceMetric.Euclidean);
 
-            for (int j = 0; j < quantizedVectorSize; j++) {
-                originalDataBuffer[j] = data[((i * quantizedVectorSize) + j)];
-            }
-            // Find the closest codebook entry
-            final CodebookEntry closestEntry = findClosestCodebookEntry(originalDataBuffer, VectorDistanceMetric.Euclidean);
-
-            for (int j = 0; j < quantizedVectorSize; j++) {
-                result[((i * quantizedVectorSize) + j)] = TypeConverter.intToShort(closestEntry.getVector()[j]);
-            }
+            result[vectorIndex] = TypeConverter.intArrayToShortArray(closestEntry.getVector());
         }
+
         return result;
     }
 
-    private double distanceBetweenVectors(final int[] originalDataVector, final int[] codebookEntry, final VectorDistanceMetric metric) {
+    private double distanceBetweenVectors(final int[] originalDataVector, final int[] codebookEntry,
+            final VectorDistanceMetric metric) {
         assert (originalDataVector.length == codebookEntry.length);
         switch (metric) {
             case Manhattan: {
