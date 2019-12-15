@@ -36,4 +36,8 @@ public class ImageU16 {
     public int getHeight() {
         return height;
     }
+
+    public Chunk2D as2dChunk() {
+        return new Chunk2D(new V2i(width, height), new V2l(0, 0), data);
+    }
 }

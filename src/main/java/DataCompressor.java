@@ -1,4 +1,3 @@
-import compression.benchmark.ScalarQuantizationBenchmark;
 import compression.data.*;
 
 import java.io.IOException;
@@ -9,26 +8,40 @@ public class DataCompressor {
 
 
     public static void main(String[] args) throws IOException {
+        //test2DChunking();
+        test3DChunking();
+//                ImageU16 img = null;
+//
+//                try {
+//                    img = RawDataIO.loadImageU16("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
+//                                                 new V3i(1041, 996, 946),
+//                                                 351);
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                    img = null;
+//                }
+//                Chunk2D imageChunk =  img.as2dChunk();
+//                int[][] imageVectors = imageChunk.divideIntoVectors(4);
+        //imageChunk.di
 
-//        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
-//                "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit.raw",
-//                "D:\\biology\\benchmark\\scalar",
-//                358,
-//                358,
-//                new V3i(1041, 996, 946));
 
-        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
-                "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit_edited.raw",
-                "D:\\biology\\benchmark\\scalar_edited",
-                0,
-                0,
-                new V3i(1041, 996, 1));
+        //        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
+        //                "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit.raw",
+        //                "D:\\biology\\benchmark\\scalar",
+        //                358,
+        //                358,
+        //                new V3i(1041, 996, 946));
+
+        //        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
+        //                "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit_edited.raw",
+        //                "D:\\biology\\benchmark\\scalar_edited",
+        //                0,
+        //                0,
+        //                new V3i(1041, 996, 1));
 
         //sqBenchmark.setUseDiffEvolution(true);
 
-        sqBenchmark.startBenchmark();
-
-
+        //sqBenchmark.startBenchmark();
     }
 
     static void test2DChunking() {
@@ -61,9 +74,9 @@ public class DataCompressor {
         reconstructed.reconstructFromChunks(chunks);
 
         if (src.equals(reconstructed)) {
-            System.out.println("Reconstruction successful.");
+            System.out.println("3D Reconstruction successful.");
         } else {
-            System.out.println("Reconstruction failed !!!");
+            System.out.println("3D Reconstruction failed !!!");
         }
     }
 

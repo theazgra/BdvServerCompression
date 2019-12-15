@@ -45,7 +45,9 @@ public class Chunk3D {
             0           1           2           3           4           5           6           7
             A[0][0][0]  A[0][0][1]  A[0][1][0]  A[0][1][1]  A[1][0][0]  A[1][0][1]  A[1][1][0]  A[1][1][1]
          */
-        final int index = (x * (dims.getY() * dims.getZ())) + (y * dims.getZ()) + z;
+        // TODO(Moravec): Test which version is correct!
+        //final int index = (x * (dims.getY() * dims.getZ())) + (y * dims.getZ()) + z;
+        final int index = (z * (dims.getX() * dims.getY())) + (y * dims.getX()) + x;
         assert (index < data.length) : "Index calculation is wrong";
         return index;
     }
@@ -64,7 +66,9 @@ public class Chunk3D {
             throw new IndexOutOfBoundsException("One of index x,y,z is out of bounds of the 3D box");
         }
 
-        final int index = (x * (chunkDims.getY() * chunkDims.getZ())) + (y * chunkDims.getZ()) + z;
+        // TODO(Moravec): Test which version is correct!
+        //final int index = (x * (chunkDims.getY() * chunkDims.getZ())) + (y * chunkDims.getZ()) + z;
+        final int index = (z * (chunkDims.getX() * chunkDims.getY())) + (y * chunkDims.getX()) + x;
         return index;
     }
 

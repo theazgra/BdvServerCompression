@@ -3,6 +3,7 @@ package compression.data;
 import compression.utilities.TypeConverter;
 
 public class Chunk2D {
+    private final int FILL_VALUE = 0;
     private final int[] data;
 
     private final V2i dims;
@@ -34,7 +35,7 @@ public class Chunk2D {
         assert (x >= 0 && x < dims.getX()) : "Index X out of bounds.";
         assert (y >= 0 && y < dims.getY()) : "Index Y out of bounds.";
 
-        return (x * dims.getY()) + y;
+        return (y * dims.getX()) + x;
     }
 
     /**
@@ -50,7 +51,7 @@ public class Chunk2D {
             throw new IndexOutOfBoundsException("One of index x,y is out of bounds of the 2D shape");
         }
 
-        return (x * chunkDims.getY()) + y;
+        return (y * chunkDims.getX()) + x;
     }
 
 
@@ -138,7 +139,7 @@ public class Chunk2D {
 
     private Chunk2D copyToChunk(final V2i chunkDims, final V2i chunkOffset) {
         int[] chunkData = new int[(chunkDims.getX() * chunkDims.getY())];
-        final int FILL_VALUE = 0;
+
         int srcX, srcY;
 
         for (int y = 0; y < chunkDims.getY(); y++) {
@@ -146,6 +147,7 @@ public class Chunk2D {
             for (int x = 0; x < chunkDims.getX(); x++) {
                 srcX = chunkOffset.getX() + x;
                 final int dstIndex = index(x, y, chunkDims);
+                // TODO(Moravec): Try repeat last value instead of FILL_VALUE.
                 chunkData[dstIndex] = isInside(srcX, srcY) ? data[index(srcX, srcY)] : FILL_VALUE;
             }
         }
@@ -178,5 +180,25 @@ public class Chunk2D {
 
     public int[] getData() {
         return data;
+    }
+
+    public int[][] divideIntoVectors(final int vectorSize) {
+        final int rowVectorCount = (int) Math.ceil(dims.getX() / (float) vectorSize);
+        final int vectorCount = rowVectorCount * dims.getY();
+        int[][] imageVectors = new int[vectorCount][vectorSize];
+
+        int vec = 0;
+        int srcX;
+        for (int row = 0; row < dims.getY(); row++) {
+            for (int vecIndex = 0; vecIndex < rowVectorCount; vecIndex++) {
+                for (int x = 0; x < vectorSize; x++) {
+                    srcX = (vecIndex * vectorSize) + x;
+                    imageVectors[vec][x] = isInside(srcX, row) ? data[index(srcX, row)] : FILL_VALUE;
+                }
+                ++vec;
+            }
+        }
+
+        return imageVectors;
     }
 }
