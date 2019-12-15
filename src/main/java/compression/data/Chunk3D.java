@@ -1,6 +1,6 @@
 package compression.data;
 
-import compression.utilities.Utils;
+import compression.utilities.TypeConverter;
 
 public class Chunk3D {
     private final int[] data;
@@ -16,7 +16,7 @@ public class Chunk3D {
     }
 
     public Chunk3D(final V3i chunkDdims, final V3l offset, final short[] data) {
-        this(chunkDdims, offset, Utils.convertShortArrayToIntArray(data));
+        this(chunkDdims, offset, TypeConverter.shortArrayToIntArray(data));
     }
 
     public Chunk3D(final V3i chunkDdims, final V3l offset) {
@@ -208,7 +208,7 @@ public class Chunk3D {
     }
 
     public short[] getDataAsShort() {
-        return Utils.convertIntArrayToShortArray(data);
+        return TypeConverter.intArrayToShortArray(data);
     }
 
     public void zeroData() {

@@ -1,10 +1,8 @@
 package compression.data;
 
-import compression.utilities.Utils;
+import compression.utilities.TypeConverter;
 
-import javax.sound.midi.SysexMessage;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,7 +27,7 @@ public class ChunkIO {
                 byte[] chunkData = new byte[dataLen];
                 buffer.get(chunkData);
 
-                chunks.add(new Chunk3D(chunkDims, chunkOffset, Utils.convertU16ByteArrayToIntArray(chunkData)));
+                chunks.add(new Chunk3D(chunkDims, chunkOffset, TypeConverter.shortBytesToIntArray(chunkData)));
             }
 
         } catch (IOException e) {

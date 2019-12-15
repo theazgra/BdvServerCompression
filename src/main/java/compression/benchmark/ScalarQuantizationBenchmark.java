@@ -9,6 +9,7 @@ import compression.io.RawDataIO;
 import compression.quantization.QTrainIteration;
 import compression.quantization.scalar.LloydMaxU16ScalarQuantization;
 import compression.quantization.scalar.ScalarQuantizer;
+import compression.utilities.TypeConverter;
 import compression.utilities.Utils;
 
 import java.io.File;
@@ -57,11 +58,14 @@ public class ScalarQuantizationBenchmark {
 
     private boolean saveDifference(final short[] originalData, final short[] transformedData, final String filename) {
         final int[] differenceData = Utils.getAbsoluteDifference(originalData, transformedData);
-
+        final String path = getFileNamePath(filename);
+        ImageU16 img = new ImageU16(rawImageDims.getX(), rawImageDims.getY(), TypeConverter.intArrayToShortArray(differenceData));
         try {
-            RawDataIO.writeDataI32(getFileNamePath(filename), differenceData);
+            RawDataIO.writeImageU16(path, img);
+            System.out.println("Saved difference to: " + path);
         } catch (Exception e) {
             e.printStackTrace();
+            System.err.println("Failed to save difference.");
             return false;
         }
         return true;
@@ -70,7 +74,7 @@ public class ScalarQuantizationBenchmark {
     public void startBenchmark() {
 
         // Test codebook sizes from 2^2 to 2^8
-        for (int bitCount = 2; bitCount <= 8; bitCount++) {
+        for (int bitCount = 8; bitCount <= 8; bitCount++) {
             final int codebookSize = (int) Math.pow(2, bitCount);
             System.out.println(String.format("Starting benchmark for codebook of size %d", codebookSize));
 
@@ -106,11 +110,7 @@ public class ScalarQuantizationBenchmark {
                     System.err.println("Failed to save quantized plane.");
                 }
 
-                if (saveDifference(planeData, quantizedData, absoluteDiffFile)) {
-                    System.out.println("Saved difference.");
-                } else {
-                    System.err.println("Failed to save difference.s");
-                }
+                saveDifference(planeData, quantizedData, absoluteDiffFile);
 
 
             }
@@ -135,7 +135,7 @@ public class ScalarQuantizationBenchmark {
 
     private ScalarQuantizer trainDifferentialEvolution(final short[] data, final int codebookSize, final int planeIndex) {
         ILShadeSolver ilshade = new ILShadeSolver(codebookSize, 100, 2000, 15);
-        ilshade.setTrainingData(Utils.convertShortArrayToIntArray(data));
+        ilshade.setTrainingData(TypeConverter.shortArrayToIntArray(data));
 
         QTrainIteration[] trainingReport = null;
         try {

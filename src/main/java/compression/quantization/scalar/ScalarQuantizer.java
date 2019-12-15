@@ -1,6 +1,6 @@
 package compression.quantization.scalar;
 
-import compression.utilities.Utils;
+import compression.utilities.TypeConverter;
 
 public class ScalarQuantizer {
     private final int min;
@@ -20,9 +20,9 @@ public class ScalarQuantizer {
     public short[] quantize(short[] data) {
         short[] result = new short[data.length];
         for (int i = 0; i < data.length; i++) {
-            final int intRepresentationOfValue = Utils.shortBitsToInt(data[i]);
+            final int intRepresentationOfValue = TypeConverter.shortToInt(data[i]);
             final int quantizedValue = quantize(intRepresentationOfValue);
-            final short shortRepresentation = Utils.u16BitsToShort(quantizedValue);
+            final short shortRepresentation = TypeConverter.intToShort(quantizedValue);
             result[i] = shortRepresentation;
         }
         return result;

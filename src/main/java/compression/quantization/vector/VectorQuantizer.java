@@ -1,7 +1,6 @@
 package compression.quantization.vector;
 
-import compression.utilities.Utils;
-import org.apache.commons.math3.stat.descriptive.moment.VectorialCovariance;
+import compression.utilities.TypeConverter;
 
 public class VectorQuantizer {
 
@@ -42,7 +41,7 @@ public class VectorQuantizer {
             final CodebookEntry closestEntry = findClosestCodebookEntry(originalDataBuffer, VectorDistanceMetric.Euclidean);
 
             for (int j = 0; j < quantizedVectorSize; j++) {
-                result[((i * quantizedVectorSize) + j)] = Utils.u16BitsToShort(closestEntry.getVector()[j]);
+                result[((i * quantizedVectorSize) + j)] = TypeConverter.intToShort(closestEntry.getVector()[j]);
             }
         }
         return result;

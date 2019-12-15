@@ -2,7 +2,7 @@ package compression.io;
 
 import compression.data.ImageU16;
 import compression.data.V3i;
-import compression.utilities.Utils;
+import compression.utilities.TypeConverter;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -41,17 +41,17 @@ public class RawDataIO {
 
         fileStream.close();
 
-        ImageU16 image = new ImageU16(rawDataDimension.getX(), rawDataDimension.getY(), Utils.convertU16ByteArrayToShortArray(buffer));
+        ImageU16 image = new ImageU16(rawDataDimension.getX(), rawDataDimension.getY(), TypeConverter.shortBytesToShortArray(buffer));
         return image;
     }
 
     public static void writeImageU16(final String rawFile, final ImageU16 image) throws IOException {
-        byte[] buffer = Utils.convertShortArrayToByteArray(image.getData());
+        byte[] buffer = TypeConverter.shortArrayToByteArray(image.getData());
         writeBytesToFile(rawFile, buffer);
     }
 
     public static void writeDataI32(String rawFile, int[] differenceData) throws IOException {
-        byte[] buffer = Utils.convertIntArrayToByteArray(differenceData);
+        byte[] buffer = TypeConverter.intArrayToByteArray(differenceData);
         writeBytesToFile(rawFile, buffer);
     }
 

@@ -2,6 +2,7 @@ package compression.quantization.scalar;
 
 import compression.U16;
 import compression.quantization.QTrainIteration;
+import compression.utilities.TypeConverter;
 import compression.utilities.Utils;
 
 import java.util.ArrayList;
@@ -21,11 +22,12 @@ public class LloydMaxU16ScalarQuantization {
     }
 
     public LloydMaxU16ScalarQuantization(final short[] trainData, final int codebookSize) {
-        this(Utils.convertShortArrayToIntArray(trainData), codebookSize);
+        this(TypeConverter.shortArrayToIntArray(trainData), codebookSize);
     }
 
     private void initialize() {
         centroids = new int[codebookSize];
+        centroids[0] = 0;
         boundaryPoints = new int[codebookSize + 1];
 
         boundaryPoints[0] = U16.Min;
@@ -58,15 +60,14 @@ public class LloydMaxU16ScalarQuantization {
 
         int lowerBound, upperBound;
 
+        // NOTE(Moravec): Leave the first centroid at zero.
         for (int j = 0; j < codebookSize; j++) {
 
             numerator = 0.0;
             denominator = 0.0;
 
             lowerBound = boundaryPoints[j];
-            //lowerBound = (int) Math.ceil(boundaryPoints[j]);
             upperBound = boundaryPoints[j + 1];
-            //upperBound = (int) ((j == (intervalCount - 1)) ? Math.ceil(boundaryPoints[j + 1]) : Math.floor(boundaryPoints[j + 1]));
 
             for (int n = lowerBound; n <= upperBound; n++) {
                 numerator += (double) n * pdf[n];
@@ -162,9 +163,9 @@ public class LloydMaxU16ScalarQuantization {
     public short[] quantize(short[] data) {
         short[] result = new short[data.length];
         for (int i = 0; i < data.length; i++) {
-            final int intRepresentationOfValue = Utils.shortBitsToInt(data[i]);
+            final int intRepresentationOfValue = TypeConverter.shortToInt(data[i]);
             final int quantizedValue = quantize(intRepresentationOfValue);
-            final short shortRepresentation = Utils.u16BitsToShort(quantizedValue);
+            final short shortRepresentation = TypeConverter.intToShort(quantizedValue);
             result[i] = shortRepresentation;
         }
         return result;
@@ -181,7 +182,7 @@ public class LloydMaxU16ScalarQuantization {
     public short[] quantizeToShortArray(int[] data) {
         short[] result = new short[data.length];
         for (int i = 0; i < data.length; i++) {
-            result[i] = Utils.u16BitsToShort(quantize(data[i]));
+            result[i] = TypeConverter.intToShort(quantize(data[i]));
         }
         return result;
     }

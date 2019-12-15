@@ -1,3 +1,4 @@
+import compression.benchmark.ScalarQuantizationBenchmark;
 import compression.data.*;
 
 import java.io.IOException;
@@ -15,12 +16,18 @@ public class DataCompressor {
 //                358,
 //                358,
 //                new V3i(1041, 996, 946));
-//
-//        sqBenchmark.setUseDiffEvolution(true);
-//
-//        sqBenchmark.startBenchmark();
 
-        test2DChunking();
+        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
+                "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit_edited.raw",
+                "D:\\biology\\benchmark\\scalar_edited",
+                0,
+                0,
+                new V3i(1041, 996, 1));
+
+        //sqBenchmark.setUseDiffEvolution(true);
+
+        sqBenchmark.startBenchmark();
+
 
     }
 
