@@ -17,7 +17,9 @@ public class RawDataIO {
      * @param plane            Plane index.
      * @return U16 image specified by the plane
      */
-    public static ImageU16 loadImageU16(final String rawFile, final V3i rawDataDimension, final int plane) throws Exception {
+    public static ImageU16 loadImageU16(final String rawFile,
+                                        final V3i rawDataDimension,
+                                        final int plane) throws Exception {
         FileInputStream fileStream = new FileInputStream(rawFile);
 
         final long planeSize = (long) rawDataDimension.getX() * (long) rawDataDimension.getY() * 2;
@@ -26,7 +28,8 @@ public class RawDataIO {
 
 
         if (expectedFileSize != fileSize) {
-            throw new Exception("File specified by `rawFile` doesn't contains raw data for image of dimensions `rawDataDimension`");
+            throw new Exception(
+                    "File specified by `rawFile` doesn't contains raw data for image of dimensions `rawDataDimension`");
         }
 
         final long planeOffset = plane * planeSize;
@@ -41,7 +44,9 @@ public class RawDataIO {
 
         fileStream.close();
 
-        ImageU16 image = new ImageU16(rawDataDimension.getX(), rawDataDimension.getY(), TypeConverter.shortBytesToShortArray(buffer));
+        ImageU16 image = new ImageU16(rawDataDimension.getX(),
+                                      rawDataDimension.getY(),
+                                      TypeConverter.shortBytesToShortArray(buffer));
         return image;
     }
 
@@ -50,9 +55,16 @@ public class RawDataIO {
         writeBytesToFile(rawFile, buffer);
     }
 
-    public static void writeDataI32(String rawFile, int[] differenceData) throws IOException {
+    public static boolean writeDataI32(String rawFile, int[] differenceData) {
+
         byte[] buffer = TypeConverter.intArrayToByteArray(differenceData);
-        writeBytesToFile(rawFile, buffer);
+        try {
+            writeBytesToFile(rawFile, buffer);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     private static void writeBytesToFile(String rawFile, byte[] buffer) throws IOException {

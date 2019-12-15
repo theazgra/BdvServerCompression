@@ -20,18 +20,17 @@ import java.io.OutputStreamWriter;
 public class ScalarQuantizationBenchmark {
     private final String inputFile;
     private final String outputDirectory;
-    private final int fromPlaneIndex;
-    private final int toPlaneIndex;
+    private final int[] planes;
     private boolean useDiffEvolution = false;
     final V3i rawImageDims;
 
-    public ScalarQuantizationBenchmark(final String inputFile, final String outputDirectory,
-                                       final int fromPlaneIndex, final int toPlaneIndex,
+    public ScalarQuantizationBenchmark(final String inputFile,
+                                       final String outputDirectory,
+                                       final int[] planes,
                                        final V3i rawImageDims) {
         this.inputFile = inputFile;
         this.outputDirectory = outputDirectory;
-        this.fromPlaneIndex = fromPlaneIndex;
-        this.toPlaneIndex = toPlaneIndex;
+        this.planes = planes;
         this.rawImageDims = rawImageDims;
     }
 
@@ -49,6 +48,7 @@ public class ScalarQuantizationBenchmark {
         ImageU16 img = new ImageU16(rawImageDims.getX(), rawImageDims.getY(), data);
         try {
             RawDataIO.writeImageU16(getFileNamePath(filename), img);
+            System.out.println(String.format("Saved %s", filename));
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -59,7 +59,9 @@ public class ScalarQuantizationBenchmark {
     private boolean saveDifference(final short[] originalData, final short[] transformedData, final String filename) {
         final int[] differenceData = Utils.getAbsoluteDifference(originalData, transformedData);
         final String path = getFileNamePath(filename);
-        ImageU16 img = new ImageU16(rawImageDims.getX(), rawImageDims.getY(), TypeConverter.intArrayToShortArray(differenceData));
+        ImageU16 img = new ImageU16(rawImageDims.getX(),
+                                    rawImageDims.getY(),
+                                    TypeConverter.intArrayToShortArray(differenceData));
         try {
             RawDataIO.writeImageU16(path, img);
             System.out.println("Saved difference to: " + path);
@@ -73,19 +75,18 @@ public class ScalarQuantizationBenchmark {
 
     public void startBenchmark() {
 
-        // Test codebook sizes from 2^2 to 2^8
-        for (int bitCount = 8; bitCount <= 8; bitCount++) {
-            final int codebookSize = (int) Math.pow(2, bitCount);
-            System.out.println(String.format("Starting benchmark for codebook of size %d", codebookSize));
+        for (final int planeIndex : planes) {
+            System.out.println(String.format("Loading plane %d ...", planeIndex));
+            final short[] planeData = loadPlaneData(planeIndex);
+            if (planeData.length == 0) {
+                System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
+                return;
+            }
 
-            for (int planeIndex = fromPlaneIndex; planeIndex <= toPlaneIndex; planeIndex++) {
-                System.out.println(String.format("Loading plane %d ...", planeIndex));
-
-                final short[] planeData = loadPlaneData(planeIndex);
-                if (planeData.length == 0) {
-                    System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
-                    continue;
-                }
+            // Test codebook sizes from 2^2 to 2^8
+            for (int bitCount = 2; bitCount <= 8; bitCount++) {
+                final int codebookSize = (int) Math.pow(2, bitCount);
+                System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
 
                 ScalarQuantizer quantizer = null;
                 if (useDiffEvolution) {
@@ -95,28 +96,39 @@ public class ScalarQuantizationBenchmark {
                 }
                 if (quantizer == null) {
                     System.err.println("Failed to initialize scalar quantizer. Skipping plane.");
-                    continue;
+                    return;
                 }
-                System.out.println("Scalar quantizer is initialized...");
+                System.out.println("Scalar quantizer ready.");
 
                 final String method = useDiffEvolution ? "ilshade" : "lloyd";
-                final String quantizedFile = String.format("quantized_%s_plane_%d_cb_%d.raw", method, planeIndex, codebookSize);
-                final String absoluteDiffFile = String.format("absolute_%s_plane_%d_cb_%d.raw", method, planeIndex, codebookSize);
+                final String centroidsFile = getFileNamePath(String.format("p%d_cb%d%s_centroids.raw",
+                                                                           (planeIndex + 1),
+                                                                           codebookSize,
+                                                                           method));
+
+                if (!RawDataIO.writeDataI32(centroidsFile, quantizer.getCentroids())) {
+                    System.err.println("Failed to save quantizer centroids.");
+                    return;
+                }
+
+
+                final String quantizedFile = String.format("p%d_cb%d%s.raw", (planeIndex + 1), codebookSize, method);
+
+                final String absoluteDiffFile = String.format("p%d_cb%d%s_diff.raw",
+                                                              (planeIndex + 1),
+                                                              codebookSize,
+                                                              method);
 
                 final short[] quantizedData = quantizer.quantize(planeData);
-                if (saveQuantizedPlaneData(quantizedData, quantizedFile)) {
-                    System.out.println(String.format("Quantized plane %d data and wrote to file...", planeIndex));
-                } else {
+
+                if (!saveQuantizedPlaneData(quantizedData, quantizedFile)) {
                     System.err.println("Failed to save quantized plane.");
+                    return;
                 }
 
                 saveDifference(planeData, quantizedData, absoluteDiffFile);
-
-
             }
-
         }
-
     }
 
     private String getFileNamePath(final String fileName) {
@@ -128,12 +140,14 @@ public class ScalarQuantizationBenchmark {
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(data, codebookSize);
         QTrainIteration[] trainingReport = lloydMax.train();
 
-        saveQTrainLog(getFileNamePath(String.format("lloyd_max_plane_%d_CB_%d.csv", planeIndex, codebookSize)), trainingReport);
+        saveQTrainLog(getFileNamePath(String.format("p%d_cb_%d_lloyd.csv", planeIndex, codebookSize)), trainingReport);
 
         return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCentroids());
     }
 
-    private ScalarQuantizer trainDifferentialEvolution(final short[] data, final int codebookSize, final int planeIndex) {
+    private ScalarQuantizer trainDifferentialEvolution(final short[] data,
+                                                       final int codebookSize,
+                                                       final int planeIndex) {
         ILShadeSolver ilshade = new ILShadeSolver(codebookSize, 100, 2000, 15);
         ilshade.setTrainingData(TypeConverter.shortArrayToIntArray(data));
 
@@ -144,7 +158,8 @@ public class ScalarQuantizationBenchmark {
             deEx.printStackTrace();
             return null;
         }
-        saveQTrainLog(getFileNamePath(String.format("il_shade_plane_%d_CB_%d.csv", planeIndex, codebookSize)), trainingReport);
+        saveQTrainLog(getFileNamePath(String.format("p%d_cb_%d_il_shade.csv", planeIndex, codebookSize)),
+                      trainingReport);
         return new ScalarQuantizer(U16.Min, U16.Max, ilshade.getBestSolution().getAttributes());
     }
 
@@ -158,11 +173,11 @@ public class ScalarQuantizationBenchmark {
 
             for (final QTrainIteration it : trainingLog) {
                 writer.write(String.format("%d;%.5f;%.5f;%.5f;%.5f\n",
-                        it.getIteration(),
-                        it.getAverageMSE(),
-                        it.getBestMSE(),
-                        it.getAveragePSNR(),
-                        it.getBestPSNR()));
+                                           it.getIteration(),
+                                           it.getAverageMSE(),
+                                           it.getBestMSE(),
+                                           it.getAveragePSNR(),
+                                           it.getBestPSNR()));
             }
             writer.flush();
             fileStream.flush();

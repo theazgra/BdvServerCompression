@@ -23,10 +23,7 @@ public class LearningCodebookEntry extends CodebookEntry {
 
     public double getAverageDistortion() {
         assert (trainingVectors.size() == trainingVectorsDistances.size());
-        //        // TODO(Moravec): Is this correct way of doing it?
-        //        if (trainingVectors.size() == 0) {
-        //            return 0.0;
-        //        }
+        assert (trainingVectors.size() > 0) : "Empty entry!";
         double totalDistortion = Utils.arrayListSum(trainingVectorsDistances);
         return (totalDistortion / (double) trainingVectors.size());
     }
@@ -57,7 +54,9 @@ public class LearningCodebookEntry extends CodebookEntry {
     public void calculateCentroid() {
         // If we dont have any training vectors we cannot recalculate the centroid.
         if (trainingVectors.size() > 0) {
-            ArrayList<Integer> mean = vectorMean2(trainingVectors.stream(), trainingVectors.get(0).length);
+            ArrayList<Integer> mean = vectorMean2(trainingVectors.stream(),
+                                                  trainingVectors.size(),
+                                                  trainingVectors.get(0).length);
             assert (mean.size() == vector.length) : "Mismatched collection sizes";
             for (int i = 0; i < vector.length; i++) {
                 vector[i] = mean.get(i);
@@ -65,9 +64,10 @@ public class LearningCodebookEntry extends CodebookEntry {
         }
     }
 
-    public static ArrayList<Integer> vectorMean2(final Stream<int[]> vectorStream, final int vectorSize) {
+    public static ArrayList<Integer> vectorMean2(final Stream<int[]> vectorStream,
+                                                 final int vectorCount,
+                                                 final int vectorSize) {
         double[] vectorSum = new double[vectorSize];
-        final int vectourCount = (int) vectorStream.count();
 
         vectorStream.forEach(vector -> {
             for (int i = 0; i < vectorSize; i++) {
@@ -77,7 +77,7 @@ public class LearningCodebookEntry extends CodebookEntry {
 
         ArrayList<Integer> average = new ArrayList<>(vectorSize);
         for (double sum : vectorSum) {
-            average.add((int) Math.round(sum / (double) vectourCount));
+            average.add((int) Math.round(sum / (double) vectorCount));
         }
         return average;
     }

@@ -193,7 +193,8 @@ public class Chunk2D {
             for (int vecIndex = 0; vecIndex < rowVectorCount; vecIndex++) {
                 for (int x = 0; x < vectorSize; x++) {
                     srcX = (vecIndex * vectorSize) + x;
-                    imageVectors[vec][x] = isInside(srcX, row) ? data[index(srcX, row)] : FILL_VALUE;
+                    // NOTE(Moravec): Repeat the last value if the source value is outside bounds.
+                    imageVectors[vec][x] = isInside(srcX, row) ? data[index(srcX, row)] : imageVectors[row][x - 1];
                 }
                 ++vec;
             }

@@ -14,6 +14,7 @@ public class LBGVectorQuantizer {
     private final int vectorSize;
     private final int codebookSize;
     private final int[][] trainingVectors;
+    private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
 
     private Random random = new Random();
 
@@ -69,7 +70,7 @@ public class LBGVectorQuantizer {
 
 
     private ArrayList<Double> getPerturbationVector(final double minPerturbationFactor,
-            final double maxPerturbationFactor) {
+                                                    final double maxPerturbationFactor) {
         ArrayList<Double> prt = new ArrayList<>(vectorSize);
         for (int i = 0; i < vectorSize; i++) {
             final double rnd =
@@ -80,7 +81,7 @@ public class LBGVectorQuantizer {
     }
 
     private void assertThatNewCodebookEntryIsOriginal(final ArrayList<LearningCodebookEntry> codebook,
-            final LearningCodebookEntry newEntry) {
+                                                      final LearningCodebookEntry newEntry) {
 
         for (final LearningCodebookEntry entry : codebook) {
             assert !(newEntry.equals(entry)) : "New entry is not original";
@@ -91,7 +92,9 @@ public class LBGVectorQuantizer {
         ArrayList<LearningCodebookEntry> codebook = new ArrayList<>(codebookSize);
         // Initialize first codebook entry as average of training vectors
         int k = 1;
-        ArrayList<Integer> initialEntry = LearningCodebookEntry.vectorMean2(Arrays.stream(trainingVectors), vectorSize);
+        ArrayList<Integer> initialEntry = LearningCodebookEntry.vectorMean2(Arrays.stream(trainingVectors),
+                                                                            trainingVectors.length,
+                                                                            vectorSize);
         codebook.add(new LearningCodebookEntry(initialEntry));
 
         while (k != codebookSize) {
@@ -109,6 +112,7 @@ public class LBGVectorQuantizer {
 
                 // We always want to carry zero vector to next iteration.
                 if (entryToSplit.isZeroVector()) {
+                    System.out.println("--------------------------IS zero vector");
                     newCodebook.add(entryToSplit);
 
                     ArrayList<Integer> rndEntryValues = new ArrayList<>(prtV.size());
@@ -121,26 +125,39 @@ public class LBGVectorQuantizer {
                     continue;
                 }
 
+                // NOTE(Moravec):   Maybe we just create one new entry and bring the "original" one to the next
+                //                  iteration as stated in Sayood's book (p. 302)
+
                 ArrayList<Integer> left = new ArrayList<>(prtV.size());
                 ArrayList<Integer> right = new ArrayList<>(prtV.size());
                 for (int j = 0; j < prtV.size(); j++) {
+                    //                    final int lVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 - prtV
+                    //                    .get(j)));
+                    //                    final int rVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 + prtV
+                    //                    .get(j)));
+
                     final int lVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 - prtV.get(j)));
-                    final int rVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 + prtV.get(j)));
+                    int rVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 + prtV.get(j)));
+                    // bad bad bad
+                    if (rVal > U16.Max)
+                        rVal = U16.Max;
+
 
                     assert (rVal >= 0) : "rVal value is negative!";
                     assert (lVal >= 0) : "lVal value is negative!";
 
+                    assert (rVal <= U16.Max) : "rVal value is too big!";
+                    assert (lVal <= U16.Max) : "lVal value is too big!";
+
                     left.add(lVal);
                     right.add(rVal);
                 }
-                // NOTE(Moravec):   Maybe we just create one new entry and bring the "original" one to the next
-                //  iteration
-                //                  as stated in Sayood's book (p. 302)
                 final LearningCodebookEntry rightEntry = new LearningCodebookEntry(right);
                 final LearningCodebookEntry leftEntry = new LearningCodebookEntry(left);
                 assert (!rightEntry.equals(leftEntry)) : "Entry was split to two identical entries!";
                 newCodebook.add(rightEntry);
                 newCodebook.add(leftEntry);
+
             }
             codebook = newCodebook;
             assert (codebook.size() == (k * 2));
@@ -156,15 +173,15 @@ public class LBGVectorQuantizer {
     }
 
 
-    private double vectorDistance(final int[] entry, final int[] vector) {
-        return euclidDistance(entry, vector);
-    }
-
     private void LBG(ArrayList<LearningCodebookEntry> codebook) {
         LBG(codebook, EPSILON);
     }
 
     private void LBG(ArrayList<LearningCodebookEntry> codebook, final double epsilon) {
+        codebook.forEach(entry -> {
+            entry.clearTrainingData();
+            assert (entry.getTrainingVectors().size() == 0) : "Using entries which are not cleared.";
+        });
 
         double previousDistortion = Double.POSITIVE_INFINITY;
 
@@ -175,13 +192,18 @@ public class LBGVectorQuantizer {
             for (final int[] trainingVec : trainingVectors) {
                 double minDist = Double.POSITIVE_INFINITY;
                 LearningCodebookEntry closestEntry = null;
+
                 for (LearningCodebookEntry entry : codebook) {
-                    double entryDistance = vectorDistance(entry.getVector(), trainingVec);
+                    double entryDistance = VectorQuantizer.distanceBetweenVectors(entry.getVector(),
+                                                                                  trainingVec,
+                                                                                  metric);
+
                     if (entryDistance < minDist) {
                         minDist = entryDistance;
                         closestEntry = entry;
                     }
                 }
+                assert (closestEntry != null) : "Did not found closest entry.";
                 if (closestEntry != null) {
                     closestEntry.addTrainingVector(trainingVec, minDist);
                 }
@@ -235,7 +257,7 @@ public class LBGVectorQuantizer {
     }
 
     private void fixSingleEmptyEntry(ArrayList<LearningCodebookEntry> codebook,
-            final LearningCodebookEntry emptyEntry) {
+                                     final LearningCodebookEntry emptyEntry) {
         System.out.println("****** FOUND EMPTY ENTRY ******");
         // Remove empty entry from codebook.
         codebook.remove(emptyEntry);
@@ -250,6 +272,7 @@ public class LBGVectorQuantizer {
             }
         }
         // Assert that we have found some.
+        assert (biggestPartition != emptyEntry);
         assert (biggestPartition.getTrainingVectors().size() > 0) : "Biggest partitions was empty before split";
 
         // Choose random trainingVector from biggest partition and set it as new entry.
@@ -267,8 +290,11 @@ public class LBGVectorQuantizer {
         newEntry.clearTrainingData();
 
         for (final int[] trVec : partionVectors) {
-            double originalPartitionDist = vectorDistance(biggestPartition.getVector(), trVec);
-            double newEntryDist = vectorDistance(newEntry.getVector(), trVec);
+            double originalPartitionDist = VectorQuantizer.distanceBetweenVectors(biggestPartition.getVector(),
+                                                                                  trVec,
+                                                                                  metric);
+
+            double newEntryDist = VectorQuantizer.distanceBetweenVectors(newEntry.getVector(), trVec, metric);
             if (originalPartitionDist < newEntryDist) {
                 biggestPartition.addTrainingVector(trVec, originalPartitionDist);
             } else {
@@ -279,16 +305,6 @@ public class LBGVectorQuantizer {
         assert (biggestPartition.getTrainingVectors().size() > 0) : "Biggest partition is empty";
         assert (newEntry.getTrainingVectors().size() > 0) : "New entry is empty";
     }
-
-    private int euclidDistance(final int[] x, final int[] y) {
-        assert (x.length == y.length) : "Array sizes doesn't match";
-        double distance = 0;
-        for (int i = 0; i < x.length; i++) {
-            distance += Math.pow((x[i] - y[i]), 2);
-        }
-        return (int) Math.sqrt(distance);
-    }
-
 
     public int getVectorSize() {
         return vectorSize;

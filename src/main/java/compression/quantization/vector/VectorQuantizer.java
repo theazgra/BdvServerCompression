@@ -40,8 +40,9 @@ public class VectorQuantizer {
         return result;
     }
 
-    private double distanceBetweenVectors(final int[] originalDataVector, final int[] codebookEntry,
-            final VectorDistanceMetric metric) {
+    public static double distanceBetweenVectors(final int[] originalDataVector,
+                                                final int[] codebookEntry,
+                                                final VectorDistanceMetric metric) {
         assert (originalDataVector.length == codebookEntry.length);
         switch (metric) {
             case Manhattan: {
@@ -56,7 +57,7 @@ public class VectorQuantizer {
                 for (int i = 0; i < originalDataVector.length; i++) {
                     sum += Math.pow(((double) originalDataVector[i] - (double) codebookEntry[i]), 2);
                 }
-                return sum;
+                return Math.sqrt(sum);
             }
             case MaxDiff: {
                 double maxDiff = Double.MIN_VALUE;

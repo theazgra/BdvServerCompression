@@ -54,4 +54,8 @@ public class ScalarQuantizer {
         mse /= (double) data.length;
         return mse;
     }
+
+    public int[] getCentroids() {
+        return centroids;
+    }
 }
