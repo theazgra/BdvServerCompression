@@ -63,21 +63,32 @@ public class LBGVectorQuantizer {
         return mse;
     }
 
+    private double[] getPerturbationVector(final ArrayList<int[]> vectors) {
+        assert (vectors.size() > 0) : "vectors are empty, unable to create perturbation vector.";
+        final int vectorSize = vectors.get(0).length;
+        // Max is initialized to zero that is ok.
+        int[] max = new int[vectorSize];
+        // We have to initialize min to Max values.
+        int[] min = new int[vectorSize];
+        Arrays.fill(min, U16.Max);
 
-    private ArrayList<Double> getPerturbationVector() {
-        return getPerturbationVector(PERTURBATION_FACTOR_MIN, PERTURBATION_FACTOR_MAX);
-    }
+        for (final int[] vector : vectors) {
 
-
-    private ArrayList<Double> getPerturbationVector(final double minPerturbationFactor,
-                                                    final double maxPerturbationFactor) {
-        ArrayList<Double> prt = new ArrayList<>(vectorSize);
-        for (int i = 0; i < vectorSize; i++) {
-            final double rnd =
-                    minPerturbationFactor + ((maxPerturbationFactor - minPerturbationFactor) * random.nextDouble());
-            prt.add(rnd);
+            for (int i = 0; i < vectorSize; i++) {
+                if (vector[i] < min[i]) {
+                    min[i] = vector[i];
+                }
+                if (vector[i] > max[i]) {
+                    max[i] = vector[i];
+                }
+            }
         }
-        return prt;
+
+        double[] perturbationVector = new double[vectorSize];
+        for (int i = 0; i < vectorSize; i++) {
+            perturbationVector[i] = ((double) max[i] - (double) min[i]) / 4.0;
+        }
+        return perturbationVector;
     }
 
     private void assertThatNewCodebookEntryIsOriginal(final ArrayList<LearningCodebookEntry> codebook,
@@ -108,17 +119,18 @@ public class LBGVectorQuantizer {
             //                  The problem happens when we try to split Vector full of zeroes.
             // Split each entry in codebook with fixed perturbation vector.
             for (final LearningCodebookEntry entryToSplit : codebook) {
-                ArrayList<Double> prtV = getPerturbationVector(0.2, 0.8);
+                double[] prtV = getPerturbationVector(entryToSplit.getTrainingVectors());
 
                 // We always want to carry zero vector to next iteration.
                 if (entryToSplit.isZeroVector()) {
                     System.out.println("--------------------------IS zero vector");
                     newCodebook.add(entryToSplit);
 
-                    ArrayList<Integer> rndEntryValues = new ArrayList<>(prtV.size());
-                    for (int j = 0; j < prtV.size(); j++) {
-                        final int value = (int) Math.floor(U16.Max * prtV.get(j));
-                        assert (value >= 0) : "rVal value is negative!";
+                    ArrayList<Integer> rndEntryValues = new ArrayList<>(prtV.length);
+                    for (int j = 0; j < prtV.length; j++) {
+                        final int value = (int) Math.floor(prtV[j]);
+                        assert (value >= 0) : "value is too low!";
+                        assert (value <= U16.Max) : "value is too big!";
                         rndEntryValues.add(value);
                     }
                     newCodebook.add(new LearningCodebookEntry(rndEntryValues));
@@ -128,20 +140,11 @@ public class LBGVectorQuantizer {
                 // NOTE(Moravec):   Maybe we just create one new entry and bring the "original" one to the next
                 //                  iteration as stated in Sayood's book (p. 302)
 
-                ArrayList<Integer> left = new ArrayList<>(prtV.size());
-                ArrayList<Integer> right = new ArrayList<>(prtV.size());
-                for (int j = 0; j < prtV.size(); j++) {
-                    //                    final int lVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 - prtV
-                    //                    .get(j)));
-                    //                    final int rVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 + prtV
-                    //                    .get(j)));
-
-                    final int lVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 - prtV.get(j)));
-                    int rVal = (int) Math.round(entryToSplit.getVector()[j] * (1.0 + prtV.get(j)));
-                    // bad bad bad
-                    if (rVal > U16.Max)
-                        rVal = U16.Max;
-
+                int[] left = new int[prtV.length];
+                int[] right = new int[prtV.length];
+                for (int i = 0; i < prtV.length; i++) {
+                    final int lVal = (int) ((double) entryToSplit.getVector()[i] - prtV[i]);
+                    final int rVal = (int) ((double) entryToSplit.getVector()[i] + prtV[i]);
 
                     assert (rVal >= 0) : "rVal value is negative!";
                     assert (lVal >= 0) : "lVal value is negative!";
@@ -149,8 +152,8 @@ public class LBGVectorQuantizer {
                     assert (rVal <= U16.Max) : "rVal value is too big!";
                     assert (lVal <= U16.Max) : "lVal value is too big!";
 
-                    left.add(lVal);
-                    right.add(rVal);
+                    left[i] = lVal;
+                    right[i] = rVal;
                 }
                 final LearningCodebookEntry rightEntry = new LearningCodebookEntry(right);
                 final LearningCodebookEntry leftEntry = new LearningCodebookEntry(left);
