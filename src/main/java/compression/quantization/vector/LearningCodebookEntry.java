@@ -1,5 +1,6 @@
 package compression.quantization.vector;
 
+import compression.U16;
 import compression.utilities.Utils;
 
 import java.util.ArrayList;
@@ -60,6 +61,8 @@ public class LearningCodebookEntry extends CodebookEntry {
             assert (mean.size() == vector.length) : "Mismatched collection sizes";
             for (int i = 0; i < vector.length; i++) {
                 vector[i] = mean.get(i);
+                assert (vector[i] >= 0) : "Centroid value is too low";
+                assert (vector[i] <= U16.Max) : "Centroid value is too big";
             }
         }
     }

@@ -24,8 +24,8 @@ public class DataCompressor {
                 }
 
                 Chunk2D imageChunk = img.as2dChunk();
-                int[][] imageVectors = imageChunk.divideIntoVectors(3);
-                var vectorQuantizer = new LBGVectorQuantizer(imageVectors, 64, 3);
+                int[][] imageVectors = imageChunk.divideIntoVectors(4);
+                var vectorQuantizer = new LBGVectorQuantizer(imageVectors, 64, 4);
                 var codebook = vectorQuantizer.findOptimalCodebook();
 
 //                Chunk2D[] chunks = imageChunk.divideIntoChunks(new V2i(2, 2));

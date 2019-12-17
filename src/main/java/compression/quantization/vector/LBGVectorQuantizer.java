@@ -84,18 +84,6 @@ public class LBGVectorQuantizer {
             }
         });
 
-        //        for (final int[] vector : vectors) {
-        //
-        //            for (int i = 0; i < vectorSize; i++) {
-        //                if (vector[i] < min[i]) {
-        //                    min[i] = vector[i];
-        //                }
-        //                if (vector[i] > max[i]) {
-        //                    max[i] = vector[i];
-        //                }
-        //            }
-        //        }
-
         double[] perturbationVector = new double[vectorSize];
         for (int i = 0; i < vectorSize; i++) {
             // NOTE(Moravec): Divide by 16 instead of 4, because we are dealing with maximum difference of 65535.
@@ -137,7 +125,7 @@ public class LBGVectorQuantizer {
                 if (codebook.size() == 1) {
                     assert (trainingVectors.length > 0) :
                             "There are no vectors from which to create perturbation " + "vector";
-
+                    System.out.println("*********************ONLY ONCE");
                     prtV = getPerturbationVector(Arrays.stream(trainingVectors));
                 } else {
                     assert (entryToSplit.getTrainingVectors().size() > 0) : "There are no vectors from which to " +
@@ -171,11 +159,11 @@ public class LBGVectorQuantizer {
                     final int lVal = (int) ((double) entryToSplit.getVector()[i] - prtV[i]);
                     final int rVal = (int) ((double) entryToSplit.getVector()[i] + prtV[i]);
 
-                    assert (rVal >= 0) : "rVal value is negative!";
-                    assert (lVal >= 0) : "lVal value is negative!";
-
-                    assert (rVal <= U16.Max) : "rVal value is too big!";
-                    assert (lVal <= U16.Max) : "lVal value is too big!";
+                    // NOTE(Moravec): We allow values outside boundaries, because LBG should fix them later.
+                    //                    assert (rVal >= 0) : "rVal value is negative!";
+                    //                    assert (lVal >= 0) : "lVal value is negative!";
+                    //                    assert (rVal <= U16.Max) : "rVal value is too big!";
+                    //                    assert (lVal <= U16.Max) : "lVal value is too big!";
 
                     left[i] = lVal;
                     right[i] = rVal;
@@ -249,15 +237,18 @@ public class LBGVectorQuantizer {
             // Step 3
             double dist = (previousDistortion - avgDistortion) / avgDistortion;
             System.out.println(String.format("It: %d Distortion: %.5f", iteration++, dist));
-            if (dist < epsilon) {
-                break;
-            }
-            previousDistortion = avgDistortion;
 
-            // Step 4
-            for (LearningCodebookEntry entry : codebook) {
-                entry.calculateCentroid();
-                entry.clearTrainingData();
+            if (dist < epsilon) {
+                // NOTE(Moravec):   We will leave training data in entries so we can use them for
+                //                  PRT vector calculation.
+                break;
+            } else {
+                previousDistortion = avgDistortion;
+                // Step 4
+                for (LearningCodebookEntry entry : codebook) {
+                    entry.calculateCentroid();
+                    entry.clearTrainingData();
+                }
             }
         }
     }
@@ -265,7 +256,6 @@ public class LBGVectorQuantizer {
 
     private void fixEmptyEntries(final ArrayList<LearningCodebookEntry> codebook) {
         final int originalSize = codebook.size();
-        final ArrayList<LearningCodebookEntry> fixedCodebook = new ArrayList<>(originalSize);
 
         LearningCodebookEntry emptyEntry = null;
         for (final LearningCodebookEntry potentiallyEmptyEntry : codebook) {
@@ -286,7 +276,7 @@ public class LBGVectorQuantizer {
 
     private void fixSingleEmptyEntry(ArrayList<LearningCodebookEntry> codebook,
                                      final LearningCodebookEntry emptyEntry) {
-        System.out.println("****** FOUND EMPTY ENTRY ******");
+        System.out.println("******** FOUND EMPTY ENTRY ********");
         // Remove empty entry from codebook.
         codebook.remove(emptyEntry);
 
