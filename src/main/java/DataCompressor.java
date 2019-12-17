@@ -38,16 +38,27 @@ public class DataCompressor {
 
         //        VectorQuantizer vq = new VectorQuantizer(codebook.getCodebook());
 
+        ScalarQuantizationBenchmark[] benchmarks = new ScalarQuantizationBenchmark[3];
+        benchmarks[0] = new ScalarQuantizationBenchmark("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
+                                                        "D:\\biology\\benchmark\\fused_tp_10_ch_0_16bit",
+                                                        new int[]{198, 240, 280, 351, 573, 663, 695},
+                                                        new V3i(1041, 996, 946));
 
-        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
-                "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_1_16bit.raw",
-                "D:\\biology\\benchmark\\test",
-                new int[]{358},
-                // new int[]{234, 294, 365, 463, 593, 682, 696},
+        benchmarks[1] = new ScalarQuantizationBenchmark(
+                "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit_edited.raw",
+                "D:\\biology\\benchmark\\fused_tp_10_ch_0_16bit_edited",
+                new int[]{198, 240, 280, 351, 573, 663, 695},
                 new V3i(1041, 996, 946));
 
-        sqBenchmark.startBenchmark();
+        benchmarks[2] = new ScalarQuantizationBenchmark("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_1_16bit.raw",
+                                                        "D:\\biology\\benchmark\\fused_tp_10_ch_1_16bit",
+                                                        new int[]{235, 295, 366, 464, 594, 683, 697},
+                                                        new V3i(1041, 996, 946));
 
+        for (ScalarQuantizationBenchmark benchmark : benchmarks)
+        {
+            benchmark.startBenchmark();
+        }
         //        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
         //                "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit_edited.raw",
         //                "D:\\biology\\benchmark\\scalar_edited",

@@ -50,14 +50,16 @@ public class RawDataIO {
         return image;
     }
 
-    public static void writeImageU16(final String rawFile, final ImageU16 image) throws IOException {
-        byte[] buffer = TypeConverter.shortArrayToByteArray(image.getData());
+    public static void writeImageU16(final String rawFile,
+                                     final ImageU16 image,
+                                     final boolean littleEndian) throws IOException {
+        byte[] buffer = TypeConverter.shortArrayToByteArray(image.getData(), littleEndian);
         writeBytesToFile(rawFile, buffer);
     }
 
-    public static boolean writeDataI32(String rawFile, int[] differenceData) {
+    public static boolean writeDataI32(String rawFile, int[] differenceData, final boolean littleEndian) {
 
-        byte[] buffer = TypeConverter.intArrayToByteArray(differenceData);
+        byte[] buffer = TypeConverter.intArrayToByteArray(differenceData, littleEndian);
         try {
             writeBytesToFile(rawFile, buffer);
         } catch (IOException e) {

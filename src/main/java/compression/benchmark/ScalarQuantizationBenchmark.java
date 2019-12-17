@@ -47,7 +47,8 @@ public class ScalarQuantizationBenchmark {
     private boolean saveQuantizedPlaneData(final short[] data, final String filename) {
         ImageU16 img = new ImageU16(rawImageDims.getX(), rawImageDims.getY(), data);
         try {
-            RawDataIO.writeImageU16(getFileNamePath(filename), img);
+            // NOTE(Moravec): Use big endian so that FIJI can read the image.
+            RawDataIO.writeImageU16(getFileNamePath(filename), img, false);
             System.out.println(String.format("Saved %s", filename));
         } catch (Exception e) {
             e.printStackTrace();
@@ -63,7 +64,8 @@ public class ScalarQuantizationBenchmark {
                                     rawImageDims.getY(),
                                     TypeConverter.intArrayToShortArray(differenceData));
         try {
-            RawDataIO.writeImageU16(path, img);
+            // NOTE(Moravec): Use little endian so that gnuplot can read the array.
+            RawDataIO.writeImageU16(path, img, true);
             System.out.println("Saved difference to: " + path);
         } catch (Exception e) {
             e.printStackTrace();
@@ -77,7 +79,8 @@ public class ScalarQuantizationBenchmark {
 
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
-            final short[] planeData = loadPlaneData(planeIndex);
+            // NOTE(Moravec): Actual planeIndex is zero based.
+            final short[] planeData = loadPlaneData(planeIndex-1);
             if (planeData.length == 0) {
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
                 return;
@@ -106,16 +109,17 @@ public class ScalarQuantizationBenchmark {
                                                                            codebookSize,
                                                                            method));
 
-                if (!RawDataIO.writeDataI32(centroidsFile, quantizer.getCentroids())) {
+                // NOTE(Moravec): Centroids are saved in little endian order.
+                if (!RawDataIO.writeDataI32(centroidsFile, quantizer.getCentroids(), true)) {
                     System.err.println("Failed to save quantizer centroids.");
                     return;
                 }
 
 
-                final String quantizedFile = String.format("p%d_cb%d%s.raw", (planeIndex + 1), codebookSize, method);
+                final String quantizedFile = String.format("p%d_cb%d%s.raw", planeIndex, codebookSize, method);
 
                 final String absoluteDiffFile = String.format("p%d_cb%d%s_diff.raw",
-                                                              (planeIndex + 1),
+                                                              planeIndex,
                                                               codebookSize,
                                                               method);
 

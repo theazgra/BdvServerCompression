@@ -53,7 +53,6 @@ public class TypeConverter {
     public static short[] intArrayToShortArray(final int[] src) {
         short[] result = new short[src.length];
 
-        short shortValue;
         for (int i = 0; i < src.length; i++) {
             if (src[i] < 0 || src[i] > U16.Max) {
                 throw new RuntimeException("Source value is outside of bounds for 16-bit unsigned integer.");
@@ -63,27 +62,38 @@ public class TypeConverter {
         return result;
     }
 
-    public static byte[] shortArrayToByteArray(final short[] data) {
+    public static byte[] shortArrayToByteArray(final short[] data, final boolean littleEndian) {
         byte[] buffer = new byte[data.length * 2];
         int j = 0;
         for (final short s : data) {
-            // NOTE(Moravec): Use little endian.
-            buffer[j++] = (byte) (s & 0xff);
-            buffer[j++] = (byte) ((s >> 8) & 0xff);
+            if (littleEndian) {
+                buffer[j++] = (byte) (s & 0xff);
+                buffer[j++] = (byte) ((s >> 8) & 0xff);
+            } else {
+                buffer[j++] = (byte) ((s >> 8) & 0xff);
+                buffer[j++] = (byte) (s & 0xff);
+            }
+
         }
         return buffer;
     }
 
-    public static byte[] intArrayToByteArray(final int[] data) {
+    public static byte[] intArrayToByteArray(final int[] data, final boolean littleEndian) {
         byte[] buffer = new byte[data.length * 4];
 
         int j = 0;
         for (final int v : data) {
-            // NOTE(Moravec): Use little endian.
-            buffer[j++] = (byte) (v & 0xFF);
-            buffer[j++] = (byte) ((v >>> 8) & 0xFF);
-            buffer[j++] = (byte) ((v >>> 16) & 0xFF);
-            buffer[j++] = (byte) ((v >>> 24) & 0xFF);
+            if (littleEndian) {
+                buffer[j++] = (byte) (v & 0xFF);
+                buffer[j++] = (byte) ((v >>> 8) & 0xFF);
+                buffer[j++] = (byte) ((v >>> 16) & 0xFF);
+                buffer[j++] = (byte) ((v >>> 24) & 0xFF);
+            } else {
+                buffer[j++] = (byte) ((v >>> 24) & 0xFF);
+                buffer[j++] = (byte) ((v >>> 16) & 0xFF);
+                buffer[j++] = (byte) ((v >>> 8) & 0xFF);
+                buffer[j++] = (byte) (v & 0xFF);
+            }
         }
         return buffer;
     }
