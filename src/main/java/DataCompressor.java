@@ -13,53 +13,55 @@ public class DataCompressor {
         //        test2DChunking();
         //        test3DChunking();
 
-                ImageU16 img = null;
-                try {
-                    img = RawDataIO.loadImageU16("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
-                                                 new V3i(1041, 996, 946),
-                                                 (351 - 1));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return;
-                }
+        ImageU16 img = null;
+        try {
+            img = RawDataIO.loadImageU16("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
+                                         new V3i(1041, 996, 946),
+                                         (351 - 1));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
 
-                Chunk2D imageChunk = img.as2dChunk();
-                int[][] imageVectors = imageChunk.divideIntoVectors(4);
-                var vectorQuantizer = new LBGVectorQuantizer(imageVectors, 64, 4);
-                var codebook = vectorQuantizer.findOptimalCodebook();
+        Chunk2D imageChunk = img.as2dChunk();
+        int[][] imageVectors = imageChunk.divideIntoVectors(4);
+        var vectorQuantizer = new LBGVectorQuantizer(imageVectors, 128, 4);
+        var codebook = vectorQuantizer.findOptimalCodebook();
 
-//                Chunk2D[] chunks = imageChunk.divideIntoChunks(new V2i(2, 2));
-//                int[][] imageVectors = new int[chunks.length][4];
-//                for (int i = 0; i < chunks.length; i++) {
-//                    imageVectors[i] = chunks[i].getData();
-//                }
-//                LBGVectorQuantizer vectorQuantizer = new LBGVectorQuantizer(imageVectors, 64, 4);
-//                var codebook = vectorQuantizer.findOptimalCodebook();
+        //        Chunk2D[] chunks = imageChunk.divideIntoChunks(new V2i(3, 3));
+        //        int[][] imageVectors = new int[chunks.length][4];
+        //        for (int i = 0; i < chunks.length; i++) {
+        //            imageVectors[i] = chunks[i].getData();
+        //        }
+        //        LBGVectorQuantizer vectorQuantizer = new LBGVectorQuantizer(imageVectors, 128, 9);
+        //        var codebook = vectorQuantizer.findOptimalCodebook();
 
-//
-//        //        VectorQuantizer vq = new VectorQuantizer(codebook.getCodebook());
-//
-//        ScalarQuantizationBenchmark[] benchmarks = new ScalarQuantizationBenchmark[3];
-//        benchmarks[0] = new ScalarQuantizationBenchmark("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
-//                                                        "D:\\biology\\benchmark\\fused_tp_10_ch_0_16bit",
-//                                                        new int[]{198, 240, 280, 351, 573, 663, 695},
-//                                                        new V3i(1041, 996, 946));
-//
-//        benchmarks[1] = new ScalarQuantizationBenchmark(
-//                "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit_edited.raw",
-//                "D:\\biology\\benchmark\\fused_tp_10_ch_0_16bit_edited",
-//                new int[]{198, 240, 280, 351, 573, 663, 695},
-//                new V3i(1041, 996, 946));
-//
-//        benchmarks[2] = new ScalarQuantizationBenchmark("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_1_16bit.raw",
-//                                                        "D:\\biology\\benchmark\\fused_tp_10_ch_1_16bit",
-//                                                        new int[]{235, 295, 366, 464, 594, 683, 697},
-//                                                        new V3i(1041, 996, 946));
-//
-//        for (ScalarQuantizationBenchmark benchmark : benchmarks)
-//        {
-//            benchmark.startBenchmark();
-//        }
+        //
+        //        //        VectorQuantizer vq = new VectorQuantizer(codebook.getCodebook());
+        //
+        //        ScalarQuantizationBenchmark[] benchmarks = new ScalarQuantizationBenchmark[3];
+        //        benchmarks[0] = new ScalarQuantizationBenchmark
+        //        ("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
+        //                                                        "D:\\biology\\benchmark\\fused_tp_10_ch_0_16bit",
+        //                                                        new int[]{198, 240, 280, 351, 573, 663, 695},
+        //                                                        new V3i(1041, 996, 946));
+        //
+        //        benchmarks[1] = new ScalarQuantizationBenchmark(
+        //                "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit_edited.raw",
+        //                "D:\\biology\\benchmark\\fused_tp_10_ch_0_16bit_edited",
+        //                new int[]{198, 240, 280, 351, 573, 663, 695},
+        //                new V3i(1041, 996, 946));
+        //
+        //        benchmarks[2] = new ScalarQuantizationBenchmark
+        //        ("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_1_16bit.raw",
+        //                                                        "D:\\biology\\benchmark\\fused_tp_10_ch_1_16bit",
+        //                                                        new int[]{235, 295, 366, 464, 594, 683, 697},
+        //                                                        new V3i(1041, 996, 946));
+        //
+        //        for (ScalarQuantizationBenchmark benchmark : benchmarks)
+        //        {
+        //            benchmark.startBenchmark();
+        //        }
         //        ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(
         //                "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit_edited.raw",
         //                "D:\\biology\\benchmark\\scalar_edited",

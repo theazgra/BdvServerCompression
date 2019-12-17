@@ -87,7 +87,7 @@ public class LBGVectorQuantizer {
         double[] perturbationVector = new double[vectorSize];
         for (int i = 0; i < vectorSize; i++) {
             // NOTE(Moravec): Divide by 16 instead of 4, because we are dealing with maximum difference of 65535.
-            perturbationVector[i] = ((double) max[i] - (double) min[i]) / 16.0;
+            perturbationVector[i] = ((double) max[i] - (double) min[i]) / 4.0;
         }
         return perturbationVector;
     }
@@ -125,9 +125,15 @@ public class LBGVectorQuantizer {
                 if (codebook.size() == 1) {
                     assert (trainingVectors.length > 0) :
                             "There are no vectors from which to create perturbation " + "vector";
-                    System.out.println("*********************ONLY ONCE");
                     prtV = getPerturbationVector(Arrays.stream(trainingVectors));
-                } else {
+                }
+                //                else if (entryToSplit.getTrainingVectors().size() == 1) {
+                //                    prtV = new double[vectorSize];
+                //                    for (int i = 0; i < vectorSize; i++) {
+                //                        prtV[i] = (double) (entryToSplit.getVector()[i] * 0.5);
+                //                    }
+                //                }
+                else {
                     assert (entryToSplit.getTrainingVectors().size() > 0) : "There are no vectors from which to " +
                             "create perturbation vector";
 
@@ -259,7 +265,7 @@ public class LBGVectorQuantizer {
 
         LearningCodebookEntry emptyEntry = null;
         for (final LearningCodebookEntry potentiallyEmptyEntry : codebook) {
-            if (potentiallyEmptyEntry.getTrainingVectors().size() == 0) {
+            if (potentiallyEmptyEntry.getTrainingVectors().size() < 2) { // < 2
                 emptyEntry = potentiallyEmptyEntry;
             }
         }
@@ -267,7 +273,7 @@ public class LBGVectorQuantizer {
             fixSingleEmptyEntry(codebook, emptyEntry);
             emptyEntry = null;
             for (final LearningCodebookEntry potentionallyEmptyEntry : codebook) {
-                if (potentionallyEmptyEntry.getTrainingVectors().size() == 0) {
+                if (potentionallyEmptyEntry.getTrainingVectors().size() < 2) { // <2
                     emptyEntry = potentionallyEmptyEntry;
                 }
             }
