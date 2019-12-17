@@ -6,6 +6,7 @@ import compression.utilities.Utils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.stream.Stream;
 
 public class LBGVectorQuantizer {
     private final double EPSILON = 0.005;
@@ -63,30 +64,42 @@ public class LBGVectorQuantizer {
         return mse;
     }
 
-    private double[] getPerturbationVector(final ArrayList<int[]> vectors) {
-        assert (vectors.size() > 0) : "vectors are empty, unable to create perturbation vector.";
-        final int vectorSize = vectors.get(0).length;
+    private double[] getPerturbationVector(final Stream<int[]> vectors) {
+
         // Max is initialized to zero that is ok.
         int[] max = new int[vectorSize];
         // We have to initialize min to Max values.
         int[] min = new int[vectorSize];
         Arrays.fill(min, U16.Max);
+        boolean executed = false;
 
-        for (final int[] vector : vectors) {
-
+        vectors.forEach(v -> {
             for (int i = 0; i < vectorSize; i++) {
-                if (vector[i] < min[i]) {
-                    min[i] = vector[i];
+                if (v[i] < min[i]) {
+                    min[i] = v[i];
                 }
-                if (vector[i] > max[i]) {
-                    max[i] = vector[i];
+                if (v[i] > max[i]) {
+                    max[i] = v[i];
                 }
             }
-        }
+        });
+
+        //        for (final int[] vector : vectors) {
+        //
+        //            for (int i = 0; i < vectorSize; i++) {
+        //                if (vector[i] < min[i]) {
+        //                    min[i] = vector[i];
+        //                }
+        //                if (vector[i] > max[i]) {
+        //                    max[i] = vector[i];
+        //                }
+        //            }
+        //        }
 
         double[] perturbationVector = new double[vectorSize];
         for (int i = 0; i < vectorSize; i++) {
-            perturbationVector[i] = ((double) max[i] - (double) min[i]) / 4.0;
+            // NOTE(Moravec): Divide by 16 instead of 4, because we are dealing with maximum difference of 65535.
+            perturbationVector[i] = ((double) max[i] - (double) min[i]) / 16.0;
         }
         return perturbationVector;
     }
@@ -106,6 +119,7 @@ public class LBGVectorQuantizer {
         ArrayList<Integer> initialEntry = LearningCodebookEntry.vectorMean2(Arrays.stream(trainingVectors),
                                                                             trainingVectors.length,
                                                                             vectorSize);
+
         codebook.add(new LearningCodebookEntry(initialEntry));
 
         while (k != codebookSize) {
@@ -119,7 +133,18 @@ public class LBGVectorQuantizer {
             //                  The problem happens when we try to split Vector full of zeroes.
             // Split each entry in codebook with fixed perturbation vector.
             for (final LearningCodebookEntry entryToSplit : codebook) {
-                double[] prtV = getPerturbationVector(entryToSplit.getTrainingVectors());
+                double[] prtV;
+                if (codebook.size() == 1) {
+                    assert (trainingVectors.length > 0) :
+                            "There are no vectors from which to create perturbation " + "vector";
+
+                    prtV = getPerturbationVector(Arrays.stream(trainingVectors));
+                } else {
+                    assert (entryToSplit.getTrainingVectors().size() > 0) : "There are no vectors from which to " +
+                            "create perturbation vector";
+
+                    prtV = getPerturbationVector(entryToSplit.getTrainingVectors().stream());
+                }
 
                 // We always want to carry zero vector to next iteration.
                 if (entryToSplit.isZeroVector()) {
