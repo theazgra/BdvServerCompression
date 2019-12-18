@@ -88,13 +88,6 @@ public class LBGVectorQuantizer {
         return perturbationVector;
     }
 
-    private void assertThatNewCodebookEntryIsOriginal(final ArrayList<LearningCodebookEntry> codebook,
-                                                      final LearningCodebookEntry newEntry) {
-
-        for (final LearningCodebookEntry entry : codebook) {
-            assert !(newEntry.equals(entry)) : "New entry is not original";
-        }
-    }
 
     private ArrayList<LearningCodebookEntry> initializeCodebook() {
         ArrayList<LearningCodebookEntry> codebook = new ArrayList<>(codebookSize);
