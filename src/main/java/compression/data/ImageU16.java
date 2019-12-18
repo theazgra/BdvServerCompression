@@ -7,6 +7,7 @@ public class ImageU16 {
     private short[] data;
 
     public ImageU16(int width, int height, short[] data) {
+        assert ((width * height) == data.length) : "Wrong data size in ImageU16 constructor.";
         this.width = width;
         this.height = height;
         this.data = data;

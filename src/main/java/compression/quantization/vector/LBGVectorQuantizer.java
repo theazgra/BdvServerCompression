@@ -19,13 +19,12 @@ public class LBGVectorQuantizer {
 
     private Random random = new Random();
 
-    public LBGVectorQuantizer(final int[][] trainingVectors, final int codebookSize, final int vectorSize) {
+    public LBGVectorQuantizer(final int[][] trainingVectors, final int codebookSize) {
 
         assert (trainingVectors.length > 0) : "No training vectors provided";
-        assert (trainingVectors[0].length == vectorSize) : "Training vector is different from provided vectorSize";
 
         this.trainingVectors = trainingVectors;
-        this.vectorSize = vectorSize;
+        this.vectorSize = trainingVectors[0].length;
         this.codebookSize = codebookSize;
     }
 

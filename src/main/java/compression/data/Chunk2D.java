@@ -2,9 +2,11 @@ package compression.data;
 
 import compression.utilities.TypeConverter;
 
+import java.util.Arrays;
+
 public class Chunk2D {
     private final int FILL_VALUE = 0;
-    private final int[] data;
+    private int[] data;
 
     private final V2i dims;
     private final V2l offset;
@@ -106,7 +108,6 @@ public class Chunk2D {
         final V2i chunkDims = chunks[0].getDims();
 
         assert (getRequiredChunkCount(chunkDims) == chunks.length) : "Wrong chunk count in reconstruct";
-
         for (final Chunk2D chunk : chunks) {
             copyFromChunk(chunk);
         }
@@ -182,6 +183,7 @@ public class Chunk2D {
         return data;
     }
 
+
     public int[][] divideIntoVectors(final int vectorSize) {
         final int rowVectorCount = (int) Math.ceil(dims.getX() / (float) vectorSize);
         final int vectorCount = rowVectorCount * dims.getY();
@@ -193,7 +195,6 @@ public class Chunk2D {
             for (int vecIndex = 0; vecIndex < rowVectorCount; vecIndex++) {
                 for (int x = 0; x < vectorSize; x++) {
                     srcX = (vecIndex * vectorSize) + x;
-                    // NOTE(Moravec): Repeat the last value if the source value is outside bounds.
                     imageVectors[vec][x] = isInside(srcX, row) ? data[index(srcX, row)] : 0;// imageVectors[row][x - 1];
                 }
                 ++vec;
@@ -201,5 +202,61 @@ public class Chunk2D {
         }
 
         return imageVectors;
+    }
+
+    public void reconstructFromVectors(int[][] vectors) {
+        if (vectors.length == 0) {
+            return;
+        }
+        final int vectorSize = vectors[0].length;
+        final int rowVectorCount = (int) Math.ceil(dims.getX() / (float) vectorSize);
+        final int vectorCount = rowVectorCount * dims.getY();
+        assert (vectors.length == vectorCount) : "Wrong vector count in reconstruct.";
+
+        int vec = 0;
+        int dstX;
+        for (int dstY = 0; dstY < dims.getY(); dstY++) {
+            for (int vecIndex = 0; vecIndex < rowVectorCount; vecIndex++) {
+                for (int x = 0; x < vectorSize; x++) {
+                    dstX = (vecIndex * vectorSize) + x;
+                    if (isInside(dstX, dstY)) {
+                        data[index(dstX, dstY)] = vectors[vec][x];
+                    }
+                }
+                ++vec;
+            }
+        }
+    }
+
+    public ImageU16 asImageU16() {
+        return new ImageU16(dims.getX(), dims.getY(), TypeConverter.intArrayToShortArray(data));
+    }
+
+    private void updateData(int[] newData) {
+        assert (data.length == newData.length) : "Data length mismatch!";
+        data = newData;
+    }
+
+    public static int[][] chunksAsImageVectors(final Chunk2D[] chunks) {
+        if (chunks.length == 0) {
+            return new int[0][0];
+        }
+        final int vectorCount = chunks.length;
+        final int vectorSize = chunks[0].data.length;
+        int[][] imageVectors = new int[vectorCount][vectorSize];
+
+        for (int i = 0; i < vectorCount; i++) {
+            assert (chunks[i].data.length == vectorSize);
+            imageVectors[i] = Arrays.copyOf(chunks[i].data, vectorSize);
+        }
+        return imageVectors;
+    }
+
+    public static void updateChunkData(Chunk2D[] chunks, final int[][] newData) {
+        assert (chunks.length == newData.length) : "chunks len newData len mismatch.";
+
+        for (int i = 0; i < chunks.length; i++) {
+            chunks[i].updateData(newData[i]);
+        }
     }
 }

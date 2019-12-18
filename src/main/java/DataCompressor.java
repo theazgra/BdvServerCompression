@@ -1,6 +1,7 @@
 import compression.data.*;
 import compression.io.RawDataIO;
 import compression.quantization.vector.LBGVectorQuantizer;
+import compression.quantization.vector.VectorQuantizer;
 
 import java.io.IOException;
 import java.util.Random;
@@ -12,6 +13,7 @@ public class DataCompressor {
     public static void main(String[] args) throws IOException {
         //        test2DChunking();
         //        test3DChunking();
+        //        test2DVectorChunking();
 
         ImageU16 img = null;
         try {
@@ -24,21 +26,45 @@ public class DataCompressor {
         }
 
         Chunk2D imageChunk = img.as2dChunk();
-        int[][] imageVectors = imageChunk.divideIntoVectors(4);
-        var vectorQuantizer = new LBGVectorQuantizer(imageVectors, 128, 4);
-        var codebook = vectorQuantizer.findOptimalCodebook();
-
-        //        Chunk2D[] chunks = imageChunk.divideIntoChunks(new V2i(3, 3));
-        //        int[][] imageVectors = new int[chunks.length][4];
-        //        for (int i = 0; i < chunks.length; i++) {
-        //            imageVectors[i] = chunks[i].getData();
+        // 1D Vectors
+        //        int[][] imageVectors = imageChunk.divideIntoVectors(8);
+        //        var lbgVQInitializer = new LBGVectorQuantizer(imageVectors, 128);
+        //        var lbgResult = lbgVQInitializer.findOptimalCodebook();
+        //        VectorQuantizer vq = new VectorQuantizer(lbgResult.getCodebook());
+        //        final int[][] quantizedVectors = vq.quantize(imageVectors);
+        //
+        //        Chunk2D reconstructedChunk = new Chunk2D(new V2i(1041, 996), new V2l(0, 0));
+        //        reconstructedChunk.reconstructFromVectors(quantizedVectors);
+        //        ImageU16 reconstructedImage = reconstructedChunk.asImageU16();
+        //        assert (!imageChunk.equals(reconstructedChunk));
+        //        try {
+        //            RawDataIO.writeImageU16("original_image.raw", img, false);
+        //            RawDataIO.writeImageU16("vq_image.raw", reconstructedImage, false);
+        //        } catch (IOException e) {
+        //            e.printStackTrace();
         //        }
-        //        LBGVectorQuantizer vectorQuantizer = new LBGVectorQuantizer(imageVectors, 128, 9);
-        //        var codebook = vectorQuantizer.findOptimalCodebook();
 
-        //
-        //        //        VectorQuantizer vq = new VectorQuantizer(codebook.getCodebook());
-        //
+        // 2D Vectors
+        Chunk2D[] chunks = imageChunk.divideIntoChunks(new V2i(3, 3));
+        int[][] image2DVectors = Chunk2D.chunksAsImageVectors(chunks);
+        LBGVectorQuantizer lbgVQInitializer = new LBGVectorQuantizer(image2DVectors, 256);
+        var lbgResult = lbgVQInitializer.findOptimalCodebook();
+
+        VectorQuantizer vq = new VectorQuantizer(lbgResult.getCodebook());
+        final int[][] quantized2DVectors = vq.quantize(image2DVectors);
+
+        Chunk2D.updateChunkData(chunks, quantized2DVectors);
+        Chunk2D reconstructedChunk = new Chunk2D(new V2i(1041, 996), new V2l(0, 0));
+        reconstructedChunk.reconstructFromChunks(chunks);
+        ImageU16 reconstructedImage = reconstructedChunk.asImageU16();
+
+        try {
+//            RawDataIO.writeImageU16("original_image.raw", img, false);
+            RawDataIO.writeImageU16("vq2d_image.raw", reconstructedImage, false);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         //        ScalarQuantizationBenchmark[] benchmarks = new ScalarQuantizationBenchmark[3];
         //        benchmarks[0] = new ScalarQuantizationBenchmark
         //        ("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
@@ -72,6 +98,23 @@ public class DataCompressor {
         //sqBenchmark.setUseDiffEvolution(true);
 
         //sqBenchmark.startBenchmark();
+    }
+
+    static void test2DVectorChunking() {
+        final int xs = 761;
+        final int ys = 438;
+        final int[] data = getRandomData(xs * ys);
+        final Chunk2D src = new Chunk2D(new V2i(xs, ys), new V2l(0), data);
+        final int[][] vectors = src.divideIntoVectors(3);
+
+        final Chunk2D reconstructed = new Chunk2D(new V2i(xs, ys), new V2l(0));
+        reconstructed.reconstructFromVectors(vectors);
+
+        if (src.equals(reconstructed)) {
+            System.out.println("2D vector Reconstruction successful.");
+        } else {
+            System.out.println("2D vector Reconstruction failed !!!");
+        }
     }
 
     static void test2DChunking() {
