@@ -58,24 +58,22 @@ public class Utils {
     }
 
 
-    public static int[] getAbsoluteDifference(final short[] original, final short[] transformed) {
+    public static int[] getDifference(final short[] original, final short[] transformed) {
         assert (original.length == transformed.length) : "Array lengths doesn't match";
 
         int[] difference = new int[original.length];
         for (int i = 0; i < original.length; i++) {
-            difference[i] = Math.abs( TypeConverter.shortToInt(original[i]) - TypeConverter.shortToInt(transformed[i]));
+            difference[i] = (TypeConverter.shortToInt(original[i]) - TypeConverter.shortToInt(transformed[i]));
         }
         return difference;
     }
 
-    public static int[] getSquaredDifference(final short[] original, final short[] transformed) {
-        assert (original.length == transformed.length) : "Array lengths doesn't match";
-
-        int[] difference = new int[original.length];
-        for (int i = 0; i < original.length; i++) {
-            difference[i] = (int) Math.pow((TypeConverter.shortToInt(original[i]) - TypeConverter.shortToInt(transformed[i])), 2);
+    public static int[] applyAbsToValues(int[] values) {
+        int[] absValues = new int[values.length];
+        for (int i = 0; i < values.length; i++) {
+            absValues[i] = Math.abs(values[i]);
         }
-        return difference;
+        return absValues;
     }
 
 

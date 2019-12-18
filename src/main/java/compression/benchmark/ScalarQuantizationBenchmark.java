@@ -57,16 +57,26 @@ public class ScalarQuantizationBenchmark {
         return true;
     }
 
-    private boolean saveDifference(final short[] originalData, final short[] transformedData, final String filename) {
-        final int[] differenceData = Utils.getAbsoluteDifference(originalData, transformedData);
-        final String path = getFileNamePath(filename);
+    private boolean saveDifference(final short[] originalData,
+                                   final short[] transformedData,
+                                   final String diffFile,
+                                   final String absDiffFile) {
+
+        final int[] differenceData = Utils.getDifference(originalData, transformedData);
+        final int[] absDifferenceData = Utils.applyAbsToValues(differenceData);
+        final String diffFilePath = getFileNamePath(diffFile);
+        final String absDiffFilePath = getFileNamePath(absDiffFile);
+
         ImageU16 img = new ImageU16(rawImageDims.getX(),
                                     rawImageDims.getY(),
-                                    TypeConverter.intArrayToShortArray(differenceData));
+                                    TypeConverter.intArrayToShortArray(absDifferenceData));
         try {
             // NOTE(Moravec): Use little endian so that gnuplot can read the array.
-            RawDataIO.writeImageU16(path, img, true);
-            System.out.println("Saved difference to: " + path);
+            RawDataIO.writeImageU16(absDiffFilePath, img, true);
+            System.out.println("Saved absolute difference to: " + absDiffFilePath);
+
+            RawDataIO.writeDataI32(diffFilePath, differenceData, true);
+            System.out.println("Saved difference to: " + absDiffFilePath);
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Failed to save difference.");
@@ -80,7 +90,7 @@ public class ScalarQuantizationBenchmark {
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
             // NOTE(Moravec): Actual planeIndex is zero based.
-            final short[] planeData = loadPlaneData(planeIndex-1);
+            final short[] planeData = loadPlaneData(planeIndex - 1);
             if (planeData.length == 0) {
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
                 return;
@@ -118,10 +128,8 @@ public class ScalarQuantizationBenchmark {
 
                 final String quantizedFile = String.format("p%d_cb%d%s.raw", planeIndex, codebookSize, method);
 
-                final String absoluteDiffFile = String.format("p%d_cb%d%s_diff.raw",
-                                                              planeIndex,
-                                                              codebookSize,
-                                                              method);
+                final String diffFile = String.format("p%d_cb%d%s_diff.raw", planeIndex, codebookSize, method);
+                final String absoluteDiffFile = String.format("p%d_cb%d%s_adiff.raw", planeIndex, codebookSize, method);
 
                 final short[] quantizedData = quantizer.quantize(planeData);
 
@@ -130,7 +138,7 @@ public class ScalarQuantizationBenchmark {
                     return;
                 }
 
-                saveDifference(planeData, quantizedData, absoluteDiffFile);
+                saveDifference(planeData, quantizedData, diffFile, absoluteDiffFile);
             }
         }
     }

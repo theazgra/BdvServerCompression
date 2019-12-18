@@ -10,14 +10,10 @@ import java.util.stream.Stream;
 
 public class LBGVectorQuantizer {
     private final double EPSILON = 0.005;
-    private final double PERTURBATION_FACTOR_MIN = 0.10;
-    private final double PERTURBATION_FACTOR_MAX = 0.60;
     private final int vectorSize;
     private final int codebookSize;
     private final int[][] trainingVectors;
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
-
-    private Random random = new Random();
 
     public LBGVectorQuantizer(final int[][] trainingVectors, final int codebookSize) {
 
@@ -57,11 +53,12 @@ public class LBGVectorQuantizer {
 
         for (int vecIndex = 0; vecIndex < quantizedVectors.length; vecIndex++) {
             for (int vecValIndex = 0; vecValIndex < vectorSize; vecValIndex++) {
-                mse += Math.pow(((double) trainingVectors[vecIndex][vecValIndex] - (double) quantizedVectors[vecIndex][vecValIndex]), 2);
+                mse += Math.pow(((double) trainingVectors[vecIndex][vecValIndex] - (double) quantizedVectors[vecIndex][vecValIndex]),
+                                2);
             }
         }
-        mse /= (double) (trainingVectors.length * vectorSize);
-        return mse;
+        final double avgMse = mse / (double) (trainingVectors.length * vectorSize);
+        return avgMse;
     }
 
     private double[] getPerturbationVector(final Stream<int[]> vectors) {
@@ -71,7 +68,6 @@ public class LBGVectorQuantizer {
         // We have to initialize min to Max values.
         int[] min = new int[vectorSize];
         Arrays.fill(min, U16.Max);
-        boolean executed = false;
 
         vectors.forEach(v -> {
             for (int i = 0; i < vectorSize; i++) {
@@ -126,14 +122,7 @@ public class LBGVectorQuantizer {
                     assert (trainingVectors.length > 0) :
                             "There are no vectors from which to create perturbation " + "vector";
                     prtV = getPerturbationVector(Arrays.stream(trainingVectors));
-                }
-                //                else if (entryToSplit.getTrainingVectors().size() == 1) {
-                //                    prtV = new double[vectorSize];
-                //                    for (int i = 0; i < vectorSize; i++) {
-                //                        prtV[i] = (double) (entryToSplit.getVector()[i] * 0.5);
-                //                    }
-                //                }
-                else {
+                } else {
                     assert (entryToSplit.getTrainingVectors().size() > 0) : "There are no vectors from which to " +
                             "create perturbation vector";
 
@@ -155,9 +144,6 @@ public class LBGVectorQuantizer {
                     newCodebook.add(new LearningCodebookEntry(rndEntryValues));
                     continue;
                 }
-
-                // NOTE(Moravec):   Maybe we just create one new entry and bring the "original" one to the next
-                //                  iteration as stated in Sayood's book (p. 302)
 
                 int[] left = new int[prtV.length];
                 int[] right = new int[prtV.length];
@@ -185,9 +171,13 @@ public class LBGVectorQuantizer {
             assert (codebook.size() == (k * 2));
             System.out.println(String.format("Split from %d -> %d", k, k * 2));
             k *= 2;
+
             // Execute LBG Algorithm on current codebook to improve it.
             System.out.println("Improving current codebook...");
             LBG(codebook);
+
+            // TODO(Moravec):   The MSE metric is super broken. We are getting really bad values, even though
+            //                  we are getting quite good results.
             final double avgMse = averageMse(codebook);
             System.out.println(String.format("Average MSE: %.4f", avgMse));
         }
@@ -225,9 +215,12 @@ public class LBGVectorQuantizer {
                         closestEntry = entry;
                     }
                 }
-                assert (closestEntry != null) : "Did not found closest entry.";
+
                 if (closestEntry != null) {
                     closestEntry.addTrainingVector(trainingVec, minDist);
+                } else {
+                    assert (false) : "Did not found closest entry.";
+                    System.err.println("Did not found closest entry.");
                 }
             }
 
@@ -261,8 +254,6 @@ public class LBGVectorQuantizer {
 
 
     private void fixEmptyEntries(final ArrayList<LearningCodebookEntry> codebook) {
-        final int originalSize = codebook.size();
-
         LearningCodebookEntry emptyEntry = null;
         for (final LearningCodebookEntry potentiallyEmptyEntry : codebook) {
             if (potentiallyEmptyEntry.getTrainingVectors().size() < 2) { // < 2
