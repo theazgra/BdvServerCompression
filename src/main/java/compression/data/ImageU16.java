@@ -1,5 +1,8 @@
 package compression.data;
 
+import compression.U16;
+import compression.utilities.TypeConverter;
+
 public class ImageU16 {
 
     private final int width;
@@ -16,6 +19,22 @@ public class ImageU16 {
     private int index(final int x, final int y) {
         assert ((x >= 0 && x < height) && (y >= 0 && y < width)) : "Index out of bounds";
         return (x * width) + y;
+    }
+
+    public Chunk2D as2dChunk() {
+        return new Chunk2D(new V2i(width, height), new V2l(0, 0), data);
+    }
+
+    public ImageU16 difference(final ImageU16 other) {
+        assert (width == other.width && height == other.height) : "Different image dimensions in difference()";
+        short[] diffData = new short[data.length];
+        int diffVal;
+        for (int i = 0; i < data.length; i++) {
+            diffVal = Math.abs(TypeConverter.shortToInt(data[i]) - TypeConverter.shortToInt(other.data[i]));
+            assert (diffVal >= 0 && diffVal <= U16.Max);
+            diffData[i] = TypeConverter.intToShort(diffVal);
+        }
+        return new ImageU16(width, height, diffData);
     }
 
     public short getValueAt(final int x, final int y) {
@@ -38,7 +57,5 @@ public class ImageU16 {
         return height;
     }
 
-    public Chunk2D as2dChunk() {
-        return new Chunk2D(new V2i(width, height), new V2l(0, 0), data);
-    }
+
 }

@@ -52,11 +52,12 @@ public class LBGVectorQuantizer {
         VectorQuantizer quantizer = new VectorQuantizer(learningCodebookToCodebook(codebook));
         final int[][] quantizedVectors = quantizer.quantize(trainingVectors);
 
+        assert trainingVectors.length == quantizedVectors.length;
         double mse = 0.0;
 
         for (int vecIndex = 0; vecIndex < quantizedVectors.length; vecIndex++) {
             for (int vecValIndex = 0; vecValIndex < vectorSize; vecValIndex++) {
-                mse += Math.pow((trainingVectors[vecIndex][vecValIndex] - quantizedVectors[vecIndex][vecValIndex]), 2);
+                mse += Math.pow(((double) trainingVectors[vecIndex][vecValIndex] - (double) quantizedVectors[vecIndex][vecValIndex]), 2);
             }
         }
         mse /= (double) (trainingVectors.length * vectorSize);
