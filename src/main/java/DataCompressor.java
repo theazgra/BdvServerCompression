@@ -28,7 +28,7 @@ public class DataCompressor {
                 new int[]{351},
                 new V3i(1041, 996, 946));
 
-        vqBench.startBenchmark(new V2i(3,3));
+        vqBench.startBenchmark(new V2i(3,1));
     }
 
     static void test2DVectorChunking() {

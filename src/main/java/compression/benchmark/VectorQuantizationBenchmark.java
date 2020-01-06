@@ -6,6 +6,7 @@ import compression.quantization.vector.LBGResult;
 import compression.quantization.vector.LBGVectorQuantizer;
 import compression.quantization.vector.VectorQuantizer;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -47,6 +48,8 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
     }
 
     public void startBenchmark(final V2i qVector) {
+
+        boolean dirCreated = new File(this.outputDirectory).mkdirs();
 
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));

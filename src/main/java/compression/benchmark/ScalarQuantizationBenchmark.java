@@ -10,6 +10,8 @@ import compression.quantization.scalar.LloydMaxU16ScalarQuantization;
 import compression.quantization.scalar.ScalarQuantizer;
 import compression.utilities.TypeConverter;
 
+import java.io.File;
+
 public class ScalarQuantizationBenchmark extends BenchmarkBase {
     private boolean useDiffEvolution = false;
 
@@ -23,7 +25,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
 
     @Override
     public void startBenchmark() {
-
+        boolean dirCreated = new File(this.outputDirectory).mkdirs();
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
             // NOTE(Moravec): Actual planeIndex is zero based.
