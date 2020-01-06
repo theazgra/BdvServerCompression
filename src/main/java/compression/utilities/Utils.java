@@ -77,4 +77,12 @@ public class Utils {
     }
 
 
+    public static double calculateMse(final int[] difference) {
+        double sum = 0.0;
+        for (final int val : difference) {
+            sum += Math.pow(val, 2);
+        }
+        final double mse = (sum / (double) difference.length);
+        return mse;
+    }
 }
