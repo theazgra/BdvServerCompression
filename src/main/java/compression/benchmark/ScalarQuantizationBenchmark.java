@@ -127,7 +127,6 @@ public class ScalarQuantizationBenchmark {
 
 
                 final String quantizedFile = String.format("p%d_cb%d%s.raw", planeIndex, codebookSize, method);
-
                 final String diffFile = String.format("p%d_cb%d%s_diff.raw", planeIndex, codebookSize, method);
                 final String absoluteDiffFile = String.format("p%d_cb%d%s_adiff.raw", planeIndex, codebookSize, method);
 

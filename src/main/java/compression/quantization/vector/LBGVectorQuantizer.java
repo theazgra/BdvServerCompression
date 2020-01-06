@@ -52,11 +52,14 @@ public class LBGVectorQuantizer {
         double mse = 0.0;
 
         for (int vecIndex = 0; vecIndex < quantizedVectors.length; vecIndex++) {
+
             for (int vecValIndex = 0; vecValIndex < vectorSize; vecValIndex++) {
                 mse += Math.pow(((double) trainingVectors[vecIndex][vecValIndex] - (double) quantizedVectors[vecIndex][vecValIndex]),
                                 2);
             }
+
         }
+
         final double avgMse = mse / (double) (trainingVectors.length * vectorSize);
         return avgMse;
     }
