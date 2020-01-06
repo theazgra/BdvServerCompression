@@ -184,7 +184,7 @@ public class Chunk2D {
     }
 
 
-    public int[][] divideIntoVectors(final int vectorSize) {
+    public int[][] divideInto1DVectors(final int vectorSize) {
         final int rowVectorCount = (int) Math.ceil(dims.getX() / (float) vectorSize);
         final int vectorCount = rowVectorCount * dims.getY();
         int[][] imageVectors = new int[vectorCount][vectorSize];

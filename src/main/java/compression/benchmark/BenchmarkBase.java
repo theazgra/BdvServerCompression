@@ -40,20 +40,32 @@ abstract class BenchmarkBase {
     }
 
     /**
+     * Load u16 plane from RAW file.
+     *
+     * @param planeIndex Zero based plane index.
+     * @return u16 plane.
+     */
+    protected ImageU16 loadPlane(final int planeIndex) {
+        try {
+            return RawDataIO.loadImageU16(inputFile, rawImageDims, planeIndex);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
      * Load U16 plane data from RAW file.
      *
      * @param planeIndex Zero based plane index.
      * @return U16 array of image plane data.
      */
     protected short[] loadPlaneData(final int planeIndex) {
-        try {
-            ImageU16 image = RawDataIO.loadImageU16(inputFile, rawImageDims, planeIndex);
-            return image.getData();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return new short[0];
+        var plane = loadPlane(planeIndex);
+
+        return (plane != null) ? plane.getData() : new short[0];
     }
+
 
     /**
      * Save quantized plane data to RAW file.
