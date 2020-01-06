@@ -31,7 +31,7 @@ public class ImageU16 {
         int diffVal;
         for (int i = 0; i < data.length; i++) {
             diffVal = Math.abs(TypeConverter.shortToInt(data[i]) - TypeConverter.shortToInt(other.data[i]));
-            assert (diffVal >= 0 && diffVal <= U16.Max);
+            assert (diffVal >= 0 && diffVal <= U16.Max) : "Diff value can not be converted to short.";
             diffData[i] = TypeConverter.intToShort(diffVal);
         }
         return new ImageU16(width, height, diffData);
