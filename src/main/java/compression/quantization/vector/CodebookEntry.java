@@ -50,4 +50,15 @@ public class CodebookEntry {
     public int[] getVector() {
         return vector;
     }
+
+    public String getVectorString() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < vector.length; i++) {
+            sb.append(vector[i]);
+            if (i != (vector.length - 1))
+                sb.append(';');
+        }
+        sb.append('\n');
+        return sb.toString();
+    }
 }

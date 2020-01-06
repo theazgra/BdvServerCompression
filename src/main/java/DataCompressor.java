@@ -24,11 +24,11 @@ public class DataCompressor {
 
         VectorQuantizationBenchmark vqBench = new VectorQuantizationBenchmark(
                 "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
-                "D:\\biology\\benchmark\\vectorBench",
+                "D:\\biology\\benchmark\\vectorBench3x3",
                 new int[]{351},
                 new V3i(1041, 996, 946));
 
-        vqBench.startBenchmark(new V2i(3,1));
+        vqBench.startBenchmark(new V2i(3,3));
     }
 
     static void test2DVectorChunking() {

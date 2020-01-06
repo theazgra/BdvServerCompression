@@ -99,16 +99,11 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
     private void saveCodebook(final CodebookEntry[] codebook, final String codebookFile) {
         final String outFile = getFileNamePathIntoOutDir(codebookFile);
         try {
-            FileOutputStream fileStream = new FileOutputStream(getFileNamePathIntoOutDir(outFile));
+            FileOutputStream fileStream = new FileOutputStream(outFile);
             OutputStreamWriter writer = new OutputStreamWriter(fileStream);
 
             for (final var entry : codebook) {
-
-                for (final int i : entry.getVector()) {
-                    writer.write(String.format("%d;", i));
-                }
-
-                writer.write('\n');
+                writer.write(entry.getVectorString());
             }
 
             writer.flush();
