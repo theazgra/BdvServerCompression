@@ -1,3 +1,4 @@
+import compression.benchmark.ScalarQuantizationBenchmark;
 import compression.benchmark.VectorQuantizationBenchmark;
 import compression.data.*;
 
@@ -11,24 +12,24 @@ public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
 
-
         //        test2DChunking();
         //        test3DChunking();
         //        test2DVectorChunking();
         //
-        //        new ScalarQuantizationBenchmark("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit_edited
-        //        .raw",
-        //                                        "D:\\biology\\benchmark\\tmp",
-        //                                        new int[]{351},
-        //                                        new V3i(1041, 996, 946)).startBenchmark();
+        if (false) {
+            new ScalarQuantizationBenchmark("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
+                                            "D:\\biology\\benchmark\\fused_tp_10_ch_0_16bit\\scalar",
+                                            new int[]{351},
+                                            new V3i(1041, 996, 946)).startBenchmark();
+        } else {
+            VectorQuantizationBenchmark vqBench = new VectorQuantizationBenchmark(
+                    "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
+                    "D:\\biology\\benchmark\\fused_tp_10_ch_0_16bit\\vector3x3",
+                    new int[]{351},
+                    new V3i(1041, 996, 946));
 
-        VectorQuantizationBenchmark vqBench = new VectorQuantizationBenchmark(
-                "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
-                "D:\\biology\\benchmark\\vectorBench3x3",
-                new int[]{351},
-                new V3i(1041, 996, 946));
-
-        vqBench.startBenchmark(new V2i(3,3));
+            vqBench.startBenchmark(new V2i(3,3));
+        }
     }
 
     static void test2DVectorChunking() {

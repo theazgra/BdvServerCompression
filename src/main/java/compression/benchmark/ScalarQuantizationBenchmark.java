@@ -4,13 +4,15 @@ import compression.U16;
 import compression.data.V3i;
 import compression.de.DeException;
 import compression.de.shade.ILShadeSolver;
-import compression.io.RawDataIO;
 import compression.quantization.QTrainIteration;
 import compression.quantization.scalar.LloydMaxU16ScalarQuantization;
 import compression.quantization.scalar.ScalarQuantizer;
 import compression.utilities.TypeConverter;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 public class ScalarQuantizationBenchmark extends BenchmarkBase {
     private boolean useDiffEvolution = false;
@@ -53,16 +55,12 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                 System.out.println("Scalar quantizer ready.");
 
                 final String method = useDiffEvolution ? "ilshade" : "lloyd";
-                final String centroidsFile = getFileNamePathIntoOutDir(String.format("p%d_cb%d%s_centroids.raw",
-                                                                                     (planeIndex + 1),
-                                                                                     codebookSize,
-                                                                                     method));
+                final String centroidsFile = String.format("p%d_cb%d%s_centroids.txt",
+                                                           planeIndex,
+                                                           codebookSize,
+                                                           method);
 
-                // NOTE(Moravec): Centroids are saved in little endian order.
-                if (!RawDataIO.writeDataI32(centroidsFile, quantizer.getCentroids(), true)) {
-                    System.err.println("Failed to save quantizer centroids.");
-                    return;
-                }
+                saveCentroids(quantizer.getCentroids(), centroidsFile);
 
 
                 final String quantizedFile = String.format("p%d_cb%d%s.raw", planeIndex, codebookSize, method);
@@ -78,6 +76,31 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
 
                 saveDifference(planeData, quantizedData, diffFile, absoluteDiffFile);
             }
+        }
+    }
+
+    private void saveCentroids(final int[] centroids, final String centroidsFile) {
+        final String outFile = getFileNamePathIntoOutDir(centroidsFile);
+        try {
+            FileOutputStream fileStream = new FileOutputStream(outFile);
+            OutputStreamWriter writer = new OutputStreamWriter(fileStream);
+
+            StringBuilder sb = new StringBuilder();
+
+
+            for (final var entry : centroids) {
+                sb.append(entry);
+                sb.append('\n');
+            }
+
+            writer.write(sb.toString());
+
+            writer.flush();
+            fileStream.flush();
+            fileStream.close();
+        } catch (IOException ioE) {
+            ioE.printStackTrace();
+            System.err.println("Failed to save codebook vectors.");
         }
     }
 

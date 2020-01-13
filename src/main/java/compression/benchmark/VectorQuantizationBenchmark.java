@@ -28,13 +28,14 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
                                                           final int[][] vectors,
                                                           final V2i qVector) {
         Chunk2D reconstructedChunk = new Chunk2D(new V2i(rawImageDims.getX(), rawImageDims.getY()), new V2l(0, 0));
-        if (qVector.getY() == 1) {
-            // 1D vector
-            reconstructedChunk.reconstructFromVectors(vectors);
-        } else {
+        if (qVector.getY() > 1) {
             var chunks = plane.as2dChunk().divideIntoChunks(qVector);
             Chunk2D.updateChunkData(chunks, vectors);
             reconstructedChunk.reconstructFromChunks(chunks);
+
+        } else {
+            // 1D vector
+            reconstructedChunk.reconstructFromVectors(vectors);
         }
         return reconstructedChunk.asImageU16();
     }
@@ -48,6 +49,12 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
     }
 
     public void startBenchmark(final V2i qVector) {
+
+        if (qVector.getY() > 1) {
+            System.out.println("2D qVector");
+        } else {
+            System.out.println("1D qVector");
+        }
 
         boolean dirCreated = new File(this.outputDirectory).mkdirs();
 
