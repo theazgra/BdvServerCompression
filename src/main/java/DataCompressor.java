@@ -1,4 +1,6 @@
 import cli.ImprovedOptionGroup;
+import compression.tool.ImageCompressor;
+import compression.tool.ImageDecompressor;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
@@ -21,6 +23,9 @@ public class DataCompressor {
     private static final String OUTPUT_SHORT = "o";
     private static final String OUTPUT_LONG = "output";
 
+    private static final String VERBOSE_SHORT = "v";
+    private static final String VERBOSE_LONG = "verbose";
+
     public static void main(String[] args) throws IOException {
 
 
@@ -32,6 +37,7 @@ public class DataCompressor {
         methodGroup.addOption(new Option(COMPRESS_SHORT, COMPRESS_LONG, false, "Compress 16 bit raw image"));
         methodGroup.addOption(new Option(DECOMPRESS_SHORT, DECOMPRESS_LONG, false, "Decompress 16 bit raw image"));
         methodGroup.addOption(new Option("h", "help", false, "Print help"));
+        methodGroup.addOption(new Option(VERBOSE_SHORT, VERBOSE_LONG, false, "Make program verbose"));
 
         options.addOptionGroup(methodGroup);
         options.addOption(BITS_SHORT, BITS_LONG, true, "Bit count per pixel [Default 8]");
@@ -71,17 +77,22 @@ public class DataCompressor {
         System.out.println("Output directory: " + currentOutputDirectory);
         System.out.println("Bit count: " + bits);
 
+        final boolean verbose = cmd.hasOption(VERBOSE_LONG);
+
         if (cmd.hasOption(COMPRESS_SHORT) || cmd.hasOption(COMPRESS_LONG)) {
             System.out.println("Compressing: ...");
-
-            // TODO(Moravec): Do compression here.
+            ImageCompressor compressor = new ImageCompressor(currentOutputDirectory, bits, verbose);
+            if (!compressor.compressRawImages(files)) {
+                // TODO(Moravec): Report error.
+            }
             return;
         }
-
         if (cmd.hasOption(DECOMPRESS_SHORT) || cmd.hasOption(DECOMPRESS_LONG)) {
             System.out.println("Decompressing: ...");
-            // TODO(Moravec): Do decompression here.
-            return;
+            ImageDecompressor decompressor = new ImageDecompressor(currentOutputDirectory, bits, verbose);
+            if (!decompressor.decompressCompressedImages(files)) {
+                // TODO(Moravec): Report error.
+            }
         }
 
 
