@@ -1,96 +1,85 @@
-import compression.benchmark.ScalarQuantizationBenchmark;
-import compression.benchmark.VectorQuantizationBenchmark;
-import compression.data.*;
+import org.apache.commons.cli.*;
 
 import java.io.IOException;
-import java.util.Random;
-
 
 public class DataCompressor {
 
+    private static final String COMPRESS_SHORT = "c";
+    private static final String COMPRESS_LONG = "compress";
+
+    private static final String DECOMPRESS_SHORT = "d";
+    private static final String DECOMPRESS_LONG = "decompress";
+
+    private static final String BITS_SHORT = "b";
+    private static final String BITS_LONG = "bits";
+
+    private static final String INPUT_SHORT = "i";
+    private static final String INPUT_LONG = "input";
+
+    private static final String OUTPUT_SHORT = "o";
+    private static final String OUTPUT_LONG = "output";
 
     public static void main(String[] args) throws IOException {
 
 
-        //        test2DChunking();
-        //        test3DChunking();
-        //        test2DVectorChunking();
-        //
-        if (false) {
-            new ScalarQuantizationBenchmark("D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
-                                            "D:\\biology\\benchmark\\fused_tp_10_ch_0_16bit\\scalar",
-                                            new int[]{351},
-                                            new V3i(1041, 996, 946)).startBenchmark();
-        } else {
-            VectorQuantizationBenchmark vqBench = new VectorQuantizationBenchmark(
-                    "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw",
-                    "D:\\biology\\benchmark\\fused_tp_10_ch_0_16bit\\vector3x3",
-                    new int[]{351},
-                    new V3i(1041, 996, 946));
+        Options options = new Options();
 
-            vqBench.startBenchmark(new V2i(3,3));
+        OptionGroup methodGroup = new OptionGroup();
+
+        methodGroup.setRequired(true);
+        methodGroup.addOption(new Option(COMPRESS_SHORT, COMPRESS_LONG, false, "Compress 16 bit raw image"));
+        methodGroup.addOption(new Option(DECOMPRESS_SHORT, DECOMPRESS_LONG, false, "Decompress 16 bit raw image"));
+        methodGroup.addOption(new Option("h", "help", false, "Print help"));
+
+        options.addOptionGroup(methodGroup);
+        options.addOption(BITS_SHORT, BITS_LONG, true, "Bit count per pixel [Default 8]");
+        options.addRequiredOption(INPUT_SHORT, INPUT_LONG, true, "Input file");
+        options.addRequiredOption(OUTPUT_SHORT, OUTPUT_LONG, true, "Output file");
+
+        HelpFormatter formatter = new HelpFormatter();
+
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd;
+        try {
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            if (args[0].equals("-h") || args[0].equals("--help")) {
+                formatter.printHelp("ijava -jar DataCompressor.jar", options);
+                return;
+            }
+            System.err.println("Error: " + e.getMessage());
+            return;
         }
-    }
 
-    static void test2DVectorChunking() {
-        final int xs = 761;
-        final int ys = 438;
-        final int[] data = getRandomData(xs * ys);
-        final Chunk2D src = new Chunk2D(new V2i(xs, ys), new V2l(0), data);
-        final int[][] vectors = src.divideInto1DVectors(3);
-
-        final Chunk2D reconstructed = new Chunk2D(new V2i(xs, ys), new V2l(0));
-        reconstructed.reconstructFromVectors(vectors);
-
-        if (src.equals(reconstructed)) {
-            System.out.println("2D vector Reconstruction successful.");
-        } else {
-            System.out.println("2D vector Reconstruction failed !!!");
+        if (cmd.hasOption("help")) {
+            formatter.printHelp("ijava -jar DataCompressor.jar", options);
+            return;
         }
-    }
 
-    static void test2DChunking() {
-        final int xs = 1920;
-        final int ys = 1080;
-        final int[] data = getRandomData(xs * ys);
-        final Chunk2D src = new Chunk2D(new V2i(xs, ys), new V2l(0), data);
-        final Chunk2D[] chunks = src.divideIntoChunks(new V2i(3));
+        final String bitsString = cmd.getOptionValue(BITS_LONG, "8");
+        final int bits = Integer.parseInt(bitsString);
 
-        final Chunk2D reconstructed = new Chunk2D(new V2i(xs, ys), new V2l(0));
-        reconstructed.reconstructFromChunks(chunks);
+        if (cmd.hasOption(COMPRESS_SHORT) || cmd.hasOption(COMPRESS_LONG)) {
+            System.out.println(String.format("Compressing %s with %d bits, saving to %s",
+                                             cmd.getOptionValue(INPUT_SHORT),
+                                             bits,
+                                             cmd.getOptionValue(OUTPUT_SHORT)));
 
-        if (src.equals(reconstructed)) {
-            System.out.println("2D Reconstruction successful.");
-        } else {
-            System.out.println("2D Reconstruction failed !!!");
+            // TODO(Moravec): Do compression here.
+            return;
         }
-    }
 
-    static void test3DChunking() {
-        //Chunk3D[] loadedChunks = ChunkIO.loadChunks("D:\\tmp\\server-dump\\chunks.bin");
-        final int xs = 11;
-        final int ys = 16;
-        final int zs = 16;
-        final int[] data = getRandomData(xs * ys * zs);
-        final Chunk3D src = new Chunk3D(new V3i(xs, ys, zs), new V3l(0), data);
-        final Chunk3D[] chunks = src.divideIntoChunks(new V3i(4));
+        if (cmd.hasOption(DECOMPRESS_SHORT) || cmd.hasOption(DECOMPRESS_LONG)) {
+            System.out.println(String.format("Decompressing %s with %d bits, saving to %s",
+                                             cmd.getOptionValue(INPUT_SHORT),
+                                             bits,
+                                             cmd.getOptionValue(OUTPUT_SHORT)));
 
-        final Chunk3D reconstructed = new Chunk3D(new V3i(xs, ys, zs), new V3l(0));
-        reconstructed.reconstructFromChunks(chunks);
-
-        if (src.equals(reconstructed)) {
-            System.out.println("3D Reconstruction successful.");
-        } else {
-            System.out.println("3D Reconstruction failed !!!");
+            // TODO(Moravec): Do decompression here.
+            return;
         }
-    }
 
-    static int[] getRandomData(int len) {
-        Random r = new Random();
-        int[] data = new int[len];
-        for (int i = 0; i < data.length; i++) {
-            data[i] = r.nextInt(20000);
-        }
-        return data;
+
     }
 }
