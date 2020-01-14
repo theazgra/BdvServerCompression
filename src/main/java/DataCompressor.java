@@ -32,7 +32,7 @@ public class DataCompressor {
     public static void main(String[] args) throws IOException {
 
         SCIFIO scifio = new SCIFIO();
-        final String file = "D:\\biology\\tiff_data\\fused_tp_10_ch_0.tif";
+        final String file = args[0];//"D:\\biology\\tiff_data\\fused_tp_10_ch_0.tif";
         final Reader reader;
         try {
             reader = scifio.initializer().initializeReader(file);
