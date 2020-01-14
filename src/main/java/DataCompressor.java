@@ -1,6 +1,9 @@
 import compression.benchmark.ScalarQuantizationBenchmark;
 import compression.benchmark.VectorQuantizationBenchmark;
 import compression.data.*;
+import io.scif.Plane;
+import io.scif.Reader;
+import io.scif.SCIFIO;
 
 import java.io.IOException;
 import java.util.Random;
@@ -8,9 +11,25 @@ import java.util.Random;
 
 public class DataCompressor {
 
-
     public static void main(String[] args) throws IOException {
 
+        SCIFIO scifio = new SCIFIO();
+        final String file = "D:\\tmp\\fused_tp_10_ch_0.tif";
+        final Reader reader;
+        try {
+            reader = scifio.initializer().initializeReader(file);
+
+            final long placeCount0 = reader.getPlaneCount(0);
+
+            final Plane plane = reader.openPlane(0, 1);
+            System.out.println("Plane (0,0) byte count: " + plane.getBytes().length);
+
+
+            scifio.getContext().dispose();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         //        test2DChunking();
         //        test3DChunking();
@@ -28,7 +47,7 @@ public class DataCompressor {
                     new int[]{351},
                     new V3i(1041, 996, 946));
 
-            vqBench.startBenchmark(new V2i(3,3));
+            vqBench.startBenchmark(new V2i(3, 3));
         }
     }
 
