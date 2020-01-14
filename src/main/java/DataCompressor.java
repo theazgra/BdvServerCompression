@@ -28,6 +28,9 @@ public class DataCompressor {
 
     public static void main(String[] args) throws IOException {
 
+        // TODO(Moravec):   We have created nice API for single files, but ...
+        //                  we are dealing with tiffs or RAW files, which means
+        //                  that we have to pass image dimensions and plane index.
 
         Options options = new Options();
 
