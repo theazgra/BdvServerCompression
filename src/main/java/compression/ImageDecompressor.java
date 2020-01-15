@@ -1,4 +1,4 @@
-package compression.tool;
+package compression;
 
 public class ImageDecompressor extends CompressorDecompressorBase {
     public ImageDecompressor(String outputDirectory, int bitsPerPixel, boolean verbose) {

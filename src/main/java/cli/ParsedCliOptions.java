@@ -2,6 +2,7 @@ package cli;
 
 import compression.data.V2i;
 import compression.data.V3i;
+import compression.fileformat.QuantizationType;
 import org.apache.commons.cli.CommandLine;
 
 import java.nio.file.Paths;

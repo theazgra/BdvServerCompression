@@ -1,4 +1,4 @@
-package compression.tool;
+package compression;
 
 public class CompressorDecompressorBase {
     private final String outputDirectory;

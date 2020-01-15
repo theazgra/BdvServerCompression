@@ -1,4 +1,4 @@
-package cli;
+package compression.fileformat;
 
 public enum QuantizationType {
     Scalar(0), Vector1D(1), Vector2D(2);
