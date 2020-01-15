@@ -1,6 +1,6 @@
 import cli.CliConstants;
 import cli.ParsedCliOptions;
-import compression.io.OutMemoryBitStream;
+import compression.io.OutBitStream;
 import org.apache.commons.cli.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,7 +11,7 @@ public class DataCompressor {
 
     public static void main(String[] args) throws IOException {
 
-        OutMemoryBitStream bitStream = new OutMemoryBitStream(null, 3, 64);
+        OutBitStream bitStream = new OutBitStream(null, 3, 64);
         bitStream.write(0);
         bitStream.write(1);
         bitStream.write(2);
