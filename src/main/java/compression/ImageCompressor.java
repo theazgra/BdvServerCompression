@@ -60,6 +60,12 @@ public class ImageCompressor extends CompressorDecompressorBase {
         header.setCodebookPerPlane(!options.hasReferencePlaneIndex());
 
         header.setImageDimension(options.getImageDimension());
+
+        // If plane index is set then, we are compressing only one plane.
+        if (options.hasPlaneIndexSet()) {
+            header.setImageSizeZ(1);
+        }
+
         header.setVectorDimension(options.getVectorDimension());
 
         return header;

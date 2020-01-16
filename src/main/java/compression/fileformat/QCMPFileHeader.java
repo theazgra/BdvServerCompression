@@ -62,13 +62,13 @@ public class QCMPFileHeader {
         outputStream.writeByte(bitsPerPixel);
         outputStream.writeBoolean(codebookPerPlane);
 
-        outputStream.writeInt(imageSizeX);
-        outputStream.writeInt(imageSizeY);
-        outputStream.writeInt(imageSizeZ);
+        outputStream.writeShort(imageSizeX);
+        outputStream.writeShort(imageSizeY);
+        outputStream.writeShort(imageSizeZ);
 
-        outputStream.writeInt(vectorSizeX);
-        outputStream.writeInt(vectorSizeY);
-        outputStream.writeInt(vectorSizeZ);
+        outputStream.writeShort(vectorSizeX);
+        outputStream.writeShort(vectorSizeY);
+        outputStream.writeShort(vectorSizeZ);
     }
 
     public boolean readHeader(DataInputStream inputStream) throws IOException {
@@ -87,13 +87,13 @@ public class QCMPFileHeader {
         bitsPerPixel = inputStream.readByte();
         codebookPerPlane = inputStream.readBoolean();
 
-        imageSizeX = inputStream.readInt();
-        imageSizeY = inputStream.readInt();
-        imageSizeZ = inputStream.readInt();
+        imageSizeX = inputStream.readUnsignedShort();
+        imageSizeY = inputStream.readUnsignedShort();
+        imageSizeZ = inputStream.readUnsignedShort();
 
-        vectorSizeX = inputStream.readInt();
-        vectorSizeY = inputStream.readInt();
-        vectorSizeZ = inputStream.readInt();
+        vectorSizeX = inputStream.readUnsignedShort();
+        vectorSizeY = inputStream.readUnsignedShort();
+        vectorSizeZ = inputStream.readUnsignedShort();
 
         return true;
     }
