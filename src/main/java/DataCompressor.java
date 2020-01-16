@@ -10,7 +10,7 @@ import java.io.IOException;
 public class DataCompressor {
 
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         Options options = getOptions();
 
         HelpFormatter formatter = new HelpFormatter();
@@ -33,7 +33,7 @@ public class DataCompressor {
             return;
         }
 
-//        System.out.println(parsedCliOptions.report());
+        //        System.out.println(parsedCliOptions.report());
 
         switch (parsedCliOptions.getMethod()) {
 

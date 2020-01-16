@@ -62,10 +62,17 @@ public class InBitStream {
         //writing => bit = (value & (1 << shift));
         for (int shift = 0; shift < bitsPerValue; shift++) {
             bit = readBit();
-            // FIXME
             result |= (bit << shift);
         }
         return result;
+    }
+
+    public int[] readNValues(final int n) throws IOException {
+        int[] values = new int[n];
+        for (int i = 0; i < n; i++) {
+            values[i] = readValue();
+        }
+        return values;
     }
 
     /**/
