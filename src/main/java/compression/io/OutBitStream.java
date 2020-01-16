@@ -15,6 +15,8 @@ public class OutBitStream {
     private final int bitsPerValue;
 
     public OutBitStream(OutputStream outputStream, final int bitsPerValue, final int bufferSize) {
+        outStream = outputStream;
+
         this.bitsPerValue = bitsPerValue;
 
         buffer = new byte[bufferSize];
@@ -22,8 +24,6 @@ public class OutBitStream {
 
         bitBuffer = 0;
         bitBufferSize = 0;
-
-        outStream = outputStream;
     }
 
     /**
@@ -62,12 +62,15 @@ public class OutBitStream {
      * @param bit True for 1
      */
     private void writeBit(final int bit) throws IOException {
-//                ++bitBufferSize;
-        if (bit > 0) {
-//            bitBuffer |= (1 << (8 - bitBufferSize));
-            bitBuffer |= (1 << bitBufferSize);
-        }
         ++bitBufferSize;
+        if (bit > 0) {
+            bitBuffer |= (1 << (8 - bitBufferSize));
+        }
+
+        //        if (bit > 0) {
+        //            bitBuffer |= (1 << bitBufferSize);
+        //        }
+        //        ++bitBufferSize;
 
         if (bitBufferSize == 8) {
             flushBitBuffer();

@@ -1,9 +1,12 @@
 import cli.CliConstants;
 import cli.ParsedCliOptions;
+import compression.io.InBitStream;
 import compression.io.OutBitStream;
 import org.apache.commons.cli.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public class DataCompressor {
@@ -11,7 +14,8 @@ public class DataCompressor {
 
     public static void main(String[] args) throws IOException {
 
-        OutBitStream bitStream = new OutBitStream(null, 3, 64);
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        OutBitStream bitStream = new OutBitStream(outStream, 3, 64);
         bitStream.write(0);
         bitStream.write(1);
         bitStream.write(2);
@@ -20,8 +24,26 @@ public class DataCompressor {
         bitStream.write(5);
         bitStream.write(6);
         bitStream.write(7);
-
+        bitStream.write(7);
+        bitStream.write(6);
+        bitStream.write(5);
         bitStream.forceFlush();
+
+        final byte[] data = outStream.toByteArray();
+
+        ByteArrayInputStream inStream = new ByteArrayInputStream(data);
+        InBitStream inBitStream = new InBitStream(inStream, 3, 64);
+        final int i0 = inBitStream.readValue();
+        final int i1 = inBitStream.readValue();
+        final int i2 = inBitStream.readValue();
+        final int i3 = inBitStream.readValue();
+        final int i4 = inBitStream.readValue();
+        final int i5 = inBitStream.readValue();
+        final int i6 = inBitStream.readValue();
+        final int i7 = inBitStream.readValue();
+        final int i8 = inBitStream.readValue();
+        final int i9 = inBitStream.readValue();
+        final int i10 = inBitStream.readValue();
 
         Options options = getOptions();
 
