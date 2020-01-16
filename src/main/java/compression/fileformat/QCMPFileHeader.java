@@ -9,6 +9,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class QCMPFileHeader {
+    public static final int QCMP_HEADER_SIZE = 23;
     public static final String QCMP_MAGIC_VALUE = "QCMPFILE";
 
     private String magicValue = QCMP_MAGIC_VALUE;
@@ -70,8 +71,17 @@ public class QCMPFileHeader {
         outputStream.writeInt(vectorSizeZ);
     }
 
-    public void readHeader(DataInputStream inputStream) throws IOException {
+    public boolean readHeader(DataInputStream inputStream) throws IOException {
+
+        if (inputStream.available() < QCMP_HEADER_SIZE) {
+            return false;
+        }
+
+
         magicValue = new String(inputStream.readNBytes(8));
+        if (!magicValue.equals(QCMP_MAGIC_VALUE)) {
+            return false;
+        }
 
         quantizationType = QuantizationType.fromByte(inputStream.readByte());
         bitsPerPixel = inputStream.readByte();
@@ -84,6 +94,8 @@ public class QCMPFileHeader {
         vectorSizeX = inputStream.readInt();
         vectorSizeY = inputStream.readInt();
         vectorSizeZ = inputStream.readInt();
+
+        return true;
     }
 
     public QuantizationType getQuantizationType() {
@@ -156,6 +168,10 @@ public class QCMPFileHeader {
 
     public void setVectorSizeZ(int vectorSizeZ) {
         this.vectorSizeZ = vectorSizeZ;
+    }
+
+    public String getMagicValue() {
+        return magicValue;
     }
 
     public void setImageDimension(final V3i imageDims) {

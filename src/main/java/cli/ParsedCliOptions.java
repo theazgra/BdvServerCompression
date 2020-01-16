@@ -1,10 +1,12 @@
 package cli;
 
+import compression.CompressorDecompressorBase;
 import compression.data.V2i;
 import compression.data.V3i;
 import compression.fileformat.QuantizationType;
 import org.apache.commons.cli.CommandLine;
 
+import java.io.File;
 import java.nio.file.Paths;
 
 public class ParsedCliOptions {
@@ -15,7 +17,7 @@ public class ParsedCliOptions {
     private QuantizationType quantizationType;
 
     private String inputFile;
-    private String outputDirectory;
+    private String outputFile;
 
     private int bitsPerPixel;
     private V2i vectorDimension = new V2i(0);
@@ -36,6 +38,13 @@ public class ParsedCliOptions {
         parseCLI(cmdInput);
     }
 
+    private String getDefaultOutputFilePath(final String inputPath) {
+        final File inputFile = new File(inputPath);
+        final File outputFile = new File(Paths.get("").toAbsolutePath().toString(),
+                                         inputFile.getName() + CompressorDecompressorBase.EXTENSTION);
+        return (outputFile.getAbsolutePath());
+    }
+
     private void parseCLI(final CommandLine cmd) {
         StringBuilder errorBuilder = new StringBuilder("Errors:\n");
         errorOccurred = false;
@@ -48,8 +57,6 @@ public class ParsedCliOptions {
 
         parseBitsPerPixel(cmd, errorBuilder);
 
-        // Default output directory to current directory.
-        outputDirectory = cmd.getOptionValue(CliConstants.OUTPUT_LONG, Paths.get("").toAbsolutePath().toString());
 
         parseReferencePlaneIndex(cmd, errorBuilder);
 
@@ -57,6 +64,10 @@ public class ParsedCliOptions {
         parseInputFilePart(errorBuilder, fileInfo);
 
         verbose = cmd.hasOption(CliConstants.VERBOSE_LONG);
+
+        if (!errorOccurred) {
+            outputFile = cmd.getOptionValue(CliConstants.OUTPUT_LONG, getDefaultOutputFilePath(inputFile));
+        }
 
         error = errorBuilder.toString();
     }
@@ -263,8 +274,8 @@ public class ParsedCliOptions {
         return inputFile;
     }
 
-    public String getOutputDirectory() {
-        return outputDirectory;
+    public String getOutputFile() {
+        return outputFile;
     }
 
     public int getBitsPerPixel() {
@@ -343,7 +354,7 @@ public class ParsedCliOptions {
 
 
         sb.append("BitsPerPixel: ").append(bitsPerPixel).append('\n');
-        sb.append("OutputDirectory: ").append(outputDirectory).append('\n');
+        sb.append("OutputDirectory: ").append(outputFile).append('\n');
         sb.append("InputFile: ").append(inputFile).append('\n');
 
         if (method == ProgramMethod.Compress) {

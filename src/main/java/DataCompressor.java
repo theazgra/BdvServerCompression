@@ -33,11 +33,11 @@ public class DataCompressor {
             return;
         }
 
-        System.out.println(parsedCliOptions.report());
+//        System.out.println(parsedCliOptions.report());
 
         switch (parsedCliOptions.getMethod()) {
 
-            case Compress:
+            case Compress: {
                 ImageCompressor compressor = new ImageCompressor(parsedCliOptions);
                 try {
                     compressor.compress();
@@ -47,19 +47,30 @@ public class DataCompressor {
                     e.printStackTrace();
                 }
                 return;
-            case Decompress:
+            }
+            case Decompress: {
                 ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
                 if (decompressor.decompress()) {
                 } else {
                     System.err.println("Errors occurred during decompression.");
                 }
                 return;
-            case PrintHelp:
+            }
+            case PrintHelp: {
                 formatter.printHelp("ijava -jar DataCompressor.jar", options);
-                break;
-            case InspectFile:
-                System.err.println("Not supported yet.");
-                break;
+            }
+            break;
+            case InspectFile: {
+                ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
+                try {
+                    System.out.println(decompressor.inspectCompressedFile());
+                } catch (IOException e) {
+                    System.err.println("Errors occurred during inspecting file.");
+                    System.err.println(e.getMessage());
+                    e.printStackTrace();
+                }
+                return;
+            }
         }
         return;
     }
@@ -107,7 +118,7 @@ public class DataCompressor {
                           true,
                           "Reference plane index");
         //        options.addRequiredOption(INPUT_SHORT, INPUT_LONG, true, "Input file");
-        options.addOption(CliConstants.OUTPUT_SHORT, CliConstants.OUTPUT_LONG, true, "Custom output directory");
+        options.addOption(CliConstants.OUTPUT_SHORT, CliConstants.OUTPUT_LONG, true, "Custom output file");
         return options;
     }
 }
