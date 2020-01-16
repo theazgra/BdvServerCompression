@@ -13,7 +13,6 @@ public class DataCompressor {
 
 
     public static void main(String[] args) throws IOException {
-
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         OutBitStream bitStream = new OutBitStream(outStream, 3, 64);
         bitStream.write(0);

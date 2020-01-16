@@ -28,6 +28,19 @@ public class ScalarQuantizer {
         return result;
     }
 
+    public int[] quantizeIntoIndices(short[] data) {
+        return quantizeIntoIndices(TypeConverter.shortArrayToIntArray(data));
+    }
+
+    public int[] quantizeIntoIndices(int[] data) {
+        int[] indices = new int[data.length];
+        for (int i = 0; i < data.length; i++) {
+            final int index = quantizeIndex(data[i]);
+            indices[i] = index;
+        }
+        return indices;
+    }
+
     private void calculateBoundaryPoints() {
         boundaryPoints[0] = min;
         boundaryPoints[centroids.length] = max;
@@ -36,13 +49,17 @@ public class ScalarQuantizer {
         }
     }
 
-    public int quantize(final int value) {
+    public int quantizeIndex(final int value) {
         for (int intervalId = 1; intervalId <= centroids.length; intervalId++) {
             if ((value >= boundaryPoints[intervalId - 1]) && (value <= boundaryPoints[intervalId])) {
-                return centroids[intervalId - 1];
+                return (intervalId - 1);
             }
         }
         throw new RuntimeException("Value couldn't be quantized!");
+    }
+
+    public int quantize(final int value) {
+        return centroids[quantizeIndex(value)];
     }
 
     public double getMse(final int[] data) {

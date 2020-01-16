@@ -40,6 +40,29 @@ public class VectorQuantizer {
         return result;
     }
 
+    public int[] quantizeIntoIndices(final int[][] dataVectors) {
+        assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
+        int[] indices = new int[dataVectors.length];
+
+        for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
+            indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex],
+                                                                 VectorDistanceMetric.Euclidean);
+        }
+        return indices;
+    }
+
+    public int[] quantizeIntoIndices(short[][] dataVectors) {
+        assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
+        int[] indices = new int[dataVectors.length];
+
+        for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
+            indices[vectorIndex] =
+                    findClosestCodebookEntryIndex(TypeConverter.shortArrayToIntArray(dataVectors[vectorIndex]),
+                                                                 VectorDistanceMetric.Euclidean);
+        }
+        return indices;
+    }
+
     public static double distanceBetweenVectors(final int[] originalDataVector,
                                                 final int[] codebookEntry,
                                                 final VectorDistanceMetric metric) {
@@ -79,17 +102,21 @@ public class VectorQuantizer {
     }
 
     private CodebookEntry findClosestCodebookEntry(final int[] dataVector, final VectorDistanceMetric metric) {
+        return codebook[findClosestCodebookEntryIndex(dataVector, metric)];
+    }
+
+    private int findClosestCodebookEntryIndex(final int[] dataVector, final VectorDistanceMetric metric) {
         double minDist = Double.MAX_VALUE;
-        CodebookEntry closestEntry = null;
-        for (CodebookEntry codebookEntry : codebook) {
-            final double dist = distanceBetweenVectors(dataVector, codebookEntry.getVector(), metric);
+        int closestEntryIndex = 0;
+        final int codebookSize = codebook.length;
+        for (int i = 0; i < codebookSize; i++) {
+            final double dist = distanceBetweenVectors(dataVector, codebook[i].getVector(), metric);
             if (dist < minDist) {
                 minDist = dist;
-                closestEntry = codebookEntry;
+                closestEntryIndex = i;
             }
         }
-        assert (closestEntry != null) : "Closest entry wasn't found";
-        return closestEntry;
+        return closestEntryIndex;
     }
 }
 
