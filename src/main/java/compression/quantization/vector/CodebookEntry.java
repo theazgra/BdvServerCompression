@@ -9,7 +9,6 @@ public class CodebookEntry {
     public CodebookEntry(final int[] codebook) {
 
         this.vector = codebook;
-        // TODO(Moravec): Pass this in costructor.
         this.width = codebook.length;
         this.height = 1;
     }

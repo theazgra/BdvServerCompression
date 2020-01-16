@@ -172,8 +172,6 @@ public class LBGVectorQuantizer {
             System.out.println("Improving current codebook...");
             LBG(codebook);
 
-            // TODO(Moravec):   The MSE metric is super broken. We are getting really bad values, even though
-            //                  we are getting quite good results.
             final double avgMse = averageMse(codebook);
             System.out.println(String.format("Average MSE: %.4f", avgMse));
         }

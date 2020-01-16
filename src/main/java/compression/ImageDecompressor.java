@@ -48,6 +48,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             }
             case Vector1D:
             case Vector2D:
+                // TODO!!
                 break;
             case Vector3D:
             case Invalid:
@@ -139,24 +140,3 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         return logBuilder.toString();
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
