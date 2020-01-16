@@ -1,6 +1,8 @@
 package compression.fileformat;
 
 import compression.U16;
+import compression.data.V2i;
+import compression.data.V3i;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -52,7 +54,7 @@ public class QCMPFileHeader {
         return true;
     }
 
-    private void writeHeader(DataOutputStream outputStream) throws IOException {
+    public void writeHeader(DataOutputStream outputStream) throws IOException {
         outputStream.writeBytes(QCMP_MAGIC_VALUE);
 
         outputStream.writeByte(quantizationType.getValue());
@@ -68,7 +70,7 @@ public class QCMPFileHeader {
         outputStream.writeInt(vectorSizeZ);
     }
 
-    private void readHeader(DataInputStream inputStream) throws IOException {
+    public void readHeader(DataInputStream inputStream) throws IOException {
         magicValue = new String(inputStream.readNBytes(8));
 
         quantizationType = QuantizationType.fromByte(inputStream.readByte());
@@ -82,5 +84,89 @@ public class QCMPFileHeader {
         vectorSizeX = inputStream.readInt();
         vectorSizeY = inputStream.readInt();
         vectorSizeZ = inputStream.readInt();
+    }
+
+    public QuantizationType getQuantizationType() {
+        return quantizationType;
+    }
+
+    public void setQuantizationType(QuantizationType quantizationType) {
+        this.quantizationType = quantizationType;
+    }
+
+    public byte getBitsPerPixel() {
+        return bitsPerPixel;
+    }
+
+    public void setBitsPerPixel(byte bitsPerPixel) {
+        this.bitsPerPixel = bitsPerPixel;
+    }
+
+    public boolean isCodebookPerPlane() {
+        return codebookPerPlane;
+    }
+
+    public void setCodebookPerPlane(boolean codebookPerPlane) {
+        this.codebookPerPlane = codebookPerPlane;
+    }
+
+    public int getImageSizeX() {
+        return imageSizeX;
+    }
+
+    public void setImageSizeX(int imageSizeX) {
+        this.imageSizeX = imageSizeX;
+    }
+
+    public int getImageSizeY() {
+        return imageSizeY;
+    }
+
+    public void setImageSizeY(int imageSizeY) {
+        this.imageSizeY = imageSizeY;
+    }
+
+    public int getImageSizeZ() {
+        return imageSizeZ;
+    }
+
+    public void setImageSizeZ(int imageSizeZ) {
+        this.imageSizeZ = imageSizeZ;
+    }
+
+    public int getVectorSizeX() {
+        return vectorSizeX;
+    }
+
+    public void setVectorSizeX(int vectorSizeX) {
+        this.vectorSizeX = vectorSizeX;
+    }
+
+    public int getVectorSizeY() {
+        return vectorSizeY;
+    }
+
+    public void setVectorSizeY(int vectorSizeY) {
+        this.vectorSizeY = vectorSizeY;
+    }
+
+    public int getVectorSizeZ() {
+        return vectorSizeZ;
+    }
+
+    public void setVectorSizeZ(int vectorSizeZ) {
+        this.vectorSizeZ = vectorSizeZ;
+    }
+
+    public void setImageDimension(final V3i imageDims) {
+        imageSizeX = imageDims.getX();
+        imageSizeY = imageDims.getY();
+        imageSizeZ = imageDims.getZ();
+    }
+
+    public void setVectorDimension(final V2i vectorDims) {
+        vectorSizeX = vectorDims.getX();
+        vectorSizeY = vectorDims.getY();
+        vectorSizeZ = 1;
     }
 }

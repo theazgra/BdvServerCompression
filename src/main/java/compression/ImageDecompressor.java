@@ -1,20 +1,13 @@
 package compression;
 
+import cli.ParsedCliOptions;
+
 public class ImageDecompressor extends CompressorDecompressorBase {
-    public ImageDecompressor(String outputDirectory, int bitsPerPixel, boolean verbose) {
-        super(outputDirectory, bitsPerPixel, verbose);
+    public ImageDecompressor(ParsedCliOptions options) {
+        super(options);
     }
 
-    public boolean decompressCompressedImages(final String[] files) {
-        for (final String file : files) {
-            if (!decompressCompressedImage(file)) {
-                return false;
-            }
-        }
+    public boolean decompress() {
         return true;
-    }
-
-    public boolean decompressCompressedImage(final String file) {
-        return false;
     }
 }

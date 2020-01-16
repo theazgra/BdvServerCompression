@@ -51,7 +51,7 @@ public class OutBitStream {
         }
     }
 
-    public void forceFlush() throws IOException {
+    public void flush() throws IOException {
         flushBitBuffer();
         flushBuffer();
     }
@@ -85,6 +85,7 @@ public class OutBitStream {
     //
     //    }
 
+
     public void write(final int value) throws IOException {
         int bit;
 
@@ -94,6 +95,12 @@ public class OutBitStream {
 
             //bit = (value & (1 << (31 - shift)));
             writeBit(bit);
+        }
+    }
+
+    public void write(final int[] values) throws IOException {
+        for (final int value : values) {
+            write(value);
         }
     }
 }

@@ -100,7 +100,7 @@ public class LloydMaxU16ScalarQuantization {
         return mse;
     }
 
-    public QTrainIteration[] train() {
+    public QTrainIteration[] train(final boolean verbose) {
         initialize();
         initializeProbabilityDensityFunction();
 
@@ -117,7 +117,9 @@ public class LloydMaxU16ScalarQuantization {
 
         currentMse = getCurrentMse();
         psnr = Utils.calculatePsnr(currentMse, U16.Max);
-        System.out.println(String.format("Initial MSE: %f", currentMse));
+        if (verbose) {
+            System.out.println(String.format("Initial MSE: %f", currentMse));
+        }
 
         int iter = 0;
         solutionHistory.add(new QTrainIteration(iter++, currentMse, currentMse, psnr, psnr));
@@ -136,11 +138,15 @@ public class LloydMaxU16ScalarQuantization {
             solutionHistory.add(new QTrainIteration(iter++, currentMse, currentMse, psnr, psnr));
             dist = (prevMse - currentMse) / currentMse;
 
-            System.out.print(String.format("\rCurrent MSE: %.4f PSNR: %.4f dB", currentMse, psnr));
+            if (verbose) {
+                System.out.print(String.format("\rCurrent MSE: %.4f PSNR: %.4f dB", currentMse, psnr));
+            }
+
 
         } while (dist > 0.0005);
-        System.out.println("\nFinished training.");
-
+        if (verbose) {
+            System.out.println("\nFinished training.");
+        }
         // printCurrentConfigration();
         return solutionHistory.toArray(new QTrainIteration[0]);
     }

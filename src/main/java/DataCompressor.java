@@ -1,49 +1,16 @@
 import cli.CliConstants;
 import cli.ParsedCliOptions;
-import compression.io.InBitStream;
-import compression.io.OutBitStream;
+import compression.ImageCompressor;
+import compression.ImageDecompressor;
 import org.apache.commons.cli.*;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public class DataCompressor {
 
 
     public static void main(String[] args) throws IOException {
-        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        OutBitStream bitStream = new OutBitStream(outStream, 3, 64);
-        bitStream.write(0);
-        bitStream.write(1);
-        bitStream.write(2);
-        bitStream.write(3);
-        bitStream.write(4);
-        bitStream.write(5);
-        bitStream.write(6);
-        bitStream.write(7);
-        bitStream.write(7);
-        bitStream.write(6);
-        bitStream.write(5);
-        bitStream.forceFlush();
-
-        final byte[] data = outStream.toByteArray();
-
-        ByteArrayInputStream inStream = new ByteArrayInputStream(data);
-        InBitStream inBitStream = new InBitStream(inStream, 3, 64);
-        final int i0 = inBitStream.readValue();
-        final int i1 = inBitStream.readValue();
-        final int i2 = inBitStream.readValue();
-        final int i3 = inBitStream.readValue();
-        final int i4 = inBitStream.readValue();
-        final int i5 = inBitStream.readValue();
-        final int i6 = inBitStream.readValue();
-        final int i7 = inBitStream.readValue();
-        final int i8 = inBitStream.readValue();
-        final int i9 = inBitStream.readValue();
-        final int i10 = inBitStream.readValue();
-
         Options options = getOptions();
 
         HelpFormatter formatter = new HelpFormatter();
@@ -71,11 +38,22 @@ public class DataCompressor {
         switch (parsedCliOptions.getMethod()) {
 
             case Compress:
-                System.out.println("Compress");
-                break;
+                ImageCompressor compressor = new ImageCompressor(parsedCliOptions);
+                try {
+                    compressor.compress();
+                } catch (Exception e) {
+                    System.err.println("Errors occurred during compression.");
+                    System.err.println(e.getMessage());
+                    e.printStackTrace();
+                }
+                return;
             case Decompress:
-                System.out.println("Decompress");
-                break;
+                ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
+                if (decompressor.decompress()) {
+                } else {
+                    System.err.println("Errors occurred during decompression.");
+                }
+                return;
             case PrintHelp:
                 formatter.printHelp("ijava -jar DataCompressor.jar", options);
                 break;
@@ -83,8 +61,7 @@ public class DataCompressor {
                 System.err.println("Not supported yet.");
                 break;
         }
-
-
+        return;
     }
 
     @NotNull

@@ -18,8 +18,8 @@ public class ParsedCliOptions {
     private String outputDirectory;
 
     private int bitsPerPixel;
-    private V2i vectorDimension;
-    private V3i imageDimension;
+    private V2i vectorDimension = new V2i(0);
+    private V3i imageDimension = new V3i(0);
 
     private boolean planeIndexSet = false;
     private int planeIndex;
@@ -29,7 +29,7 @@ public class ParsedCliOptions {
 
     private boolean verbose;
 
-    private boolean errorOccured;
+    private boolean errorOccurred;
     private String error;
 
     public ParsedCliOptions(CommandLine cmdInput) {
@@ -38,7 +38,7 @@ public class ParsedCliOptions {
 
     private void parseCLI(final CommandLine cmd) {
         StringBuilder errorBuilder = new StringBuilder("Errors:\n");
-        errorOccured = false;
+        errorOccurred = false;
 
         parseProgramMethod(cmd, errorBuilder);
         if (method == ProgramMethod.PrintHelp)
@@ -66,7 +66,7 @@ public class ParsedCliOptions {
             if (fileInfo.length > 0) {
                 inputFile = fileInfo[0];
             } else {
-                errorOccured = true;
+                errorOccurred = true;
                 errorBuilder.append("Missing input file for decompression");
             }
         } else {
@@ -74,7 +74,7 @@ public class ParsedCliOptions {
 
             // We require the file path and dimensions, like input.raw 1920x1080x5
             if (fileInfo.length < 2) {
-                errorOccured = true;
+                errorOccurred = true;
                 errorBuilder.append("Both filepath and file dimensions are required arguments\n");
             } else {
                 // The first string must be file path.
@@ -88,7 +88,7 @@ public class ParsedCliOptions {
                         planeIndexSet = true;
                         planeIndex = parseResult.getValue();
                     } else {
-                        errorOccured = true;
+                        errorOccurred = true;
                         errorBuilder.append("The second argument after file name must be plane index\n");
                     }
                 }
@@ -101,7 +101,7 @@ public class ParsedCliOptions {
 
         final int firstDelimIndex = dimsString.indexOf('x');
         if (firstDelimIndex == -1) {
-            errorOccured = true;
+            errorOccurred = true;
             errorBuilder.append("Error parsing image dimensions. We require DxDxD or DxD [=DxDx1]\n");
             return;
         }
@@ -115,7 +115,7 @@ public class ParsedCliOptions {
             if (n1Result.isSuccess() && n2Result.isSuccess()) {
                 imageDimension = new V3i(n1Result.getValue(), n2Result.getValue(), 1);
             } else {
-                errorOccured = true;
+                errorOccurred = true;
                 errorBuilder.append("Failed to parse image dimensions of format DxD, got: ");
                 errorBuilder.append(String.format("%sx%s\n", num1String, secondPart));
             }
@@ -130,7 +130,7 @@ public class ParsedCliOptions {
             if (n1Result.isSuccess() && n2Result.isSuccess() && n3Result.isSuccess()) {
                 imageDimension = new V3i(n1Result.getValue(), n2Result.getValue(), n3Result.getValue());
             } else {
-                errorOccured = true;
+                errorOccurred = true;
                 errorBuilder.append("Failed to parse image dimensions of format DxDxD, got: ");
                 errorBuilder.append(String.format("%sx%sx%s\n", num1String, num2String, num3String));
             }
@@ -146,7 +146,7 @@ public class ParsedCliOptions {
                 referencePlaneIndex = parseResult.getValue();
                 refPlaneIndexSet = true;
             } else {
-                errorOccured = true;
+                errorOccurred = true;
                 errorBuilder.append("Failed to parse reference plane index").append('\n');
                 errorBuilder.append(parseResult.getErrorMessage()).append('\n');
             }
@@ -162,7 +162,7 @@ public class ParsedCliOptions {
             if (parseResult.isSuccess()) {
                 bitsPerPixel = parseResult.getValue();
             } else {
-                errorOccured = true;
+                errorOccurred = true;
                 errorBuilder.append("Failed to parse bits per pixel.").append('\n');
                 errorBuilder.append(parseResult.getErrorMessage()).append('\n');
             }
@@ -185,7 +185,7 @@ public class ParsedCliOptions {
                         quantizationType = QuantizationType.Vector1D;
                         vectorDimension = new V2i(parseResult.getValue(), 1);
                     } else {
-                        errorOccured = true;
+                        errorOccurred = true;
                         errorBuilder.append("1D vector quantization requires vector size").append('\n').append(
                                 parseResult.getErrorMessage()).append('\n');
                     }
@@ -200,13 +200,13 @@ public class ParsedCliOptions {
                                                   secondNumberParseResult.getValue());
 
                         if ((vectorDimension.getX() <= 0) || (vectorDimension.getY() <= 0)) {
-                            errorOccured = true;
+                            errorOccurred = true;
                             errorBuilder.append("Wrong quantization vector: ").append(vectorDimension.toString());
                         } else {
                             if ((vectorDimension.getX() > 1) && (vectorDimension.getY() == 1)) {
                                 quantizationType = QuantizationType.Vector1D;
                             } else if ((vectorDimension.getX() == 1) && (vectorDimension.getY() > 1)) {
-                                errorOccured = true;
+                                errorOccurred = true;
                                 errorBuilder.append("There is nothing wrong with the vector ").
                                         append(vectorDimension.toString()).append(
                                         " but we do not support column vectors yet").append('\n');
@@ -215,13 +215,13 @@ public class ParsedCliOptions {
                             }
                         }
                     } else {
-                        errorOccured = true;
+                        errorOccurred = true;
                         errorBuilder.append("Failed to parse vector dimension. Expected DxD, got: ").append(
                                 vectorDefinition);
                     }
                 }
             } else {
-                errorOccured = true;
+                errorOccurred = true;
                 errorBuilder.append("Quantization type wasn't set for compression").append('\n');
             }
         }
@@ -237,7 +237,7 @@ public class ParsedCliOptions {
         } else if (cmd.hasOption(CliConstants.INSPECT_LONG)) {
             method = ProgramMethod.InspectFile;
         } else {
-            errorOccured = true;
+            errorOccurred = true;
             errorBuilder.append("No program method was matched\n");
         }
     }
@@ -300,7 +300,7 @@ public class ParsedCliOptions {
     }
 
     public boolean hasErrorOccured() {
-        return errorOccured;
+        return errorOccurred;
     }
 
     public String getError() {

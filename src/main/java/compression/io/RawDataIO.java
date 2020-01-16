@@ -44,10 +44,9 @@ public class RawDataIO {
 
         fileStream.close();
 
-        ImageU16 image = new ImageU16(rawDataDimension.getX(),
-                                      rawDataDimension.getY(),
-                                      TypeConverter.shortBytesToShortArray(buffer));
-        return image;
+        return new ImageU16(rawDataDimension.getX(),
+                            rawDataDimension.getY(),
+                            TypeConverter.shortBytesToShortArray(buffer));
     }
 
     public static void writeImageU16(final String rawFile,

@@ -1,25 +1,29 @@
 package compression;
 
+import cli.ParsedCliOptions;
+
 public class CompressorDecompressorBase {
-    private final String outputDirectory;
-    private final int bitsPerPixel;
-    private final boolean verbose;
+    public static final String EXTENSTION = ".QCMP";
 
-    public CompressorDecompressorBase(final String outputDirectory, final int bitsPerPixel, final boolean verbose) {
-        this.outputDirectory = outputDirectory;
-        this.bitsPerPixel = bitsPerPixel;
-        this.verbose = verbose;
+    protected final ParsedCliOptions options;
+
+    public CompressorDecompressorBase(ParsedCliOptions options) {
+        this.options = options;
     }
 
-    public boolean isVerbose() {
-        return verbose;
+    protected int[] getPlaneIndicesForCompression() {
+        if (options.hasPlaneIndexSet()) {
+            return new int[]{options.getPlaneIndex()};
+        } else {
+            return generateAllPlaneIndices(options.getImageDimension().getZ());
+        }
     }
 
-    public String getOutputDirectory() {
-        return outputDirectory;
-    }
-
-    public int getBitsPerPixel() {
-        return bitsPerPixel;
+    private int[] generateAllPlaneIndices(final int planeCount) {
+        int[] planeIndices = new int[planeCount];
+        for (int i = 0; i < planeCount; i++) {
+            planeIndices[i] = i;
+        }
+        return planeIndices;
     }
 }
