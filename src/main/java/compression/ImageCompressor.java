@@ -8,6 +8,7 @@ import compression.io.RawDataIO;
 import compression.quantization.scalar.LloydMaxU16ScalarQuantization;
 import compression.quantization.scalar.ScalarQuantizer;
 
+import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,7 +26,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
     public void compress() throws Exception {
 
         FileOutputStream fos = new FileOutputStream(options.getOutputFile(), false);
-        DataOutputStream dataOutputStream = new DataOutputStream(fos);
+        DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(fos, 8192));
 
         // Create and write header to output stream.
         final QCMPFileHeader header = createHeader();
