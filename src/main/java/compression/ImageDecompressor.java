@@ -58,7 +58,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
     private QCMPFileHeader readQCMPFileHeader(DataInputStream inputStream) throws IOException {
         QCMPFileHeader header = new QCMPFileHeader();
         if (!header.readHeader(inputStream)) {
-            // Not valid QCMP file.
+            // Invalid QCMPFile header.
             return null;
         }
         return header;
@@ -166,8 +166,8 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 throw new Exception("Invalid quantization type;");
         }
 
-        fileInputStream.close();
         dataInputStream.close();
+        fileInputStream.close();
 
         decompressStream.flush();
         decompressStream.close();

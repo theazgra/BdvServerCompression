@@ -77,7 +77,6 @@ public class QCMPFileHeader {
             return false;
         }
 
-
         magicValue = new String(inputStream.readNBytes(8));
         if (!magicValue.equals(QCMP_MAGIC_VALUE)) {
             return false;

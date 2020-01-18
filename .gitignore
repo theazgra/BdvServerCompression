@@ -3,3 +3,6 @@ target/
 class/
 out/
 ~$leFormat.docx
+*.raw
+*.qcmp
+*.QCMP

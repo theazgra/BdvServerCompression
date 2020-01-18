@@ -46,8 +46,9 @@ public class ImageCompressor extends CompressorDecompressorBase {
         }
 
         dataOutputStream.flush();
-        dataOutputStream.close();
         fos.flush();
+
+        dataOutputStream.close();
         fos.close();
     }
 
@@ -74,9 +75,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
                                              DataOutputStream outputStream) throws IOException {
         final int[] centroids = quantizer.getCentroids();
         for (final int quantizationValue : centroids) {
-            // TODO(Moravec): Check this!
             outputStream.writeShort(quantizationValue);
-            //outputStream.writeShort(TypeConverter.intToShort(quantizationValue));
         }
     }
 

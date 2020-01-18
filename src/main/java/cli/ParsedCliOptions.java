@@ -49,7 +49,7 @@ public class ParsedCliOptions {
                 defaultValue += CompressorDecompressorBase.EXTENSTION;
                 break;
             case Decompress: {
-                if (defaultValue.endsWith(CompressorDecompressorBase.EXTENSTION)) {
+                if (defaultValue.toUpperCase().endsWith(CompressorDecompressorBase.EXTENSTION)) {
                     defaultValue = defaultValue.substring(0,
                                                           defaultValue.length() - CompressorDecompressorBase.EXTENSTION.length());
                 }
@@ -94,7 +94,12 @@ public class ParsedCliOptions {
     private void parseInputFilePart(StringBuilder errorBuilder, final String[] fileInfo) {
         if ((method == ProgramMethod.Decompress) || (method == ProgramMethod.InspectFile)) {
             if (fileInfo.length > 0) {
-                inputFile = fileInfo[0];
+                final File input = new File(fileInfo[0]);
+                if (!input.exists()) {
+                    errorOccurred = true;
+                    errorBuilder.append("Input file doesn't exist.\n");
+                }
+                inputFile = input.getAbsolutePath();
             } else {
                 errorOccurred = true;
                 errorBuilder.append("Missing input file for decompression");
