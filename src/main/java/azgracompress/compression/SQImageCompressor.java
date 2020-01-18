@@ -46,7 +46,7 @@ public class SQImageCompressor extends CompressorDecompressorBase {
     }
 
     /**
-     * Compress the image file specified by parsed CLI options using scalar quantization..
+     * Compress the image file specified by parsed CLI options using scalar quantization.
      *
      * @param compressStream Stream to which compressed data will be written.
      * @throws Exception When compress process fails.
