@@ -6,9 +6,11 @@ public abstract class CompressorDecompressorBase {
     public static final String EXTENSTION = ".QCMP";
 
     protected final ParsedCliOptions options;
+    protected final int codebookSize;
 
     public CompressorDecompressorBase(ParsedCliOptions options) {
         this.options = options;
+        this.codebookSize = (int) Math.pow(2, this.options.getBitsPerPixel());
     }
 
     protected int[] getPlaneIndicesForCompression() {

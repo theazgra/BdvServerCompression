@@ -1,15 +1,12 @@
 package azgracompress.compression;
 
 import azgracompress.cli.ParsedCliOptions;
-import azgracompress.U16;
 import azgracompress.data.Chunk2D;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V2i;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.io.OutBitStream;
 import azgracompress.io.RawDataIO;
-import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
-import azgracompress.quantization.scalar.ScalarQuantizer;
 import azgracompress.quantization.vector.CodebookEntry;
 import azgracompress.quantization.vector.LBGResult;
 import azgracompress.quantization.vector.LBGVectorQuantizer;
@@ -43,9 +40,11 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
         boolean compressionResult = true;
         switch (options.getQuantizationType()) {
-            case Scalar:
-                compressUsingScalarQuantization(dataOutputStream);
-                break;
+            case Scalar: {
+                SQImageCompressor compressor = new SQImageCompressor(options);
+                compressor.compress(dataOutputStream);
+            }
+            break;
             case Vector1D:
             case Vector2D:
                 compressUsingVectorQuantization(dataOutputStream);
@@ -60,14 +59,6 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
         dataOutputStream.close();
         fos.close();
-    }
-
-
-    private ScalarQuantizer getScalarQuantizerFromPlane(final ImageU16 plane) {
-
-        LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(plane.getData(), codebookSize);
-        lloydMax.train(false);
-        return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCentroids());
     }
 
     private int[][] getPlaneVectors(final ImageU16 plane) {
@@ -153,14 +144,6 @@ public class ImageCompressor extends CompressorDecompressorBase {
         return header;
     }
 
-    private void writeCodebookToOutputStream(final ScalarQuantizer quantizer,
-                                             DataOutputStream compressStream) throws IOException {
-        final int[] centroids = quantizer.getCentroids();
-        for (final int quantizationValue : centroids) {
-            compressStream.writeShort(quantizationValue);
-        }
-    }
-
     private void writeCodebookToOutputStream(final VectorQuantizer quantizer,
                                              DataOutputStream compressStream) throws IOException {
         final CodebookEntry[] codebook = quantizer.getCodebook();
@@ -169,46 +152,6 @@ public class ImageCompressor extends CompressorDecompressorBase {
             for (final int vecVal : entryVector) {
                 compressStream.writeShort(vecVal);
             }
-        }
-    }
-
-
-    private void compressUsingScalarQuantization(DataOutputStream compressStream) throws Exception {
-        ScalarQuantizer quantizer = null;
-        if (options.hasReferencePlaneIndex()) {
-            final ImageU16 referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
-                                                                   options.getImageDimension(),
-                                                                   options.getReferencePlaneIndex());
-
-            Log("Creating codebook from reference plane...");
-            quantizer = getScalarQuantizerFromPlane(referencePlane);
-            writeCodebookToOutputStream(quantizer, compressStream);
-            Log("Wrote reference codebook.");
-        }
-
-        final int[] planeIndices = getPlaneIndicesForCompression();
-
-        for (final int planeIndex : planeIndices) {
-            Log(String.format("Loading plane %d...", planeIndex));
-            final ImageU16 plane = RawDataIO.loadImageU16(options.getInputFile(),
-                                                          options.getImageDimension(),
-                                                          planeIndex);
-
-            if (!options.hasReferencePlaneIndex()) {
-                Log("Creating plane codebook...");
-                quantizer = getScalarQuantizerFromPlane(plane);
-                writeCodebookToOutputStream(quantizer, compressStream);
-                Log("Wrote plane codebook.");
-            }
-
-            assert (quantizer != null);
-
-            Log("Writing quantization indices...");
-            final int[] indices = quantizer.quantizeIntoIndices(plane.getData());
-            OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048);
-            outBitStream.write(indices);
-            outBitStream.flush();
-            Log(String.format("Finished processing of plane %d", planeIndex));
         }
     }
 }
