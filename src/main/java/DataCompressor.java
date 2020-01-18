@@ -95,10 +95,6 @@ public class DataCompressor {
                                          false,
                                          "Inspect the compressed file"));
         methodGroup.addOption(new Option(CliConstants.HELP_SHORT, CliConstants.HELP_LONG, false, "Print help"));
-        methodGroup.addOption(new Option(CliConstants.VERBOSE_SHORT,
-                                         CliConstants.VERBOSE_LONG,
-                                         false,
-                                         "Make program verbose"));
 
         OptionGroup compressionMethodGroup = new OptionGroup();
         compressionMethodGroup.addOption(new Option(CliConstants.SCALAR_QUANTIZATION_SHORT,
@@ -118,6 +114,10 @@ public class DataCompressor {
                           CliConstants.REFERENCE_PLANE_LONG,
                           true,
                           "Reference plane index");
+        options.addOption(new Option(CliConstants.VERBOSE_SHORT,
+                                     CliConstants.VERBOSE_LONG,
+                                     false,
+                                     "Make program verbose"));
         //        options.addRequiredOption(INPUT_SHORT, INPUT_LONG, true, "Input file");
         options.addOption(CliConstants.OUTPUT_SHORT, CliConstants.OUTPUT_LONG, true, "Custom output file");
         return options;

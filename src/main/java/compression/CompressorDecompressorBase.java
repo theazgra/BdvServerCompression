@@ -26,4 +26,16 @@ public class CompressorDecompressorBase {
         }
         return planeIndices;
     }
+
+    protected void Log(final String message) {
+        if (options.isVerbose()) {
+            System.out.println(message);
+        }
+    }
+
+    protected void LogError(final String message) {
+        if (options.isVerbose()) {
+            System.err.println(message);
+        }
+    }
 }

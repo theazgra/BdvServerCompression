@@ -194,16 +194,19 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         int[] quantizationValues = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
+            Log("Loading reference codebook...");
             quantizationValues = readQuantizationValues(compressedStream, codebookSize);
         }
 
 
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
             if (header.isCodebookPerPlane()) {
+                Log("Loading plane codebook...");
                 quantizationValues = readQuantizationValues(compressedStream, codebookSize);
             }
             assert (quantizationValues != null);
 
+            Log(String.format("Decompressing plane %d...", planeIndex));
             InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerPixel(), planeIndicesDataSize);
             inBitStream.readToBuffer();
             inBitStream.setAllowReadFromUnderlyingStream(false);
@@ -216,6 +219,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             final byte[] decompressedPlaneData = TypeConverter.shortArrayToByteArray(decompressedValues, false);
 
             decompressStream.write(decompressedPlaneData);
+            Log(String.format("Decompressed plane %d.", planeIndex));
         }
     }
 }

@@ -83,7 +83,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
     private ScalarQuantizer getScalarQuantizerFromPlane(final ImageU16 plane) {
 
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(plane.getData(), codebookSize);
-        lloydMax.train(options.isVerbose());
+        lloydMax.train(false);
         return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCentroids());
     }
 
@@ -93,28 +93,36 @@ public class ImageCompressor extends CompressorDecompressorBase {
             final ImageU16 referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
                                                                    options.getImageDimension(),
                                                                    options.getReferencePlaneIndex());
+
+            Log("Creating codebook from reference plane...");
             quantizer = getScalarQuantizerFromPlane(referencePlane);
             writeCodebookToOutputStream(quantizer, outputStream);
+            Log("Wrote reference codebook.");
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression();
 
         for (final int planeIndex : planeIndices) {
+            Log(String.format("Loading plane %d...", planeIndex));
             final ImageU16 plane = RawDataIO.loadImageU16(options.getInputFile(),
                                                           options.getImageDimension(),
                                                           planeIndex);
 
             if (!options.hasReferencePlaneIndex()) {
+                Log("Creating plane codebook...");
                 quantizer = getScalarQuantizerFromPlane(plane);
                 writeCodebookToOutputStream(quantizer, outputStream);
+                Log("Wrote plane codebook.");
             }
 
             assert (quantizer != null);
-            final int[] indices = quantizer.quantizeIntoIndices(plane.getData());
 
+            Log("Writing quantization indices...");
+            final int[] indices = quantizer.quantizeIntoIndices(plane.getData());
             OutBitStream outBitStream = new OutBitStream(outputStream, options.getBitsPerPixel(), 2048);
             outBitStream.write(indices);
             outBitStream.flush();
+            Log(String.format("Finished processing of plane %d", planeIndex));
         }
     }
 }
