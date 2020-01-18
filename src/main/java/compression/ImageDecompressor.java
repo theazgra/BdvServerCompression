@@ -31,10 +31,12 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         long codebookDataSize = 2 * codebookSize;
         codebookDataSize *= (header.isCodebookPerPlane() ? header.getImageSizeZ() : 1);
 
-        final long pixelCount = header.getImageSizeX() * header.getImageSizeY() * header.getImageSizeZ();
-        final long pixelDataSize = (int) Math.ceil((pixelCount * header.getBitsPerPixel()) / 8.0);
+        final long planePixelDataSize =
+                (int) Math.ceil(((header.getImageSizeX() * header.getImageSizeY()) * header.getBitsPerPixel()) / 8.0);
 
-        return (codebookDataSize + pixelDataSize);
+        final long allPlanesDataSize = planePixelDataSize * header.getImageSizeZ();
+
+        return (codebookDataSize + allPlanesDataSize);
     }
 
     private long getExpectedDataSize(final QCMPFileHeader header) {
