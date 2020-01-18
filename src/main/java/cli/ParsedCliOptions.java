@@ -34,6 +34,10 @@ public class ParsedCliOptions {
     private boolean errorOccurred;
     private String error;
 
+    private boolean planeRangeSet = false;
+    private int fromPlaneIndex;
+    private int toPlaneIndex;
+
     public ParsedCliOptions(CommandLine cmdInput) {
         parseCLI(cmdInput);
     }
@@ -94,12 +98,7 @@ public class ParsedCliOptions {
     private void parseInputFilePart(StringBuilder errorBuilder, final String[] fileInfo) {
         if ((method == ProgramMethod.Decompress) || (method == ProgramMethod.InspectFile)) {
             if (fileInfo.length > 0) {
-                final File input = new File(fileInfo[0]);
-                if (!input.exists()) {
-                    errorOccurred = true;
-                    errorBuilder.append("Input file doesn't exist.\n");
-                }
-                inputFile = input.getAbsolutePath();
+                inputFile = fileInfo[0];
             } else {
                 errorOccurred = true;
                 errorBuilder.append("Missing input file for decompression");
@@ -118,13 +117,32 @@ public class ParsedCliOptions {
                 parseImageDims(fileInfo[1], errorBuilder);
 
                 if (fileInfo.length > 2) {
-                    final var parseResult = tryParseInt(fileInfo[2]);
-                    if (parseResult.isSuccess()) {
-                        planeIndexSet = true;
-                        planeIndex = parseResult.getValue();
+
+                    int rangeSepIndex = fileInfo[2].indexOf("-");
+                    if (rangeSepIndex != -1) {
+                        final String fromIndexString = fileInfo[2].substring(0, rangeSepIndex);
+                        final String toIndexString = fileInfo[2].substring(rangeSepIndex + 1);
+                        final var indexFromResult = tryParseInt(fromIndexString);
+                        final var indexToResult = tryParseInt(toIndexString);
+
+                        if (indexFromResult.isSuccess() && indexToResult.isSuccess()) {
+                            fromPlaneIndex = indexFromResult.getValue();
+                            toPlaneIndex = indexToResult.getValue();
+                            planeRangeSet = true;
+                        } else {
+                            errorOccurred = true;
+                            errorBuilder.append("Plane range index is wrong. Expected format D-D, got: ").append(
+                                    fileInfo[2]).append('\n');
+                        }
                     } else {
-                        errorOccurred = true;
-                        errorBuilder.append("The second argument after file name must be plane index\n");
+                        final var parseResult = tryParseInt(fileInfo[2]);
+                        if (parseResult.isSuccess()) {
+                            planeIndexSet = true;
+                            planeIndex = parseResult.getValue();
+                        } else {
+                            errorOccurred = true;
+                            errorBuilder.append("The second argument after file name must be plane index\n");
+                        }
                     }
                 }
             }
@@ -342,6 +360,18 @@ public class ParsedCliOptions {
         return error;
     }
 
+    public boolean hasPlaneRangeSet() {
+        return planeRangeSet;
+    }
+
+    public int getFromPlaneIndex() {
+        return fromPlaneIndex;
+    }
+
+    public int getToPlaneIndex() {
+        return toPlaneIndex;
+    }
+
     public String report() {
         StringBuilder sb = new StringBuilder();
 
@@ -391,8 +421,22 @@ public class ParsedCliOptions {
         if (refPlaneIndexSet) {
             sb.append("ReferencePlaneIndex: ").append(referencePlaneIndex).append('\n');
         }
+        if (planeRangeSet) {
+            sb.append("FromPlaneIndex: ").append(fromPlaneIndex).append('\n');
+            sb.append("ToPlaneIndex: ").append(toPlaneIndex).append('\n');
+        }
 
 
         return sb.toString();
+    }
+
+    public int getNumberOfPlanes() {
+        if (hasPlaneIndexSet()) {
+            return 1;
+        } else if (hasPlaneRangeSet()) {
+            return (toPlaneIndex - fromPlaneIndex);
+        } else {
+            return imageDimension.getZ();
+        }
     }
 }

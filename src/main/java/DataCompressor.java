@@ -33,7 +33,7 @@ public class DataCompressor {
             return;
         }
 
-        //        System.out.println(parsedCliOptions.report());
+//        System.out.println(parsedCliOptions.report());
 
         switch (parsedCliOptions.getMethod()) {
 
@@ -56,7 +56,8 @@ public class DataCompressor {
                     System.err.println("Errors occurred during decompression.");
                     System.err.println(e.getMessage());
                     e.printStackTrace();
-                } return;
+                }
+                return;
             }
             case PrintHelp: {
                 formatter.printHelp("ijava -jar DataCompressor.jar", options);
@@ -73,7 +74,8 @@ public class DataCompressor {
                 }
                 return;
             }
-        } return;
+        }
+        return;
     }
 
     @NotNull

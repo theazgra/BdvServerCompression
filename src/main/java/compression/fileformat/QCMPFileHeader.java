@@ -141,6 +141,10 @@ public class QCMPFileHeader {
         return imageSizeZ;
     }
 
+    public V3i getImageDims() {
+        return new V3i(imageSizeX, imageSizeY, imageSizeZ);
+    }
+
     public void setImageSizeZ(int imageSizeZ) {
         this.imageSizeZ = imageSizeZ;
     }

@@ -31,6 +31,8 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
     public void compress() throws Exception {
 
+        Log(String.format("Compression with BPP = %d", options.getBitsPerPixel()));
+
         FileOutputStream fos = new FileOutputStream(options.getOutputFile(), false);
         DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(fos, 8192));
 
@@ -94,7 +96,8 @@ public class ImageCompressor extends CompressorDecompressorBase {
                                                                    options.getReferencePlaneIndex());
 
             Log("Creating codebook from reference plane...");
-            quantizer = trainVectorQuantizerFromPlaneVectors(getPlaneVectors(referencePlane));
+            final int[][] refPlaneVectors = getPlaneVectors(referencePlane);
+            quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
             writeCodebookToOutputStream(quantizer, compressStream);
             Log("Wrote reference codebook.");
         }
@@ -135,7 +138,9 @@ public class ImageCompressor extends CompressorDecompressorBase {
         header.setBitsPerPixel((byte) options.getBitsPerPixel());
         header.setCodebookPerPlane(!options.hasReferencePlaneIndex());
 
-        header.setImageDimension(options.getImageDimension());
+        header.setImageSizeX(options.getImageDimension().getX());
+        header.setImageSizeY(options.getImageDimension().getY());
+        header.setImageSizeZ(options.getNumberOfPlanes());
 
         // If plane index is set then, we are compressing only one plane.
         if (options.hasPlaneIndexSet()) {

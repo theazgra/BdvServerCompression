@@ -2,8 +2,6 @@ package compression.data;
 
 import compression.utilities.TypeConverter;
 
-import java.util.Arrays;
-
 public class Chunk2D {
     private final int FILL_VALUE = 0;
     private int[] data;
@@ -247,7 +245,8 @@ public class Chunk2D {
 
         for (int i = 0; i < vectorCount; i++) {
             assert (chunks[i].data.length == vectorSize);
-            imageVectors[i] = Arrays.copyOf(chunks[i].data, vectorSize);
+            System.arraycopy(chunks[i].data,0,imageVectors[i],0, vectorSize);
+            //imageVectors[i] = Arrays.copyOf(chunks[i].data, vectorSize);
         }
         return imageVectors;
     }

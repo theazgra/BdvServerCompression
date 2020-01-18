@@ -1,6 +1,7 @@
 package compression;
 
 import cli.ParsedCliOptions;
+import compression.data.*;
 import compression.fileformat.QCMPFileHeader;
 import compression.io.InBitStream;
 import compression.utilities.TypeConverter;
@@ -31,24 +32,35 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         return (codebookDataSize + allPlaneIndicesDataSize);
     }
 
+    private long calculatePlaneVectorCount(final QCMPFileHeader header) {
+        final int vectorXCount = (int) Math.ceil((double) header.getImageSizeX() / (double) header.getVectorSizeX());
+        final int vectorYCount = (int) Math.ceil((double) header.getImageSizeY() / (double) header.getVectorSizeY());
+        // Number of vectors per plane.
+        return (vectorXCount * vectorYCount);
+    }
+
+    private long calculatePlaneDataSize(final long planeVectorCount, final int bpp) {
+        // Data size of single plane indices.
+        return (long) Math.ceil((planeVectorCount * bpp) / 8.0);
+    }
+
     private long getExpectedDataSizeForVectorQuantization(final QCMPFileHeader header) {
         // Vector count in codebook
         final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
 
         // Single vector size in bytes.
-        final int vectorDataSize = 2 * header.getVectorSizeX() * header.getVectorSizeY() * header.getImageSizeZ();
+        assert (header.getVectorSizeZ() == 1);
+        final int vectorDataSize = 2 * header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
 
         // Total codebook size in bytes.
         final long codebookDataSize = (codebookSize * vectorDataSize) * (header.isCodebookPerPlane() ?
                 header.getImageSizeZ() : 1);
 
-        final int vectorXCount = (int) Math.ceil((double) header.getImageSizeX() / (double) header.getVectorSizeX());
-        final int vectorYCount = (int) Math.ceil((double) header.getImageSizeY() / (double) header.getVectorSizeY());
         // Number of vectors per plane.
-        final long vectorCount = vectorXCount * vectorYCount;
+        final long planeVectorCount = calculatePlaneVectorCount(header);
 
         // Data size of single plane indices.
-        final long planeDataSize = (long) Math.ceil((vectorCount * header.getBitsPerPixel()) / 8.0);
+        final long planeDataSize = calculatePlaneDataSize(planeVectorCount, header.getBitsPerPixel());
 
         // All planes data size.
         final long allPlanesDataSize = planeDataSize * header.getImageSizeZ();
@@ -64,8 +76,8 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             }
             case Vector1D:
             case Vector2D:
-                return getExpectedDataSizeForVectorQuantization(header);
             case Vector3D:
+                return getExpectedDataSizeForVectorQuantization(header);
             case Invalid:
                 return -1;
         }
@@ -176,9 +188,9 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 break;
             case Vector1D:
             case Vector2D:
-                // TODO!
-                break;
             case Vector3D:
+                decompressUsingVectorQuantization(dataInputStream, decompressStream, header);
+                break;
             case Invalid:
                 throw new Exception("Invalid quantization type;");
         }
@@ -199,6 +211,102 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         }
         return quantizationValues;
     }
+
+    private int[][] readCodebookVectors(DataInputStream compressedStream,
+                                        final int codebookSize,
+                                        final int vectorSize) throws IOException {
+
+        int[][] codebook = new int[codebookSize][vectorSize];
+        for (int codebookIndex = 0; codebookIndex < codebookSize; codebookIndex++) {
+            for (int vecIndex = 0; vecIndex < vectorSize; vecIndex++) {
+                codebook[codebookIndex][vecIndex] = compressedStream.readUnsignedShort();
+            }
+        }
+        return codebook;
+    }
+
+    private ImageU16 reconstructImageFromQuantizedVectors(final int[][] vectors,
+                                                          final V2i qVector,
+                                                          final V3i imageDims) {
+
+        Chunk2D reconstructedChunk = new Chunk2D(new V2i(imageDims.getX(), imageDims.getY()), new V2l(0, 0));
+        if (qVector.getY() > 1) {
+            // FIXME
+            //            Chunk2D new Chunk2D(new V2i(width, height), new V2l(0, 0), data);
+            //            var chunks = plane.as2dChunk().divideIntoChunks(qVector);
+
+            var chunks = reconstructedChunk.divideIntoChunks(qVector);
+            Chunk2D.updateChunkData(chunks, vectors);
+            reconstructedChunk.reconstructFromChunks(chunks);
+
+        } else {
+            // 1D vector
+            reconstructedChunk.reconstructFromVectors(vectors);
+        }
+        return reconstructedChunk.asImageU16();
+    }
+
+    private void decompressUsingVectorQuantization(DataInputStream compressedStream,
+                                                   DataOutputStream decompressStream,
+                                                   final QCMPFileHeader header) throws Exception {
+        final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
+        assert (header.getVectorSizeZ() == 1);
+        final int vectorSize = header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
+        final int planeCountForDecompression = header.getImageSizeZ();
+        final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
+        final long planeVectorCount = calculatePlaneVectorCount(header);
+        final long planeDataSize = calculatePlaneDataSize(planeVectorCount, header.getBitsPerPixel());
+        final V2i qVector = new V2i(header.getVectorSizeX(), header.getVectorSizeY());
+
+
+        int[][] quantizationVectors = null;
+        if (!header.isCodebookPerPlane()) {
+            // There is only one codebook.
+            Log("Loading reference codebook...");
+            quantizationVectors = readCodebookVectors(compressedStream, codebookSize, vectorSize);
+        }
+
+
+        for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
+            if (header.isCodebookPerPlane()) {
+                Log("Loading plane codebook...");
+                quantizationVectors = readCodebookVectors(compressedStream, codebookSize, vectorSize);
+            }
+            assert (quantizationVectors != null);
+
+            Log(String.format("Decompressing plane %d...", planeIndex));
+            InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerPixel(), (int) planeDataSize);
+            inBitStream.readToBuffer();
+            inBitStream.setAllowReadFromUnderlyingStream(false);
+            final int[] indices = inBitStream.readNValues((int) planeVectorCount);
+
+            int[][] decompressedVectors = new int[(int) planeVectorCount][vectorSize];
+            for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
+                System.arraycopy(quantizationVectors[indices[vecIndex]],
+                                 0,
+                                 decompressedVectors[vecIndex],
+                                 0,
+                                 vectorSize);
+            }
+
+            //            int[] decompressedValues = new int[planePixelCount];
+            //            for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
+            //                System.arraycopy(quantizationVectors[indices[vecIndex]],
+            //                                 0,
+            //                                 decompressedValues,
+            //                                 (vecIndex * vectorSize),
+            //                                 vectorSize);
+            //            }
+            final ImageU16 decompressedPlane = reconstructImageFromQuantizedVectors(decompressedVectors,
+                                                                                    qVector,
+                                                                                    header.getImageDims());
+            final byte[] decompressedPlaneData = TypeConverter.shortArrayToByteArray(decompressedPlane.getData(),
+                                                                                     false);
+            decompressStream.write(decompressedPlaneData);
+            Log(String.format("Decompressed plane %d.", planeIndex));
+        }
+    }
+
 
     private void decompressUsingScalarQuantization(DataInputStream compressedStream,
                                                    DataOutputStream decompressStream,
