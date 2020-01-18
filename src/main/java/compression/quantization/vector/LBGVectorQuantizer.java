@@ -24,16 +24,25 @@ public class LBGVectorQuantizer {
         this.codebookSize = codebookSize;
     }
 
-    // TODO(Moravec): Maybe return QTrainIteration somehow?
     public LBGResult findOptimalCodebook() {
-        ArrayList<LearningCodebookEntry> codebook = initializeCodebook();
-        System.out.println("Got initial codebook. Improving codebook...");
-        LBG(codebook, EPSILON * 0.01);
+        return findOptimalCodebook(true);
+    }
+
+    // TODO(Moravec): Maybe return QTrainIteration somehow?
+    public LBGResult findOptimalCodebook(boolean verbose) {
+        ArrayList<LearningCodebookEntry> codebook = initializeCodebook(verbose);
+        if (verbose) {
+            System.out.println("Got initial codebook. Improving codebook...");
+        }
+        LBG(codebook, EPSILON * 0.01, verbose);
         final double finalMse = averageMse(codebook);
         final double psnr = Utils.calculatePsnr(finalMse, U16.Max);
-        System.out.println(String.format("Improved codebook, final average MSE: %.4f PSNR: %.4f (dB)", finalMse, psnr));
-        LBGResult result = new LBGResult(learningCodebookToCodebook(codebook), finalMse, psnr);
-        return result;
+        if (verbose) {
+            System.out.println(String.format("Improved codebook, final average MSE: %.4f PSNR: %.4f (dB)",
+                                             finalMse,
+                                             psnr));
+        }
+        return new LBGResult(learningCodebookToCodebook(codebook), finalMse, psnr);
     }
 
     private CodebookEntry[] learningCodebookToCodebook(final ArrayList<LearningCodebookEntry> learningCodebook) {
@@ -92,7 +101,7 @@ public class LBGVectorQuantizer {
     }
 
 
-    private ArrayList<LearningCodebookEntry> initializeCodebook() {
+    private ArrayList<LearningCodebookEntry> initializeCodebook(final boolean verbose) {
         ArrayList<LearningCodebookEntry> codebook = new ArrayList<>(codebookSize);
         // Initialize first codebook entry as average of training vectors
         int k = 1;
@@ -165,25 +174,32 @@ public class LBGVectorQuantizer {
             }
             codebook = newCodebook;
             assert (codebook.size() == (k * 2));
-            System.out.println(String.format("Split from %d -> %d", k, k * 2));
+            if (verbose) {
+                System.out.println(String.format("Split from %d -> %d", k, k * 2));
+            }
             k *= 2;
 
             // Execute LBG Algorithm on current codebook to improve it.
-            System.out.println("Improving current codebook...");
-            LBG(codebook);
+            if (verbose) {
+                System.out.println("Improving current codebook...");
+            }
+            LBG(codebook, verbose);
 
-            final double avgMse = averageMse(codebook);
-            System.out.println(String.format("Average MSE: %.4f", avgMse));
+
+            if (verbose) {
+                final double avgMse = averageMse(codebook);
+                System.out.println(String.format("Average MSE: %.4f", avgMse));
+            }
         }
         return codebook;
     }
 
 
-    private void LBG(ArrayList<LearningCodebookEntry> codebook) {
-        LBG(codebook, EPSILON);
+    private void LBG(ArrayList<LearningCodebookEntry> codebook, final boolean verbose) {
+        LBG(codebook, EPSILON, verbose);
     }
 
-    private void LBG(ArrayList<LearningCodebookEntry> codebook, final double epsilon) {
+    private void LBG(ArrayList<LearningCodebookEntry> codebook, final double epsilon, final boolean verbose) {
         codebook.forEach(entry -> {
             entry.clearTrainingData();
             assert (entry.getTrainingVectors().size() == 0) : "Using entries which are not cleared.";
@@ -218,7 +234,7 @@ public class LBGVectorQuantizer {
                 }
             }
 
-            fixEmptyEntries(codebook);
+            fixEmptyEntries(codebook, verbose);
 
             // Step 2
             double avgDistortion = 0;
@@ -229,7 +245,9 @@ public class LBGVectorQuantizer {
 
             // Step 3
             double dist = (previousDistortion - avgDistortion) / avgDistortion;
-            System.out.println(String.format("It: %d Distortion: %.5f", iteration++, dist));
+            if (verbose) {
+                System.out.println(String.format("It: %d Distortion: %.5f", iteration++, dist));
+            }
 
             if (dist < epsilon) {
                 // NOTE(Moravec):   We will leave training data in entries so we can use them for
@@ -247,7 +265,7 @@ public class LBGVectorQuantizer {
     }
 
 
-    private void fixEmptyEntries(final ArrayList<LearningCodebookEntry> codebook) {
+    private void fixEmptyEntries(final ArrayList<LearningCodebookEntry> codebook, final boolean verbose) {
         LearningCodebookEntry emptyEntry = null;
         for (final LearningCodebookEntry potentiallyEmptyEntry : codebook) {
             if (potentiallyEmptyEntry.getTrainingVectors().size() < 2) { // < 2
@@ -255,7 +273,7 @@ public class LBGVectorQuantizer {
             }
         }
         while (emptyEntry != null) {
-            fixSingleEmptyEntry(codebook, emptyEntry);
+            fixSingleEmptyEntry(codebook, emptyEntry, verbose);
             emptyEntry = null;
             for (final LearningCodebookEntry potentionallyEmptyEntry : codebook) {
                 if (potentionallyEmptyEntry.getTrainingVectors().size() < 2) { // <2
@@ -266,8 +284,11 @@ public class LBGVectorQuantizer {
     }
 
     private void fixSingleEmptyEntry(ArrayList<LearningCodebookEntry> codebook,
-                                     final LearningCodebookEntry emptyEntry) {
-        System.out.println("******** FOUND EMPTY ENTRY ********");
+                                     final LearningCodebookEntry emptyEntry,
+                                     final boolean verbose) {
+        if (verbose) {
+            System.out.println("******** FOUND EMPTY ENTRY ********");
+        }
         // Remove empty entry from codebook.
         codebook.remove(emptyEntry);
 

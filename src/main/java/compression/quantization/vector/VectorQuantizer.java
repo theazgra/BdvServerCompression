@@ -118,5 +118,9 @@ public class VectorQuantizer {
         }
         return closestEntryIndex;
     }
+
+    public CodebookEntry[] getCodebook() {
+        return codebook;
+    }
 }
 

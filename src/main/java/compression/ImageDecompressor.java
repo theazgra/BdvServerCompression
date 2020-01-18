@@ -14,17 +14,6 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         super(options);
     }
 
-
-    //    private void openCompressStreams() throws FileNotFoundException {
-    //        fileInputStream = new FileInputStream(options.getInputFile());
-    //        dataInputStream = new DataInputStream(fileInputStream);
-    //    }
-
-    //    private void closeInputStreams() throws IOException {
-    //        fileInputStream.close();
-    //        dataInputStream.close();
-    //    }
-
     private long getExpectedDataSizeForScalarQuantization(final QCMPFileHeader header) {
         final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
 
@@ -175,7 +164,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         fos.close();
     }
 
-    private int[] readQuantizationValues(DataInputStream compressedStream, final int n) throws IOException {
+    private int[] readScalarQuantizationValues(DataInputStream compressedStream, final int n) throws IOException {
         int[] quantizationValues = new int[n];
         for (int i = 0; i < n; i++) {
             quantizationValues[i] = compressedStream.readUnsignedShort();
@@ -197,14 +186,14 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
             Log("Loading reference codebook...");
-            quantizationValues = readQuantizationValues(compressedStream, codebookSize);
+            quantizationValues = readScalarQuantizationValues(compressedStream, codebookSize);
         }
 
 
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
             if (header.isCodebookPerPlane()) {
                 Log("Loading plane codebook...");
-                quantizationValues = readQuantizationValues(compressedStream, codebookSize);
+                quantizationValues = readScalarQuantizationValues(compressedStream, codebookSize);
             }
             assert (quantizationValues != null);
 
