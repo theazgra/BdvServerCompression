@@ -50,11 +50,13 @@ public class DataCompressor {
             }
             case Decompress: {
                 ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
-                if (decompressor.decompress()) {
-                } else {
+                try {
+                    decompressor.decompress();
+                } catch (Exception e) {
                     System.err.println("Errors occurred during decompression.");
-                }
-                return;
+                    System.err.println(e.getMessage());
+                    e.printStackTrace();
+                } return;
             }
             case PrintHelp: {
                 formatter.printHelp("ijava -jar DataCompressor.jar", options);
@@ -71,8 +73,7 @@ public class DataCompressor {
                 }
                 return;
             }
-        }
-        return;
+        } return;
     }
 
     @NotNull

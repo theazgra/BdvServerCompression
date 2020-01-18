@@ -2,32 +2,28 @@ package compression;
 
 import cli.ParsedCliOptions;
 import compression.fileformat.QCMPFileHeader;
+import compression.io.InBitStream;
+import compression.utilities.TypeConverter;
 
 import java.io.*;
 
 
 public class ImageDecompressor extends CompressorDecompressorBase {
 
-    private FileInputStream fileInputStream = null;
-    private DataInputStream dataInputStream = null;
-
     public ImageDecompressor(ParsedCliOptions options) {
         super(options);
     }
 
-    public boolean decompress() {
-        return true;
-    }
 
-    private void openCompressStreams() throws FileNotFoundException {
-        fileInputStream = new FileInputStream(options.getInputFile());
-        dataInputStream = new DataInputStream(fileInputStream);
-    }
+    //    private void openCompressStreams() throws FileNotFoundException {
+    //        fileInputStream = new FileInputStream(options.getInputFile());
+    //        dataInputStream = new DataInputStream(fileInputStream);
+    //    }
 
-    private void closeInputStreams() throws IOException {
-        fileInputStream.close();
-        dataInputStream.close();
-    }
+    //    private void closeInputStreams() throws IOException {
+    //        fileInputStream.close();
+    //        dataInputStream.close();
+    //    }
 
     private long getExpectedDataSizeForScalarQuantization(final QCMPFileHeader header) {
         final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
@@ -36,7 +32,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         codebookDataSize *= (header.isCodebookPerPlane() ? header.getImageSizeZ() : 1);
 
         final long pixelCount = header.getImageSizeX() * header.getImageSizeY() * header.getImageSizeZ();
-        final long pixelDataSize = (pixelCount * header.getBitsPerPixel()) / 8;
+        final long pixelDataSize = (int) Math.ceil((pixelCount * header.getBitsPerPixel()) / 8.0);
 
         return (codebookDataSize + pixelDataSize);
     }
@@ -57,21 +53,6 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         return -1;
     }
 
-    private boolean isValidQCMPFile() throws IOException {
-        openCompressStreams();
-        final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
-        closeInputStreams();
-
-        if (header == null) {
-            return false;
-        } else {
-            final long fileSize = new File(options.getInputFile()).length();
-            final long dataSize = fileSize - QCMPFileHeader.QCMP_HEADER_SIZE;
-            final long expectedDataSize = getExpectedDataSize(header);
-            return (dataSize == expectedDataSize);
-        }
-    }
-
     private QCMPFileHeader readQCMPFileHeader(DataInputStream inputStream) throws IOException {
         QCMPFileHeader header = new QCMPFileHeader();
         if (!header.readHeader(inputStream)) {
@@ -84,9 +65,15 @@ public class ImageDecompressor extends CompressorDecompressorBase {
     public String inspectCompressedFile() throws IOException {
         StringBuilder logBuilder = new StringBuilder();
         boolean validFile = true;
-        openCompressStreams();
+
+
+        var fileInputStream = new FileInputStream(options.getInputFile());
+        var dataInputStream = new DataInputStream(fileInputStream);
+
         final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
-        closeInputStreams();
+
+        fileInputStream.close();
+        dataInputStream.close();
 
         if (header == null) {
             logBuilder.append("Input file is not valid QCMPFile\n");
@@ -138,5 +125,97 @@ public class ImageDecompressor extends CompressorDecompressorBase {
 
         logBuilder.append("\n=== Input file is ").append(validFile ? "VALID" : "INVALID").append(" ===\n");
         return logBuilder.toString();
+    }
+
+    public void decompress() throws Exception {
+
+        var fileInputStream = new FileInputStream(options.getInputFile());
+        var dataInputStream = new DataInputStream(fileInputStream);
+
+        final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
+
+        if (header == null) {
+            throw new Exception("Failed to read QCMPFile header");
+        }
+        if (!header.validateHeader()) {
+            throw new Exception("QCMPFile header is invalid");
+        }
+
+        final long fileSize = new File(options.getInputFile()).length();
+        final long dataSize = fileSize - QCMPFileHeader.QCMP_HEADER_SIZE;
+        final long expectedDataSize = getExpectedDataSize(header);
+        if (dataSize != expectedDataSize) {
+            throw new Exception("Invalid file size.");
+        }
+
+        FileOutputStream fos = new FileOutputStream(options.getOutputFile(), false);
+        DataOutputStream decompressStream = new DataOutputStream(fos);
+
+        switch (header.getQuantizationType()) {
+            case Scalar:
+                decompressUsingScalarQuantization(dataInputStream, decompressStream, header);
+                break;
+            case Vector1D:
+            case Vector2D:
+                // TODO!
+                break;
+            case Vector3D:
+            case Invalid:
+                throw new Exception("Invalid quantization type;");
+        }
+
+        fileInputStream.close();
+        dataInputStream.close();
+
+        decompressStream.flush();
+        decompressStream.close();
+        fos.flush();
+        fos.close();
+    }
+
+    private int[] readQuantizationValues(DataInputStream compressedStream, final int n) throws IOException {
+        int[] quantizationValues = new int[n];
+        for (int i = 0; i < n; i++) {
+            quantizationValues[i] = compressedStream.readUnsignedShort();
+        }
+        return quantizationValues;
+    }
+
+    private void decompressUsingScalarQuantization(DataInputStream compressedStream,
+                                                   DataOutputStream decompressStream,
+                                                   final QCMPFileHeader header) throws Exception {
+
+        final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
+        final int planeCountForDecompression = header.getImageSizeZ();
+
+        final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
+        final int planeIndicesDataSize = (int) Math.ceil((planePixelCount * header.getBitsPerPixel()) / 8.0);
+
+        int[] quantizationValues = null;
+        if (!header.isCodebookPerPlane()) {
+            // There is only one codebook.
+            quantizationValues = readQuantizationValues(compressedStream, codebookSize);
+        }
+
+
+        for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
+            if (header.isCodebookPerPlane()) {
+                quantizationValues = readQuantizationValues(compressedStream, codebookSize);
+            }
+            assert (quantizationValues != null);
+
+            InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerPixel(), planeIndicesDataSize);
+            inBitStream.readToBuffer();
+            inBitStream.setAllowReadFromUnderlyingStream(false);
+            final int[] indices = inBitStream.readNValues(planePixelCount);
+
+            short[] decompressedValues = new short[planePixelCount];
+            for (int i = 0; i < planePixelCount; i++) {
+                decompressedValues[i] = TypeConverter.intToShort(quantizationValues[indices[i]]);
+            }
+            final byte[] decompressedPlaneData = TypeConverter.shortArrayToByteArray(decompressedValues, false);
+
+            decompressStream.write(decompressedPlaneData);
+        }
     }
 }

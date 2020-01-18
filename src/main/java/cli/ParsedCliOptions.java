@@ -40,9 +40,28 @@ public class ParsedCliOptions {
 
     private String getDefaultOutputFilePath(final String inputPath) {
         final File inputFile = new File(inputPath);
-        final File outputFile = new File(Paths.get("").toAbsolutePath().toString(),
-                                         inputFile.getName() + CompressorDecompressorBase.EXTENSTION);
-        return (outputFile.getAbsolutePath());
+        final File outputFile = new File(Paths.get("").toAbsolutePath().toString(), inputFile.getName());
+
+        String defaultValue = outputFile.getAbsolutePath();
+
+        switch (method) {
+            case Compress:
+                defaultValue += CompressorDecompressorBase.EXTENSTION;
+                break;
+            case Decompress: {
+                if (defaultValue.endsWith(CompressorDecompressorBase.EXTENSTION)) {
+                    defaultValue = defaultValue.substring(0,
+                                                          defaultValue.length() - CompressorDecompressorBase.EXTENSTION.length());
+                }
+            }
+            case PrintHelp:
+                break;
+            case InspectFile:
+                defaultValue += ".txt";
+                break;
+        }
+
+        return defaultValue;
     }
 
     private void parseCLI(final CommandLine cmd) {

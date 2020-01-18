@@ -15,6 +15,8 @@ public class InBitStream {
 
     private final int bitsPerValue;
 
+    private boolean allowReadFromUnderlyingStream = true;
+
     public InBitStream(InputStream inputStream, final int bitsPerValue, final int bufferSize) {
         this.inputStream = inputStream;
         this.bitsPerValue = bitsPerValue;
@@ -27,11 +29,19 @@ public class InBitStream {
         bitBufferSize = 0;
     }
 
+    public void readToBuffer() throws IOException {
+        bytesAvailable = inputStream.read(buffer, 0, buffer.length);
+        bufferPosition = 0;
+    }
+
+
     private void readByteToBitBuffer() throws IOException {
 
         if (!(bufferPosition < bytesAvailable)) {
-            bytesAvailable = inputStream.read(buffer, 0, buffer.length);
-            bufferPosition = 0;
+            if (!allowReadFromUnderlyingStream) {
+                throw new IOException("Can not read from underlying stream.");
+            }
+            readToBuffer();
         }
 
         if (bufferPosition < bytesAvailable) {
@@ -50,10 +60,6 @@ public class InBitStream {
         int bit = bitBuffer & (1 << bitBufferSize);
         return (bit > 0 ? 1 : 0);
     }
-
-    //    boolean canRead() {
-    //        birb
-    //    }
 
     public int readValue() throws IOException {
         int result = 0;
@@ -75,5 +81,13 @@ public class InBitStream {
         return values;
     }
 
-    /**/
+    public boolean canReadFromUnderlyingStream() {
+        return allowReadFromUnderlyingStream;
+    }
+
+    public void setAllowReadFromUnderlyingStream(final boolean allowReadFromUnderlyingStream) {
+        this.allowReadFromUnderlyingStream = allowReadFromUnderlyingStream;
+    }
+
+
 }

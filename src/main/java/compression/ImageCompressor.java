@@ -48,7 +48,6 @@ public class ImageCompressor extends CompressorDecompressorBase {
         dataOutputStream.flush();
         dataOutputStream.close();
         fos.flush();
-
         fos.close();
     }
 
