@@ -20,7 +20,7 @@ public class DataCompressor {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
             if ((args.length > 0) && (args[0].equals("-h") || args[0].equals("--help"))) {
-                formatter.printHelp("ijava -jar DataCompressor.jar", options);
+                formatter.printHelp(CliConstants.MAIN_HELP, options);
                 return;
             }
             System.err.println("Error: " + e.getMessage());
@@ -60,7 +60,7 @@ public class DataCompressor {
                 return;
             }
             case PrintHelp: {
-                formatter.printHelp("ijava -jar DataCompressor.jar", options);
+                formatter.printHelp(CliConstants.MAIN_HELP, options);
             }
             break;
             case InspectFile: {

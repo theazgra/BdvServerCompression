@@ -2,6 +2,8 @@ package cli;
 
 public class CliConstants {
 
+    public static final String MAIN_HELP = "DataCompressor [options] input_file with dimensions";
+
     public static final String HELP_SHORT = "h";
     public static final String HELP_LONG = "help";
 
