@@ -15,18 +15,47 @@ public class ImageDecompressor extends CompressorDecompressorBase {
     }
 
     private long getExpectedDataSizeForScalarQuantization(final QCMPFileHeader header) {
+        // Quantization value count.
         final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
 
-        long codebookDataSize = 2 * codebookSize;
-        codebookDataSize *= (header.isCodebookPerPlane() ? header.getImageSizeZ() : 1);
+        // Total codebook size in bytes.
+        long codebookDataSize = (2 * codebookSize) * (header.isCodebookPerPlane() ? header.getImageSizeZ() : 1);
 
-        final long planePixelDataSize =
-                (int) Math.ceil(((header.getImageSizeX() * header.getImageSizeY()) * header.getBitsPerPixel()) / 8.0);
+        // Data size of single plane indices.
+        final long planeIndicesDataSize =
+                (long) Math.ceil(((header.getImageSizeX() * header.getImageSizeY()) * header.getBitsPerPixel()) / 8.0);
 
-        final long allPlanesDataSize = planePixelDataSize * header.getImageSizeZ();
+        // All planes data size.
+        final long allPlaneIndicesDataSize = planeIndicesDataSize * header.getImageSizeZ();
+
+        return (codebookDataSize + allPlaneIndicesDataSize);
+    }
+
+    private long getExpectedDataSizeForVectorQuantization(final QCMPFileHeader header) {
+        // Vector count in codebook
+        final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
+
+        // Single vector size in bytes.
+        final int vectorDataSize = 2 * header.getVectorSizeX() * header.getVectorSizeY() * header.getImageSizeZ();
+
+        // Total codebook size in bytes.
+        final long codebookDataSize = (codebookSize * vectorDataSize) * (header.isCodebookPerPlane() ?
+                header.getImageSizeZ() : 1);
+
+        final int vectorXCount = (int) Math.ceil((double) header.getImageSizeX() / (double) header.getVectorSizeX());
+        final int vectorYCount = (int) Math.ceil((double) header.getImageSizeY() / (double) header.getVectorSizeY());
+        // Number of vectors per plane.
+        final long vectorCount = vectorXCount * vectorYCount;
+
+        // Data size of single plane indices.
+        final long planeDataSize = (long) Math.ceil((vectorCount * header.getBitsPerPixel()) / 8.0);
+
+        // All planes data size.
+        final long allPlanesDataSize = planeDataSize * header.getImageSizeZ();
 
         return (codebookDataSize + allPlanesDataSize);
     }
+
 
     private long getExpectedDataSize(final QCMPFileHeader header) {
         switch (header.getQuantizationType()) {
@@ -35,8 +64,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             }
             case Vector1D:
             case Vector2D:
-                // TODO!!
-                break;
+                return getExpectedDataSizeForVectorQuantization(header);
             case Vector3D:
             case Invalid:
                 return -1;
