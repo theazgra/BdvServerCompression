@@ -34,8 +34,8 @@ public class ImageDecompressor extends CompressorDecompressorBase {
      *
      * @return Correct implementation of image decompressor.
      */
-    private IImageDecompressor getImageDecompressor() {
-        switch (options.getQuantizationType()) {
+    private IImageDecompressor getImageDecompressor(final QCMPFileHeader header) {
+        switch (header.getQuantizationType()) {
             case Scalar:
                 return new SQImageDecompressor(options);
             case Vector1D:
@@ -109,9 +109,9 @@ public class ImageDecompressor extends CompressorDecompressorBase {
 
             final long fileSize = new File(options.getInputFile()).length();
             final long dataSize = fileSize - QCMPFileHeader.QCMP_HEADER_SIZE;
-            final var decompressor = getImageDecompressor();
+            final var decompressor = getImageDecompressor(header);
             if (decompressor != null) {
-                final long expectedDataSize = getImageDecompressor().getExpectedDataSize(header);
+                final long expectedDataSize = decompressor.getExpectedDataSize(header);
                 validFile = (dataSize == expectedDataSize);
                 logBuilder.append("Data size:\t\t").append(dataSize).append(" Bytes ").append(dataSize == expectedDataSize ? "(correct)\n" : "(INVALID)\n");
             }
@@ -137,7 +137,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 return false;
             }
 
-            IImageDecompressor imageDecompressor = getImageDecompressor();
+            IImageDecompressor imageDecompressor = getImageDecompressor(header);
             if (imageDecompressor == null) {
                 System.err.println("Unable to create correct decompressor.");
                 return false;
