@@ -48,12 +48,8 @@ public class DataCompressor {
             }
             case Decompress: {
                 ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
-                try {
-                    decompressor.decompress();
-                } catch (Exception e) {
+                if (!decompressor.decompress()) {
                     System.err.println("Errors occurred during decompression.");
-                    System.err.println(e.getMessage());
-                    e.printStackTrace();
                 }
                 return;
             }
