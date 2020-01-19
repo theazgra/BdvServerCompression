@@ -35,18 +35,14 @@ public class DataCompressor {
             return;
         }
 
-//        System.out.println(parsedCliOptions.report());
+        //        System.out.println(parsedCliOptions.report());
 
         switch (parsedCliOptions.getMethod()) {
 
             case Compress: {
                 ImageCompressor compressor = new ImageCompressor(parsedCliOptions);
-                try {
-                    compressor.compress();
-                } catch (Exception e) {
+                if (!compressor.compress()) {
                     System.err.println("Errors occurred during compression.");
-                    System.err.println(e.getMessage());
-                    e.printStackTrace();
                 }
                 return;
             }

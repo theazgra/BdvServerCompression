@@ -11,7 +11,7 @@ import azgracompress.quantization.scalar.ScalarQuantizer;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class SQImageCompressor extends CompressorDecompressorBase {
+public class SQImageCompressor extends CompressorDecompressorBase implements IImageCompressor {
 
     public SQImageCompressor(ParsedCliOptions options) {
         super(options);

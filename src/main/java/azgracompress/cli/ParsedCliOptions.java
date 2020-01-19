@@ -430,6 +430,11 @@ public class ParsedCliOptions {
         return sb.toString();
     }
 
+    /**
+     * Get number of planes to be compressed.
+     *
+     * @return Number of planes for compression.
+     */
     public int getNumberOfPlanes() {
         if (hasPlaneIndexSet()) {
             return 1;

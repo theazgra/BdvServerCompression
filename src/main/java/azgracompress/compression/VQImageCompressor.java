@@ -14,7 +14,7 @@ import azgracompress.quantization.vector.VectorQuantizer;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class VQImageCompressor extends CompressorDecompressorBase {
+public class VQImageCompressor extends CompressorDecompressorBase implements IImageCompressor {
 
     public VQImageCompressor(ParsedCliOptions options) {
         super(options);

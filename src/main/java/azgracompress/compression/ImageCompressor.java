@@ -3,9 +3,7 @@ package azgracompress.compression;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.fileformat.QCMPFileHeader;
 
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 
 public class ImageCompressor extends CompressorDecompressorBase {
 
@@ -16,44 +14,57 @@ public class ImageCompressor extends CompressorDecompressorBase {
         codebookSize = (int) Math.pow(2, options.getBitsPerPixel());
     }
 
-
-    public void compress() throws Exception {
-
-        Log(String.format("Compression with BPP = %d", options.getBitsPerPixel()));
-
-        FileOutputStream fos = new FileOutputStream(options.getOutputFile(), false);
-        DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(fos, 8192));
-
-        // Create and write header to output stream.
-        final QCMPFileHeader header = createHeader();
-        header.writeHeader(compressStream);
-
-        boolean compressionResult = true;
+    /**
+     * Create compressor based on set options.
+     *
+     * @return Correct implementation of image compressor or null if configuration is not valid.
+     */
+    private IImageCompressor getImageCompressor() {
         switch (options.getQuantizationType()) {
             case Scalar: {
-                SQImageCompressor compressor = new SQImageCompressor(options);
-                compressor.compress(compressStream);
+                return new SQImageCompressor(options);
             }
-            break;
             case Vector1D:
             case Vector2D: {
-                VQImageCompressor compressor = new VQImageCompressor(options);
-                compressor.compress(compressStream);
+                return new VQImageCompressor(options);
             }
-            break;
             case Vector3D:
             case Invalid:
-                throw new Exception("Not supported quantization type");
+            default:
+                return null;
         }
-
-        compressStream.flush();
-        fos.flush();
-
-        compressStream.close();
-        fos.close();
     }
 
 
+    public boolean compress() {
+        IImageCompressor imageCompressor = getImageCompressor();
+
+        if (imageCompressor == null) {
+            return false;
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(options.getOutputFile(), false);
+             DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(fos, 8192))) {
+
+            final QCMPFileHeader header = createHeader();
+            header.writeHeader(compressStream);
+
+            imageCompressor.compress(compressStream);
+
+        } catch (Exception ex) {
+            System.err.println(ex.getMessage());
+            return false;
+
+        }
+        return true;
+    }
+
+
+    /**
+     * Create QCMPFile header for compressed file.
+     *
+     * @return Valid QCMPFile header for compressed file.
+     */
     private QCMPFileHeader createHeader() {
         QCMPFileHeader header = new QCMPFileHeader();
 
@@ -65,15 +76,8 @@ public class ImageCompressor extends CompressorDecompressorBase {
         header.setImageSizeY(options.getImageDimension().getY());
         header.setImageSizeZ(options.getNumberOfPlanes());
 
-        // If plane index is set then, we are compressing only one plane.
-        if (options.hasPlaneIndexSet()) {
-            header.setImageSizeZ(1);
-        }
-
         header.setVectorDimension(options.getVectorDimension());
 
         return header;
     }
-
-
 }
