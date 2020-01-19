@@ -66,6 +66,9 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 compressStream.writeShort(vecVal);
             }
         }
+        if (options.isVerbose()) {
+            Log("Wrote quantization vectors to compressed stream.");
+        }
     }
 
     /**
@@ -81,7 +84,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                                                                    options.getImageDimension(),
                                                                    options.getReferencePlaneIndex());
 
-            Log("Creating codebook from reference plane...");
+            Log(String.format("Training vector quantizer from reference plane %d.", options.getReferencePlaneIndex()));
             final int[][] refPlaneVectors = getPlaneVectors(referencePlane);
             quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
             writeQuantizerToCompressStream(quantizer, compressStream);
@@ -91,7 +94,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final int[] planeIndices = getPlaneIndicesForCompression();
 
         for (final int planeIndex : planeIndices) {
-            Log(String.format("Loading plane %d...", planeIndex));
+            Log(String.format("Loading plane %d.", planeIndex));
             final ImageU16 plane = RawDataIO.loadImageU16(options.getInputFile(),
                                                           options.getImageDimension(),
                                                           planeIndex);
@@ -99,7 +102,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             final int[][] planeVectors = getPlaneVectors(plane);
 
             if (!options.hasReferencePlaneIndex()) {
-                Log("Creating plane codebook...");
+                Log(String.format("Training vector quantizer from plane %d.", planeIndex));
                 quantizer = trainVectorQuantizerFromPlaneVectors(planeVectors);
                 writeQuantizerToCompressStream(quantizer, compressStream);
                 Log("Wrote plane codebook.");
@@ -107,13 +110,19 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             assert (quantizer != null);
 
-            Log("Writing quantization indices...");
+            Log("Compression plane...");
             final int[] indices = quantizer.quantizeIntoIndices(planeVectors);
 
-            OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048);
-            outBitStream.write(indices);
-            outBitStream.flush();
-            Log(String.format("Finished processing of plane %d", planeIndex));
+            try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
+                outBitStream.write(indices);
+            } catch (IOException ioEx) {
+                ioEx.printStackTrace();
+            }
+            Log(String.format("Finished processing of plane %d.", planeIndex));
+            //            OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048);
+            //            outBitStream.write(indices);
+            //            outBitStream.flush();
+            //            Log(String.format("Finished processing of plane %d.", planeIndex));
         }
     }
 

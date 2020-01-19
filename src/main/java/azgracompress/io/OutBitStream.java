@@ -3,7 +3,7 @@ package azgracompress.io;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class OutBitStream {
+public class OutBitStream implements AutoCloseable {
     private OutputStream outStream;
 
     private byte[] buffer;
@@ -102,5 +102,15 @@ public class OutBitStream {
         for (final int value : values) {
             write(value);
         }
+    }
+
+    /**
+     * Flush the bitsteam on close.
+     * @throws Exception when flush fails.
+     */
+    @Override
+    public void close() throws Exception {
+        flush();
+        System.out.println("Autoclosing OutBitStream");
     }
 }

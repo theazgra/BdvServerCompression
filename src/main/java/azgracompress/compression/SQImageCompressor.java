@@ -15,7 +15,6 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
 
     public SQImageCompressor(ParsedCliOptions options) {
         super(options);
-
     }
 
     /**
@@ -43,6 +42,9 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         for (final int quantizationValue : centroids) {
             compressStream.writeShort(quantizationValue);
         }
+        if (options.isVerbose()) {
+            Log("Wrote quantization values to compressed stream.");
+        }
     }
 
     /**
@@ -58,34 +60,36 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
                                                                    options.getImageDimension(),
                                                                    options.getReferencePlaneIndex());
 
-            Log("Creating codebook from reference plane...");
+            Log(String.format("Training scalar quantizer from reference plane %d.", options.getReferencePlaneIndex()));
             quantizer = trainScalarQuantizerFromData(referencePlane.getData());
             writeCodebookToOutputStream(quantizer, compressStream);
-            Log("Wrote reference codebook.");
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression();
 
         for (final int planeIndex : planeIndices) {
-            Log(String.format("Loading plane %d...", planeIndex));
+            Log(String.format("Loading plane %d.", planeIndex));
             final ImageU16 plane = RawDataIO.loadImageU16(options.getInputFile(),
                                                           options.getImageDimension(),
                                                           planeIndex);
 
             if (!options.hasReferencePlaneIndex()) {
-                Log("Creating plane codebook...");
+                Log(String.format("Training scalar quantizer from plane %d.", planeIndex));
                 quantizer = trainScalarQuantizerFromData(plane.getData());
                 writeCodebookToOutputStream(quantizer, compressStream);
-                Log("Wrote plane codebook.");
             }
 
             assert (quantizer != null);
 
-            Log("Writing quantization indices...");
+            Log("Compressing plane...");
             final int[] indices = quantizer.quantizeIntoIndices(plane.getData());
-            OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048);
-            outBitStream.write(indices);
-            outBitStream.flush();
+
+            try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
+                outBitStream.write(indices);
+            } catch (IOException ioEx) {
+                ioEx.printStackTrace();
+            }
+
             Log(String.format("Finished processing of plane %d", planeIndex));
         }
     }
