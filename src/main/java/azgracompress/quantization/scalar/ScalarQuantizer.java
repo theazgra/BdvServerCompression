@@ -28,6 +28,14 @@ public class ScalarQuantizer {
         return result;
     }
 
+    public int[] quantize(int[] data) {
+        int[] result = new int[data.length];
+        for (int i = 0; i < data.length; i++) {
+            result[i] = quantize(data[i]);
+        }
+        return result;
+    }
+
     public int[] quantizeIntoIndices(short[] data) {
         return quantizeIntoIndices(TypeConverter.shortArrayToIntArray(data));
     }

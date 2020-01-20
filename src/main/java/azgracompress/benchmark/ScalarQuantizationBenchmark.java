@@ -7,7 +7,6 @@ import azgracompress.de.shade.ILShadeSolver;
 import azgracompress.quantization.QTrainIteration;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
 import azgracompress.quantization.scalar.ScalarQuantizer;
-import azgracompress.utilities.TypeConverter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,7 +30,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
             // NOTE(Moravec): Actual planeIndex is zero based.
-            final short[] planeData = loadPlaneData(planeIndex - 1);
+            final int[] planeData = loadPlaneData(planeIndex - 1);
             if (planeData.length == 0) {
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
                 return;
@@ -67,7 +66,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                 final String diffFile = String.format("p%d_cb%d%s_diff.raw", planeIndex, codebookSize, method);
                 final String absoluteDiffFile = String.format("p%d_cb%d%s_adiff.raw", planeIndex, codebookSize, method);
 
-                final short[] quantizedData = quantizer.quantize(planeData);
+                final int[] quantizedData = quantizer.quantize(planeData);
 
                 if (!saveQuantizedPlaneData(quantizedData, quantizedFile)) {
                     System.err.println("Failed to save quantized plane.");
@@ -104,7 +103,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
         }
     }
 
-    private ScalarQuantizer trainLloydMaxQuantizer(final short[] data, final int codebookSize, final int planeIndex) {
+    private ScalarQuantizer trainLloydMaxQuantizer(final int[] data, final int codebookSize, final int planeIndex) {
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(data, codebookSize);
         QTrainIteration[] trainingReport = lloydMax.train(true);
 
@@ -113,11 +112,11 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
         return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCentroids());
     }
 
-    private ScalarQuantizer trainDifferentialEvolution(final short[] data,
+    private ScalarQuantizer trainDifferentialEvolution(final int[] data,
                                                        final int codebookSize,
                                                        final int planeIndex) {
         ILShadeSolver ilshade = new ILShadeSolver(codebookSize, 100, 2000, 15);
-        ilshade.setTrainingData(TypeConverter.shortArrayToIntArray(data));
+        ilshade.setTrainingData(data);
 
         QTrainIteration[] trainingReport = null;
         try {

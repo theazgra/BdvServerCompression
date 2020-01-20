@@ -58,12 +58,12 @@ public class Utils {
     }
 
 
-    public static int[] getDifference(final short[] original, final short[] transformed) {
+    public static int[] getDifference(final int[] original, final int[] transformed) {
         assert (original.length == transformed.length) : "Array lengths doesn't match";
 
         int[] difference = new int[original.length];
         for (int i = 0; i < original.length; i++) {
-            difference[i] = (TypeConverter.shortToInt(original[i]) - TypeConverter.shortToInt(transformed[i]));
+            difference[i] = (original[i] - transformed[i]);
         }
         return difference;
     }

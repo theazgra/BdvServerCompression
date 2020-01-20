@@ -71,11 +71,11 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             inBitStream.setAllowReadFromUnderlyingStream(false);
             final int[] indices = inBitStream.readNValues(planePixelCount);
 
-            short[] decompressedValues = new short[planePixelCount];
+            int[] decompressedValues = new int[planePixelCount];
             for (int i = 0; i < planePixelCount; i++) {
-                decompressedValues[i] = TypeConverter.intToShort(quantizationValues[indices[i]]);
+                decompressedValues[i] = quantizationValues[indices[i]];
             }
-            final byte[] decompressedPlaneData = TypeConverter.shortArrayToByteArray(decompressedValues, false);
+            final byte[] decompressedPlaneData = TypeConverter.unsignedShortArrayToByteArray(decompressedValues, false);
 
             decompressStream.write(decompressedPlaneData);
             Log(String.format("Decompressed plane %d.", planeIndex));

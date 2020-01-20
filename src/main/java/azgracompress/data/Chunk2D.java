@@ -228,7 +228,7 @@ public class Chunk2D {
 
     public ImageU16 asImageU16() {
 //        return new ImageU16(dims.getX(), dims.getY(), TypeConverter.intArrayToShortArray(data));
-        return new ImageU16(dims.getX(), dims.getY(), TypeConverter.intArrayToShortArrayUnchecked(data));
+        return new ImageU16(dims.getX(), dims.getY(), data);
     }
 
     private void updateData(int[] newData) {

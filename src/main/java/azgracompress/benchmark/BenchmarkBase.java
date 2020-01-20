@@ -4,7 +4,6 @@ import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.io.RawDataIO;
 import azgracompress.quantization.QTrainIteration;
-import azgracompress.utilities.TypeConverter;
 import azgracompress.utilities.Utils;
 
 import java.io.File;
@@ -60,10 +59,10 @@ abstract class BenchmarkBase {
      * @param planeIndex Zero based plane index.
      * @return U16 array of image plane data.
      */
-    protected short[] loadPlaneData(final int planeIndex) {
+    protected int[] loadPlaneData(final int planeIndex) {
         var plane = loadPlane(planeIndex);
 
-        return (plane != null) ? plane.getData() : new short[0];
+        return (plane != null) ? plane.getData() : new int[0];
     }
 
 
@@ -74,7 +73,7 @@ abstract class BenchmarkBase {
      * @param filename File storing quantized plane data.
      * @return True if file was saved.
      */
-    protected boolean saveQuantizedPlaneData(final short[] data, final String filename) {
+    protected boolean saveQuantizedPlaneData(final int[] data, final String filename) {
         ImageU16 img = new ImageU16(rawImageDims.getX(), rawImageDims.getY(), data);
         try {
             // NOTE(Moravec): Use big endian so that FIJI can read the image.
@@ -96,8 +95,8 @@ abstract class BenchmarkBase {
      * @param absDiffFile     File storing u16 absolute difference values.
      * @return True if both files were saved successfully.
      */
-    protected boolean saveDifference(final short[] originalData,
-                                     final short[] transformedData,
+    protected boolean saveDifference(final int[] originalData,
+                                     final int[] transformedData,
                                      final String diffFile,
                                      final String absDiffFile) {
 
@@ -108,7 +107,7 @@ abstract class BenchmarkBase {
 
         ImageU16 img = new ImageU16(rawImageDims.getX(),
                                     rawImageDims.getY(),
-                                    TypeConverter.intArrayToShortArray(absDifferenceData));
+                                    absDifferenceData);
         try {
             // NOTE(Moravec): Use little endian so that gnuplot can read the array.
             RawDataIO.writeImageU16(absDiffFilePath, img, true);

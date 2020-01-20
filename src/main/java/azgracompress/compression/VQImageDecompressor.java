@@ -105,33 +105,34 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
 
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
-                if (header.isCodebookPerPlane()) {
-                    Log("Loading plane codebook...");
-                    quantizationVectors = readCodebookVectors(compressedStream, codebookSize, vectorSize);
-                }
-                assert (quantizationVectors != null);
+            if (header.isCodebookPerPlane()) {
+                Log("Loading plane codebook...");
+                quantizationVectors = readCodebookVectors(compressedStream, codebookSize, vectorSize);
+            }
+            assert (quantizationVectors != null);
 
-                Log(String.format("Decompressing plane %d...", planeIndex));
-                InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerPixel(), (int) planeDataSize);
-                inBitStream.readToBuffer();
-                inBitStream.setAllowReadFromUnderlyingStream(false);
-                final int[] indices = inBitStream.readNValues((int) planeVectorCount);
+            Log(String.format("Decompressing plane %d...", planeIndex));
+            InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerPixel(), (int) planeDataSize);
+            inBitStream.readToBuffer();
+            inBitStream.setAllowReadFromUnderlyingStream(false);
+            final int[] indices = inBitStream.readNValues((int) planeVectorCount);
 
-                int[][] decompressedVectors = new int[(int) planeVectorCount][vectorSize];
-                for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
-                    System.arraycopy(quantizationVectors[indices[vecIndex]],
-                                     0,
-                                     decompressedVectors[vecIndex],
-                                     0,
-                                     vectorSize);
-                }
+            int[][] decompressedVectors = new int[(int) planeVectorCount][vectorSize];
+            for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
+                System.arraycopy(quantizationVectors[indices[vecIndex]],
+                                 0,
+                                 decompressedVectors[vecIndex],
+                                 0,
+                                 vectorSize);
+            }
 
 
             final ImageU16 decompressedPlane = reconstructImageFromQuantizedVectors(decompressedVectors,
                                                                                     qVector,
                                                                                     header.getImageDims());
-            final byte[] decompressedPlaneData = TypeConverter.shortArrayToByteArray(decompressedPlane.getData(),
-                                                                                     false);
+            final byte[] decompressedPlaneData = TypeConverter.unsignedShortArrayToByteArray(
+                    decompressedPlane.getData(),
+                    false);
             decompressStream.write(decompressedPlaneData);
             Log(String.format("Decompressed plane %d.", planeIndex));
         }

@@ -46,13 +46,13 @@ public class RawDataIO {
 
         return new ImageU16(rawDataDimension.getX(),
                             rawDataDimension.getY(),
-                            TypeConverter.shortBytesToShortArray(buffer));
+                            TypeConverter.shortBytesToIntArray(buffer));
     }
 
     public static void writeImageU16(final String rawFile,
                                      final ImageU16 image,
                                      final boolean littleEndian) throws IOException {
-        byte[] buffer = TypeConverter.shortArrayToByteArray(image.getData(), littleEndian);
+        byte[] buffer = TypeConverter.unsignedShortArrayToByteArray(image.getData(), littleEndian);
         writeBytesToFile(rawFile, buffer);
     }
 
