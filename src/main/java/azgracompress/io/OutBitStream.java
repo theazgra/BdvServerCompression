@@ -111,6 +111,5 @@ public class OutBitStream implements AutoCloseable {
     @Override
     public void close() throws Exception {
         flush();
-        System.out.println("Autoclosing OutBitStream");
     }
 }

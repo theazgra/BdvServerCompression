@@ -62,6 +62,15 @@ public class TypeConverter {
         return result;
     }
 
+    public static short[] intArrayToShortArrayUnchecked(final int[] src) {
+        short[] result = new short[src.length];
+
+        for (int i = 0; i < src.length; i++) {
+            result[i] = (short) src[i];
+        }
+        return result;
+    }
+
     public static byte[] shortArrayToByteArray(final short[] data, final boolean littleEndian) {
         byte[] buffer = new byte[data.length * 2];
         int j = 0;

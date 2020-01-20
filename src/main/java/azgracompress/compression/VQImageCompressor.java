@@ -119,10 +119,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 ioEx.printStackTrace();
             }
             Log(String.format("Finished processing of plane %d.", planeIndex));
-            //            OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048);
-            //            outBitStream.write(indices);
-            //            outBitStream.flush();
-            //            Log(String.format("Finished processing of plane %d.", planeIndex));
         }
     }
 

@@ -146,7 +146,7 @@ public class Chunk2D {
             for (int x = 0; x < chunkDims.getX(); x++) {
                 srcX = chunkOffset.getX() + x;
                 final int dstIndex = index(x, y, chunkDims);
-                // TODO(Moravec): Try repeat last value instead of FILL_VALUE.
+                // NOTE(Moravec): Try repeat last value instead of FILL_VALUE.
                 chunkData[dstIndex] = isInside(srcX, srcY) ? data[index(srcX, srcY)] : FILL_VALUE;
             }
         }
@@ -227,7 +227,8 @@ public class Chunk2D {
     }
 
     public ImageU16 asImageU16() {
-        return new ImageU16(dims.getX(), dims.getY(), TypeConverter.intArrayToShortArray(data));
+//        return new ImageU16(dims.getX(), dims.getY(), TypeConverter.intArrayToShortArray(data));
+        return new ImageU16(dims.getX(), dims.getY(), TypeConverter.intArrayToShortArrayUnchecked(data));
     }
 
     private void updateData(int[] newData) {
