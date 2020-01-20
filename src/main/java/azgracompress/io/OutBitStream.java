@@ -67,24 +67,10 @@ public class OutBitStream implements AutoCloseable {
             bitBuffer |= (1 << (8 - bitBufferSize));
         }
 
-        //        if (bit > 0) {
-        //            bitBuffer |= (1 << bitBufferSize);
-        //        }
-        //        ++bitBufferSize;
-
         if (bitBufferSize == 8) {
             flushBitBuffer();
         }
     }
-
-    //    public void write(final byte value) {
-    //
-    //    }
-    //
-    //    public void write(final short value) {
-    //
-    //    }
-
 
     public void write(final int value) throws IOException {
         int bit;

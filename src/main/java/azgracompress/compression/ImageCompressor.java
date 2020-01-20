@@ -3,7 +3,9 @@ package azgracompress.compression;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.fileformat.QCMPFileHeader;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
 
 public class ImageCompressor extends CompressorDecompressorBase {
 
@@ -35,6 +37,11 @@ public class ImageCompressor extends CompressorDecompressorBase {
         }
     }
 
+    private void reportCompressionRatio(final QCMPFileHeader header, final int written) {
+        final long originalDataSize = 2 * header.getImageSizeX() * header.getImageSizeY() * header.getImageSizeZ();
+        final double compressionRatio = (double) written / (double) originalDataSize;
+        System.out.println(String.format("Compression ratio: %.5f", compressionRatio));
+    }
 
     public boolean compress() {
         IImageCompressor imageCompressor = getImageCompressor();
@@ -50,6 +57,10 @@ public class ImageCompressor extends CompressorDecompressorBase {
             header.writeHeader(compressStream);
 
             imageCompressor.compress(compressStream);
+
+            if (options.isVerbose()) {
+                reportCompressionRatio(header, compressStream.size());
+            }
 
         } catch (Exception ex) {
             System.err.println(ex.getMessage());
