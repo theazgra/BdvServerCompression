@@ -259,10 +259,8 @@ public class ParsedCliOptions {
                             if ((vectorDimension.getX() > 1) && (vectorDimension.getY() == 1)) {
                                 quantizationType = QuantizationType.Vector1D;
                             } else if ((vectorDimension.getX() == 1) && (vectorDimension.getY() > 1)) {
-                                errorOccurred = true;
-                                errorBuilder.append("There is nothing wrong with the vector ").
-                                        append(vectorDimension.toString()).append(
-                                        " but we do not support column vectors yet").append('\n');
+                                // This is actually Vector1D, but Vector2D implementation works here just fine.
+                                quantizationType = QuantizationType.Vector2D;
                             } else {
                                 quantizationType = QuantizationType.Vector2D;
                             }

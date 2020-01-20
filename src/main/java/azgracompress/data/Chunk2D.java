@@ -243,7 +243,6 @@ public class Chunk2D {
         for (int i = 0; i < vectorCount; i++) {
             assert (chunks[i].data.length == vectorSize);
             System.arraycopy(chunks[i].data,0,imageVectors[i],0, vectorSize);
-            //imageVectors[i] = Arrays.copyOf(chunks[i].data, vectorSize);
         }
         return imageVectors;
     }
