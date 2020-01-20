@@ -302,8 +302,9 @@ public class LBGVectorQuantizer {
             }
         }
         // Assert that we have found some.
-        assert (biggestPartition != emptyEntry);
+        assert (biggestPartition != emptyEntry) : "Unable to find biggest partition.";
         assert (biggestPartition.getTrainingVectors().size() > 0) : "Biggest partitions was empty before split";
+
 
         // Choose random trainingVector from biggest partition and set it as new entry.
         int randomIndex = new Random().nextInt(biggestPartition.getTrainingVectors().size());
@@ -315,11 +316,13 @@ public class LBGVectorQuantizer {
         biggestPartition.removeTrainingVectorAndDistance(randomIndex);
 
         // Redistribute biggest partition training vectors
-        final ArrayList<int[]> partionVectors = (ArrayList<int[]>) biggestPartition.getTrainingVectors().clone();
+        @SuppressWarnings("unchecked") final ArrayList<int[]> partitionVectors =
+                (ArrayList<int[]>) biggestPartition.getTrainingVectors().clone();
+
         biggestPartition.clearTrainingData();
         newEntry.clearTrainingData();
 
-        for (final int[] trVec : partionVectors) {
+        for (final int[] trVec : partitionVectors) {
             double originalPartitionDist = VectorQuantizer.distanceBetweenVectors(biggestPartition.getVector(),
                                                                                   trVec,
                                                                                   metric);
