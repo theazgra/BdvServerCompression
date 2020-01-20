@@ -15,10 +15,6 @@ public class Chunk3D {
         assert (data.length == (dims.getX() * dims.getY() * dims.getZ())) : "Wrong box data.";
     }
 
-    public Chunk3D(final V3i chunkDdims, final V3l offset, final short[] data) {
-        this(chunkDdims, offset, TypeConverter.shortArrayToIntArray(data));
-    }
-
     public Chunk3D(final V3i chunkDdims, final V3l offset) {
         this(chunkDdims, offset, new int[chunkDdims.getX() * chunkDdims.getY() * chunkDdims.getZ()]);
     }
@@ -209,10 +205,6 @@ public class Chunk3D {
 
     public int[] getData() {
         return data;
-    }
-
-    public short[] getDataAsShort() {
-        return TypeConverter.intArrayToShortArray(data);
     }
 
     public void zeroData() {

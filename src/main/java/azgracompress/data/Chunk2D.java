@@ -16,10 +16,6 @@ public class Chunk2D {
         assert (data.length == (dims.getX() * dims.getY())) : "Wrong box data.";
     }
 
-    public Chunk2D(final V2i chunkDdims, final V2l offset, final short[] data) {
-        this(chunkDdims, offset, TypeConverter.shortArrayToIntArray(data));
-    }
-
     public Chunk2D(final V2i chunkDdims, final V2l offset) {
         this(chunkDdims, offset, new int[chunkDdims.getX() * chunkDdims.getY()]);
     }

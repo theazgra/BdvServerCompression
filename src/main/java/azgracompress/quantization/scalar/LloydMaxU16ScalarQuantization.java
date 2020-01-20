@@ -166,33 +166,6 @@ public class LloydMaxU16ScalarQuantization {
         System.out.println(sb);
     }
 
-    public short[] quantize(short[] data) {
-        short[] result = new short[data.length];
-        for (int i = 0; i < data.length; i++) {
-            final int intRepresentationOfValue = TypeConverter.shortToInt(data[i]);
-            final int quantizedValue = quantize(intRepresentationOfValue);
-            final short shortRepresentation = TypeConverter.intToShort(quantizedValue);
-            result[i] = shortRepresentation;
-        }
-        return result;
-    }
-
-    public int[] quantize(int[] data) {
-        int[] result = new int[data.length];
-        for (int i = 0; i < data.length; i++) {
-            result[i] = quantize(data[i]);
-        }
-        return result;
-    }
-
-    public short[] quantizeToShortArray(int[] data) {
-        short[] result = new short[data.length];
-        for (int i = 0; i < data.length; i++) {
-            result[i] = TypeConverter.intToShort(quantize(data[i]));
-        }
-        return result;
-    }
-
     public int[] getCentroids() {
         return centroids;
     }

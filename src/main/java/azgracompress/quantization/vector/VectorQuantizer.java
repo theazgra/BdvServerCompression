@@ -1,7 +1,5 @@
 package azgracompress.quantization.vector;
 
-import azgracompress.utilities.TypeConverter;
-
 public class VectorQuantizer {
 
     private final CodebookEntry[] codebook;
@@ -25,39 +23,12 @@ public class VectorQuantizer {
         return result;
     }
 
-    public short[][] quantize(short[][] dataVectors) {
-        assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
-        short[][] result = new short[dataVectors.length][vectorSize];
-
-        for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-            final CodebookEntry closestEntry =
-                    findClosestCodebookEntry(TypeConverter.shortArrayToIntArray(dataVectors[vectorIndex]),
-                                                                        VectorDistanceMetric.Euclidean);
-
-            result[vectorIndex] = TypeConverter.intArrayToShortArray(closestEntry.getVector());
-        }
-
-        return result;
-    }
-
     public int[] quantizeIntoIndices(final int[][] dataVectors) {
         assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
         int[] indices = new int[dataVectors.length];
 
         for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
             indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex],
-                                                                 VectorDistanceMetric.Euclidean);
-        }
-        return indices;
-    }
-
-    public int[] quantizeIntoIndices(short[][] dataVectors) {
-        assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
-        int[] indices = new int[dataVectors.length];
-
-        for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-            indices[vectorIndex] =
-                    findClosestCodebookEntryIndex(TypeConverter.shortArrayToIntArray(dataVectors[vectorIndex]),
                                                                  VectorDistanceMetric.Euclidean);
         }
         return indices;

@@ -1,7 +1,5 @@
 package azgracompress.quantization.scalar;
 
-import azgracompress.utilities.TypeConverter;
-
 public class ScalarQuantizer {
     private final int min;
     private final int max;
@@ -17,27 +15,12 @@ public class ScalarQuantizer {
         calculateBoundaryPoints();
     }
 
-    public short[] quantize(short[] data) {
-        short[] result = new short[data.length];
-        for (int i = 0; i < data.length; i++) {
-            final int intRepresentationOfValue = TypeConverter.shortToInt(data[i]);
-            final int quantizedValue = quantize(intRepresentationOfValue);
-            final short shortRepresentation = TypeConverter.intToShort(quantizedValue);
-            result[i] = shortRepresentation;
-        }
-        return result;
-    }
-
     public int[] quantize(int[] data) {
         int[] result = new int[data.length];
         for (int i = 0; i < data.length; i++) {
             result[i] = quantize(data[i]);
         }
         return result;
-    }
-
-    public int[] quantizeIntoIndices(short[] data) {
-        return quantizeIntoIndices(TypeConverter.shortArrayToIntArray(data));
     }
 
     public int[] quantizeIntoIndices(int[] data) {

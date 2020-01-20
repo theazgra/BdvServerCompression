@@ -55,6 +55,4 @@ public class ImageU16 {
     public int getHeight() {
         return height;
     }
-
-
 }
