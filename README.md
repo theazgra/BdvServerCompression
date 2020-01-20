@@ -1,4 +1,4 @@
-## azgracompress.DataCompressor usage
+## DataCompressor usage
 
 Help output:
 ```
@@ -20,8 +20,8 @@ usage: azgracompress.DataCompressor [options] input
 - `-c`, `--compress` - Compress image planes file (Currently only RAW image files).
   - Use scalar quantization using `-sq` or `--scalar-quantization`
   - Use vector quantization using `-vq` or `--vector-quantization` and specify the row vector size (9, 9x1, etc.) or matrix dimensions (2x2, 4x6, etc.) 
-  - Set the bits per pixel amount using `-b` or `--bits` and integer value from 1 to 8
-  - Set the reference plane index using `-rp, or `--reference-plane`. Reference plane is used to create codebook for all planes.
+  - Set the bits per pixel amount using `-b` or `--bits` and integer value from 1 to 8. Codebook size is equal to (2^bits).
+  - Set the reference plane index using `-rp` or `--reference-plane`. Reference plane is used to create codebook for all planes.
 - `-d`, `--decompress` - Decompress the file compressed by this application. This options doesn't require any further parameters.
 - `-i`, `--inspect` - Inspect the compressed file. Read compressed file header are write out informations about that file.
 
