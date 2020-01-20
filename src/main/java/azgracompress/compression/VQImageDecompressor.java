@@ -47,10 +47,6 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
         Chunk2D reconstructedChunk = new Chunk2D(new V2i(imageDims.getX(), imageDims.getY()), new V2l(0, 0));
         if (qVector.getY() > 1) {
-            // FIXME
-            //            Chunk2D new Chunk2D(new V2i(width, height), new V2l(0, 0), data);
-            //            var chunks = plane.as2dChunk().divideIntoChunks(qVector);
-
             var chunks = reconstructedChunk.divideIntoChunks(qVector);
             Chunk2D.updateChunkData(chunks, vectors);
             reconstructedChunk.reconstructFromChunks(chunks);
