@@ -28,7 +28,6 @@ public class LBGVectorQuantizer {
         return findOptimalCodebook(true);
     }
 
-    // TODO(Moravec): Maybe return QTrainIteration somehow?
     public LBGResult findOptimalCodebook(boolean verbose) {
         ArrayList<LearningCodebookEntry> codebook = initializeCodebook(verbose);
         if (verbose) {
@@ -118,8 +117,6 @@ public class LBGVectorQuantizer {
             // Create perturbation vector.
 
 
-            // TODO(Moravec):   Make sure that when we are splitting entry we don't end up creating two same entries.
-            //                  The problem happens when we try to split Vector full of zeroes.
             // Split each entry in codebook with fixed perturbation vector.
             for (final LearningCodebookEntry entryToSplit : codebook) {
                 double[] prtV;
@@ -142,8 +139,8 @@ public class LBGVectorQuantizer {
                     newCodebook.add(entryToSplit);
 
                     ArrayList<Integer> rndEntryValues = new ArrayList<>(prtV.length);
-                    for (int j = 0; j < prtV.length; j++) {
-                        final int value = (int) Math.floor(prtV[j]);
+                    for (final double v : prtV) {
+                        final int value = (int) Math.floor(v);
                         assert (value >= 0) : "value is too low!";
                         assert (value <= U16.Max) : "value is too big!";
                         rndEntryValues.add(value);

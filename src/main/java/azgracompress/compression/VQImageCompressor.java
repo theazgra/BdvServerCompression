@@ -56,16 +56,20 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      *
      * @param quantizer      Quantizer with the codebook.
      * @param compressStream Stream with compressed data.
-     * @throws IOException When unable to write quantizer.
+     * @throws ImageCompressionException When unable to write quantizer.
      */
     private void writeQuantizerToCompressStream(final VectorQuantizer quantizer,
-                                                DataOutputStream compressStream) throws IOException {
+                                                DataOutputStream compressStream) throws ImageCompressionException {
         final CodebookEntry[] codebook = quantizer.getCodebook();
-        for (final CodebookEntry entry : codebook) {
-            final int[] entryVector = entry.getVector();
-            for (final int vecVal : entryVector) {
-                compressStream.writeShort(vecVal);
+        try {
+            for (final CodebookEntry entry : codebook) {
+                final int[] entryVector = entry.getVector();
+                for (final int vecVal : entryVector) {
+                    compressStream.writeShort(vecVal);
+                }
             }
+        } catch (IOException ioEx) {
+            throw new ImageCompressionException("Unable to write codebook to compress stream.", ioEx);
         }
         if (options.isVerbose()) {
             Log("Wrote quantization vectors to compressed stream.");
@@ -76,16 +80,22 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * Compress the image file specified by parsed CLI options using vector quantization.
      *
      * @param compressStream Stream to which compressed data will be written.
-     * @throws Exception When compress process fails.
+     * @throws ImageCompressionException When compress process fails.
      */
-    public void compress(DataOutputStream compressStream) throws Exception {
+    public void compress(DataOutputStream compressStream) throws ImageCompressionException {
         VectorQuantizer quantizer = null;
         Stopwatch stopwatch = new Stopwatch();
         if (options.hasReferencePlaneIndex()) {
             stopwatch.restart();
-            final ImageU16 referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
-                                                                   options.getImageDimension(),
-                                                                   options.getReferencePlaneIndex());
+
+            ImageU16 referencePlane = null;
+            try {
+                referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
+                                                        options.getImageDimension(),
+                                                        options.getReferencePlaneIndex());
+            } catch (Exception ex) {
+                throw new ImageCompressionException("Unable to load reference plane data.", ex);
+            }
 
             Log(String.format("Training vector quantizer from reference plane %d.", options.getReferencePlaneIndex()));
             final int[][] refPlaneVectors = getPlaneVectors(referencePlane);
@@ -101,9 +111,15 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         for (final int planeIndex : planeIndices) {
             stopwatch.restart();
             Log(String.format("Loading plane %d.", planeIndex));
-            final ImageU16 plane = RawDataIO.loadImageU16(options.getInputFile(),
-                                                          options.getImageDimension(),
-                                                          planeIndex);
+
+            ImageU16 plane = null;
+            try {
+                plane = RawDataIO.loadImageU16(options.getInputFile(),
+                                               options.getImageDimension(),
+                                               planeIndex);
+            } catch (Exception ex) {
+                throw new ImageCompressionException("Unable to load plane data.", ex);
+            }
 
             final int[][] planeVectors = getPlaneVectors(plane);
 
@@ -121,8 +137,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
                 outBitStream.write(indices);
-            } catch (IOException ioEx) {
-                ioEx.printStackTrace();
+            } catch (Exception ex) {
+                throw new ImageCompressionException("Unable to write indices to OutBitStream.", ex);
             }
             stopwatch.stop();
             Log("Plane time: " + stopwatch.getElapsedTimeString());

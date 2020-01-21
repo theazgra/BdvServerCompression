@@ -30,13 +30,17 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
     private int[][] readCodebookVectors(DataInputStream compressedStream,
                                         final int codebookSize,
-                                        final int vectorSize) throws IOException {
+                                        final int vectorSize) throws ImageDecompressionException {
 
         int[][] codebook = new int[codebookSize][vectorSize];
-        for (int codebookIndex = 0; codebookIndex < codebookSize; codebookIndex++) {
-            for (int vecIndex = 0; vecIndex < vectorSize; vecIndex++) {
-                codebook[codebookIndex][vecIndex] = compressedStream.readUnsignedShort();
+        try {
+            for (int codebookIndex = 0; codebookIndex < codebookSize; codebookIndex++) {
+                for (int vecIndex = 0; vecIndex < vectorSize; vecIndex++) {
+                    codebook[codebookIndex][vecIndex] = compressedStream.readUnsignedShort();
+                }
             }
+        } catch (IOException ioEx) {
+            throw new ImageDecompressionException("Unable to read quantization values from compressed stream.", ioEx);
         }
         return codebook;
     }
@@ -87,7 +91,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
     @Override
     public void decompress(DataInputStream compressedStream,
                            DataOutputStream decompressStream,
-                           QCMPFileHeader header) throws Exception {
+                           QCMPFileHeader header) throws ImageDecompressionException {
         final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
         assert (header.getVectorSizeZ() == 1);
         final int vectorSize = header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
@@ -114,28 +118,43 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             assert (quantizationVectors != null);
 
             Log(String.format("Decompressing plane %d...", planeIndex));
-            InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerPixel(), (int) planeDataSize);
-            inBitStream.readToBuffer();
-            inBitStream.setAllowReadFromUnderlyingStream(false);
-            final int[] indices = inBitStream.readNValues((int) planeVectorCount);
 
-            int[][] decompressedVectors = new int[(int) planeVectorCount][vectorSize];
-            for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
-                System.arraycopy(quantizationVectors[indices[vecIndex]],
-                                 0,
-                                 decompressedVectors[vecIndex],
-                                 0,
-                                 vectorSize);
+            byte[] decompressedPlaneData = null;
+
+            try (InBitStream inBitStream = new InBitStream(compressedStream,
+                                                           header.getBitsPerPixel(),
+                                                           (int) planeDataSize)) {
+                inBitStream.readToBuffer();
+                inBitStream.setAllowReadFromUnderlyingStream(false);
+                final int[] indices = inBitStream.readNValues((int) planeVectorCount);
+
+                int[][] decompressedVectors = new int[(int) planeVectorCount][vectorSize];
+                for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
+
+                    System.arraycopy(quantizationVectors[indices[vecIndex]],
+                                     0,
+                                     decompressedVectors[vecIndex],
+                                     0,
+                                     vectorSize);
+                }
+
+
+                final ImageU16 decompressedPlane = reconstructImageFromQuantizedVectors(decompressedVectors,
+                                                                                        qVector,
+                                                                                        header.getImageDims());
+                decompressedPlaneData =
+                        TypeConverter.unsignedShortArrayToByteArray(decompressedPlane.getData(), false);
+            } catch (Exception ex) {
+                throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
             }
 
 
-            final ImageU16 decompressedPlane = reconstructImageFromQuantizedVectors(decompressedVectors,
-                                                                                    qVector,
-                                                                                    header.getImageDims());
-            final byte[] decompressedPlaneData = TypeConverter.unsignedShortArrayToByteArray(
-                    decompressedPlane.getData(),
-                    false);
-            decompressStream.write(decompressedPlaneData);
+            try {
+                decompressStream.write(decompressedPlaneData);
+            } catch (IOException e) {
+                throw new ImageDecompressionException("Unable to write decompressed data to decompress stream.", e);
+            }
+
             stopwatch.stop();
             Log(String.format("Decompressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString()));
         }

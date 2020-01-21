@@ -20,10 +20,10 @@ public interface IImageDecompressor {
      * @param compressedStream Input stream of compressed data.
      * @param decompressStream Output stream for decompressed data.
      * @param header           QCMPFile information.
-     * @throws Exception when decompression fails.
+     * @throws ImageDecompressionException when decompression fails.
      */
     void decompress(DataInputStream compressedStream,
                     DataOutputStream decompressStream,
-                    final QCMPFileHeader header) throws Exception;
+                    final QCMPFileHeader header) throws ImageDecompressionException;
 
 }

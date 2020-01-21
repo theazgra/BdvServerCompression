@@ -62,10 +62,12 @@ public class ImageCompressor extends CompressorDecompressorBase {
                 reportCompressionRatio(header, compressStream.size());
             }
 
-        } catch (Exception ex) {
+        } catch (ImageCompressionException ex) {
             System.err.println(ex.getMessage());
             return false;
-
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
         return true;
     }

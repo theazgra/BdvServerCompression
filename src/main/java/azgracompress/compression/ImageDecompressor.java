@@ -62,8 +62,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         try (FileInputStream fileInputStream = new FileInputStream(options.getInputFile());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
             header = readQCMPFileHeader(dataInputStream);
-        }
-        catch (IOException ioEx){
+        } catch (IOException ioEx) {
             ioEx.printStackTrace();
             return "";
         }
@@ -154,9 +153,11 @@ public class ImageDecompressor extends CompressorDecompressorBase {
 
             try (FileOutputStream fos = new FileOutputStream(options.getOutputFile(), false);
                  DataOutputStream decompressStream = new DataOutputStream(fos)) {
+
                 imageDecompressor.decompress(dataInputStream, decompressStream, header);
-            } catch (Exception ex) {
-                ex.printStackTrace();
+
+            } catch (ImageDecompressionException ex) {
+                System.err.println(ex.getMessage());
                 return false;
             }
 

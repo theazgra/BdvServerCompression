@@ -15,10 +15,15 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         super(options);
     }
 
-    private int[] readScalarQuantizationValues(DataInputStream compressedStream, final int n) throws IOException {
+    private int[] readScalarQuantizationValues(DataInputStream compressedStream,
+                                               final int n) throws ImageDecompressionException {
         int[] quantizationValues = new int[n];
-        for (int i = 0; i < n; i++) {
-            quantizationValues[i] = compressedStream.readUnsignedShort();
+        try {
+            for (int i = 0; i < n; i++) {
+                quantizationValues[i] = compressedStream.readUnsignedShort();
+            }
+        } catch (IOException ioEx) {
+            throw new ImageDecompressionException("Unable to read quantization values from compressed stream.", ioEx);
         }
         return quantizationValues;
     }
@@ -44,7 +49,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
     @Override
     public void decompress(DataInputStream compressedStream,
                            DataOutputStream decompressStream,
-                           QCMPFileHeader header) throws Exception {
+                           QCMPFileHeader header) throws ImageDecompressionException {
         final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
         final int planeCountForDecompression = header.getImageSizeZ();
 
@@ -68,18 +73,31 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             assert (quantizationValues != null);
 
             Log(String.format("Decompressing plane %d...", planeIndex));
-            InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerPixel(), planeIndicesDataSize);
-            inBitStream.readToBuffer();
-            inBitStream.setAllowReadFromUnderlyingStream(false);
-            final int[] indices = inBitStream.readNValues(planePixelCount);
+            byte[] decompressedPlaneData = null;
+            try (InBitStream inBitStream = new InBitStream(compressedStream,
+                                                           header.getBitsPerPixel(),
+                                                           planeIndicesDataSize)) {
+                inBitStream.readToBuffer();
+                inBitStream.setAllowReadFromUnderlyingStream(false);
+                final int[] indices = inBitStream.readNValues(planePixelCount);
 
-            int[] decompressedValues = new int[planePixelCount];
-            for (int i = 0; i < planePixelCount; i++) {
-                decompressedValues[i] = quantizationValues[indices[i]];
+                int[] decompressedValues = new int[planePixelCount];
+                for (int i = 0; i < planePixelCount; i++) {
+                    decompressedValues[i] = quantizationValues[indices[i]];
+                }
+                decompressedPlaneData =
+                        TypeConverter.unsignedShortArrayToByteArray(decompressedValues, false);
+
+
+            } catch (Exception ex) {
+                throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
             }
-            final byte[] decompressedPlaneData = TypeConverter.unsignedShortArrayToByteArray(decompressedValues, false);
+            try {
+                decompressStream.write(decompressedPlaneData);
+            } catch (IOException e) {
+                throw new ImageDecompressionException("Unable to write decompressed data to decompress stream.", e);
+            }
 
-            decompressStream.write(decompressedPlaneData);
             stopwatch.stop();
             Log(String.format("Decompressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString()));
         }

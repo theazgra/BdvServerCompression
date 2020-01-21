@@ -1,6 +1,9 @@
 package azgracompress.quantization.vector;
 
+import azgracompress.quantization.QTrainIteration;
+
 public class LBGResult {
+
     private final CodebookEntry[] codebook;
     private final double averageMse;
     private final double psnr;

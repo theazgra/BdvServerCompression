@@ -3,7 +3,7 @@ package azgracompress.io;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class InBitStream {
+public class InBitStream implements AutoCloseable {
 
     private InputStream inputStream;
     private byte[] buffer;
@@ -90,4 +90,9 @@ public class InBitStream {
     }
 
 
+    @Override
+    public void close() throws Exception {
+        bitBufferSize = 0;
+        bytesAvailable = 0;
+    }
 }

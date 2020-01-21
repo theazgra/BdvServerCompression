@@ -35,13 +35,17 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      *
      * @param quantizer      Quantizer used for compression of the image.
      * @param compressStream Compressed data stream.
-     * @throws IOException when writing to the stream fails.
+     * @throws ImageCompressionException when writing to the stream fails.
      */
     private void writeCodebookToOutputStream(final ScalarQuantizer quantizer,
-                                             DataOutputStream compressStream) throws IOException {
+                                             DataOutputStream compressStream) throws ImageCompressionException {
         final int[] centroids = quantizer.getCentroids();
-        for (final int quantizationValue : centroids) {
-            compressStream.writeShort(quantizationValue);
+        try {
+            for (final int quantizationValue : centroids) {
+                compressStream.writeShort(quantizationValue);
+            }
+        } catch (IOException ioEx) {
+            throw new ImageCompressionException("Unable to write codebook to compress stream.", ioEx);
         }
         if (options.isVerbose()) {
             Log("Wrote quantization values to compressed stream.");
@@ -52,21 +56,29 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      * Compress the image file specified by parsed CLI options using scalar quantization.
      *
      * @param compressStream Stream to which compressed data will be written.
-     * @throws Exception When compress process fails.
+     * @throws ImageCompressionException When compress process fails.
      */
-    public void compress(DataOutputStream compressStream) throws Exception {
+    public void compress(DataOutputStream compressStream) throws ImageCompressionException {
         ScalarQuantizer quantizer = null;
         Stopwatch stopwatch = new Stopwatch();
         if (options.hasReferencePlaneIndex()) {
             stopwatch.restart();
-            final ImageU16 referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
-                                                                   options.getImageDimension(),
-                                                                   options.getReferencePlaneIndex());
+            ImageU16 referencePlane = null;
+            try {
+                referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
+                                                        options.getImageDimension(),
+                                                        options.getReferencePlaneIndex());
+            } catch (Exception ex) {
+                throw new ImageCompressionException("Unable to load reference plane data.", ex);
+            }
+
 
             Log(String.format("Training scalar quantizer from reference plane %d.", options.getReferencePlaneIndex()));
             quantizer = trainScalarQuantizerFromData(referencePlane.getData());
             stopwatch.stop();
+
             writeCodebookToOutputStream(quantizer, compressStream);
+
             Log("Reference codebook created in: " + stopwatch.getElapsedTimeString());
         }
 
@@ -74,9 +86,16 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         for (final int planeIndex : planeIndices) {
             stopwatch.restart();
             Log(String.format("Loading plane %d.", planeIndex));
-            final ImageU16 plane = RawDataIO.loadImageU16(options.getInputFile(),
-                                                          options.getImageDimension(),
-                                                          planeIndex);
+
+            ImageU16 plane = null;
+
+            try {
+                plane = RawDataIO.loadImageU16(options.getInputFile(),
+                                               options.getImageDimension(),
+                                               planeIndex);
+            } catch (Exception ex) {
+                throw new ImageCompressionException("Unable to load plane data.", ex);
+            }
 
             if (!options.hasReferencePlaneIndex()) {
                 Log(String.format("Training scalar quantizer from plane %d.", planeIndex));
@@ -91,8 +110,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
 
             try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
                 outBitStream.write(indices);
-            } catch (IOException ioEx) {
-                ioEx.printStackTrace();
+            } catch (Exception ex) {
+                throw new ImageCompressionException("Unable to write indices to OutBitStream.", ex);
             }
             stopwatch.stop();
             Log("Plane time: " + stopwatch.getElapsedTimeString());
