@@ -53,6 +53,10 @@ public class DataCompressor {
                 }
                 return;
             }
+            case Benchmark: {
+                System.out.println("Call benchmark with parsed options.");
+            }
+            break;
             case PrintHelp: {
                 formatter.printHelp(CliConstants.MAIN_HELP, options);
             }
@@ -90,6 +94,12 @@ public class DataCompressor {
                                          CliConstants.INSPECT_LONG,
                                          false,
                                          "Inspect the compressed file"));
+
+        methodGroup.addOption(new Option(CliConstants.BENCHMARK_SHORT,
+                                         CliConstants.BENCHMARK_LONG,
+                                         false,
+                                         "Benchmark"));
+
         methodGroup.addOption(new Option(CliConstants.HELP_SHORT, CliConstants.HELP_LONG, false, "Print help"));
 
         OptionGroup compressionMethodGroup = new OptionGroup();

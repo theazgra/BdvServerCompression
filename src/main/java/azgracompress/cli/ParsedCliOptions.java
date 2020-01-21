@@ -80,7 +80,6 @@ public class ParsedCliOptions {
 
         parseBitsPerPixel(cmd, errorBuilder);
 
-
         parseReferencePlaneIndex(cmd, errorBuilder);
 
         final String[] fileInfo = cmd.getArgs();
@@ -285,6 +284,8 @@ public class ParsedCliOptions {
             method = ProgramMethod.Compress;
         } else if (cmd.hasOption(CliConstants.DECOMPRESS_LONG)) {
             method = ProgramMethod.Decompress;
+        } else if (cmd.hasOption(CliConstants.BENCHMARK_LONG)) {
+            method = ProgramMethod.Benchmark;
         } else if (cmd.hasOption(CliConstants.INSPECT_LONG)) {
             method = ProgramMethod.InspectFile;
         } else {

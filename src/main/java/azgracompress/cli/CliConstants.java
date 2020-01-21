@@ -13,6 +13,9 @@ public class CliConstants {
     public static final String DECOMPRESS_SHORT = "d";
     public static final String DECOMPRESS_LONG = "decompress";
 
+    public static final String BENCHMARK_SHORT = "bench";
+    public static final String BENCHMARK_LONG = "benchmark";
+
     public static final String INSPECT_SHORT = "i";
     public static final String INSPECT_LONG = "inspect";
 
