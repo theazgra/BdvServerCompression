@@ -1,5 +1,6 @@
 package azgracompress;
 
+import azgracompress.benchmark.CompressionBenchmark;
 import azgracompress.cli.CliConstants;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.ImageCompressor;
@@ -54,9 +55,9 @@ public class DataCompressor {
                 return;
             }
             case Benchmark: {
-                System.out.println("Call benchmark with parsed options.");
+                CompressionBenchmark.runBenchmark(parsedCliOptions);
+                return;
             }
-            break;
             case PrintHelp: {
                 formatter.printHelp(CliConstants.MAIN_HELP, options);
             }
