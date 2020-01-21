@@ -1,5 +1,6 @@
 package azgracompress.benchmark;
 
+import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.io.RawDataIO;
@@ -12,10 +13,18 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 
 abstract class BenchmarkBase {
+
+    protected final static String QUANTIZED_FILE_TEMPLATE = "%d_cb%d.raw";
+    protected final static String DIFFERENCE_FILE_TEMPLATE = "%d_cb%d.data";
+    protected final static String ABSOLUTE_DIFFERENCE_FILE_TEMPLATE = "%d_cb%d.data";
+
     protected final String inputFile;
     protected final String outputDirectory;
     protected final int[] planes;
     protected final V3i rawImageDims;
+
+    protected boolean hasReferencePlane = false;
+    protected int referencePlaneIndex = -1;
 
     protected BenchmarkBase(final String inputFile,
                             final String outputDirectory,
@@ -25,6 +34,36 @@ abstract class BenchmarkBase {
         this.outputDirectory = outputDirectory;
         this.planes = planes;
         this.rawImageDims = rawImageDims;
+    }
+
+    protected BenchmarkBase(final ParsedCliOptions options) {
+        this.inputFile = options.getInputFile();
+        this.outputDirectory = options.getOutputFile();
+        this.rawImageDims = options.getImageDimension();
+        this.hasReferencePlane = options.hasReferencePlaneIndex();
+        if (this.hasReferencePlane) {
+            this.referencePlaneIndex = options.getReferencePlaneIndex();
+        }
+
+        if (options.hasPlaneIndexSet()) {
+            this.planes = new int[]{options.getPlaneIndex()};
+        } else if (options.hasPlaneRangeSet()) {
+            final int from = options.getFromPlaneIndex();
+            final int to = options.getToPlaneIndex();
+            final int count = to - from;
+
+            this.planes = new int[count];
+            for (int i = 0; i < count; i++) {
+                this.planes[i] = from + i;
+            }
+        } else {
+            final int planeCount = options.getImageDimension().getZ();
+            this.planes = new int[planeCount];
+            for (int i = 0; i < planeCount; i++) {
+                this.planes[i] = i;
+            }
+        }
+
     }
 
     /**

@@ -1,6 +1,7 @@
 package azgracompress.benchmark;
 
 import azgracompress.U16;
+import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.V3i;
 import azgracompress.de.DeException;
 import azgracompress.de.shade.ILShadeSolver;
@@ -21,6 +22,10 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                                        final int[] planes,
                                        final V3i rawImageDims) {
         super(inputFile, outputDirectory, planes, rawImageDims);
+    }
+
+    public ScalarQuantizationBenchmark(final ParsedCliOptions options) {
+        super(options);
     }
 
 
@@ -53,18 +58,19 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                 }
                 System.out.println("Scalar quantizer ready.");
 
-                final String method = useDiffEvolution ? "ilshade" : "lloyd";
-                final String centroidsFile = String.format("p%d_cb%d%s_centroids.txt",
-                                                           planeIndex,
-                                                           codebookSize,
-                                                           method);
+//                final String method = useDiffEvolution ? "ilshade" : "lloyd";
+//                final String centroidsFile = String.format("p%d_cb%d%s_centroids.txt",
+//                                                           planeIndex,
+//                                                           codebookSize,
+//                                                           method);
+//                saveCentroids(quantizer.getCentroids(), centroidsFile);
 
-                saveCentroids(quantizer.getCentroids(), centroidsFile);
 
-
-                final String quantizedFile = String.format("p%d_cb%d%s.raw", planeIndex, codebookSize, method);
-                final String diffFile = String.format("p%d_cb%d%s_diff.raw", planeIndex, codebookSize, method);
-                final String absoluteDiffFile = String.format("p%d_cb%d%s_adiff.raw", planeIndex, codebookSize, method);
+                final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
+                final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
+                final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
+                                                              planeIndex,
+                                                              codebookSize);
 
                 final int[] quantizedData = quantizer.quantize(planeData);
 

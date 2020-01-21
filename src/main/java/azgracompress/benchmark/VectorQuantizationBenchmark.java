@@ -1,5 +1,6 @@
 package azgracompress.benchmark;
 
+import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.*;
 import azgracompress.quantization.vector.CodebookEntry;
 import azgracompress.quantization.vector.LBGResult;
@@ -17,6 +18,10 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
 
     public VectorQuantizationBenchmark(String inputFile, String outputDirectory, int[] planes, V3i rawImageDims) {
         super(inputFile, outputDirectory, planes, rawImageDims);
+    }
+
+    public VectorQuantizationBenchmark(final ParsedCliOptions options) {
+        super(options);
     }
 
     @Override
@@ -82,12 +87,12 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
 
                 VectorQuantizer quantizer = new VectorQuantizer(vqResult.getCodebook());
 
-                final String quantizedFile = String.format("p%d_cb%d.raw", planeIndex, codebookSize);
-                final String diffFile = String.format("p%d_cb%d_diff.raw", planeIndex, codebookSize);
-                final String absoluteDiffFile = String.format("p%d_cb%d_adiff.raw", planeIndex, codebookSize);
+                final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
+                final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
+                final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
 
-                final String codebookFile = String.format("p%d_cb%d_vectors.txt", planeIndex, codebookSize);
-                saveCodebook(vqResult.getCodebook(), codebookFile);
+//                final String codebookFile = String.format("p%d_cb%d_vectors.txt", planeIndex, codebookSize);
+//                saveCodebook(vqResult.getCodebook(), codebookFile);
 
                 final int[][] quantizedData = quantizer.quantize(planeData);
 
