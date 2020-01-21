@@ -57,14 +57,13 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
         if (planes.length < 1) {
             return;
         }
-        // TODO(Moravec): Support parsed CLI options.
         if (qVector.getY() > 1) {
             System.out.println("2D qVector");
         } else {
             System.out.println("1D qVector");
         }
         boolean dirCreated = new File(this.outputDirectory).mkdirs();
-
+        System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
         VectorQuantizer quantizer = null;
 
         if (hasReferencePlane) {
@@ -79,6 +78,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
             LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData, codebookSize);
             final LBGResult vqResult = vqInitializer.findOptimalCodebook();
             quantizer = new VectorQuantizer(vqResult.getCodebook());
+            System.out.println("Created reference quantizer.");
         }
 
         for (final int planeIndex : planes) {
@@ -94,11 +94,12 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
 
             final int[][] planeData = getPlaneVectors(plane, qVector);
 
-            System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
+
             if (!hasReferencePlane) {
                 LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData, codebookSize);
                 LBGResult vqResult = vqInitializer.findOptimalCodebook();
                 quantizer = new VectorQuantizer(vqResult.getCodebook());
+                System.out.println("Created plane quantizer.");
             }
 
             final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);

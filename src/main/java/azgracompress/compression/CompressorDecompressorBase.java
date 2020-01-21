@@ -21,8 +21,8 @@ public abstract class CompressorDecompressorBase {
             final int to = options.getToPlaneIndex();
             final int count = to - from;
 
-            int[] indices = new int[count];
-            for (int i = 0; i < count; i++) {
+            int[] indices = new int[count + 1];
+            for (int i = 0; i <= count; i++) {
                 indices[i] = from + i;
             }
             return indices;

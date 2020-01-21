@@ -35,7 +35,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
             return;
         }
         boolean dirCreated = new File(this.outputDirectory).mkdirs();
-
+        System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
         ScalarQuantizer quantizer = null;
         if (hasReferencePlane) {
             final int[] refPlaneData = loadPlaneData(referencePlaneIndex);
@@ -48,6 +48,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
             } else {
                 quantizer = trainLloydMaxQuantizer(refPlaneData, codebookSize);
             }
+            System.out.println("Created reference quantizer.");
         }
 
         for (final int planeIndex : planes) {
@@ -58,7 +59,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
                 return;
             }
-            System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
+
 
             if (!hasReferencePlane) {
                 if (useDiffEvolution) {
@@ -66,12 +67,13 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                 } else {
                     quantizer = trainLloydMaxQuantizer(planeData, codebookSize);
                 }
+                System.out.println("Created plane quantizer");
             }
             if (quantizer == null) {
                 System.err.println("Failed to initialize scalar quantizer.");
                 return;
             }
-            System.out.println("Scalar quantizer ready.");
+
 
             final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
             final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);

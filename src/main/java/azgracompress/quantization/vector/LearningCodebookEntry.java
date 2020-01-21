@@ -55,9 +55,9 @@ public class LearningCodebookEntry extends CodebookEntry {
     public void calculateCentroid() {
         // If we dont have any training vectors we cannot recalculate the centroid.
         if (trainingVectors.size() > 0) {
-            ArrayList<Integer> mean = vectorMean2(trainingVectors.stream(),
-                                                  trainingVectors.size(),
-                                                  trainingVectors.get(0).length);
+            ArrayList<Integer> mean = vectorMean(trainingVectors.stream(),
+                                                 trainingVectors.size(),
+                                                 trainingVectors.get(0).length);
             assert (mean.size() == vector.length) : "Mismatched collection sizes";
             for (int i = 0; i < vector.length; i++) {
                 vector[i] = mean.get(i);
@@ -67,9 +67,9 @@ public class LearningCodebookEntry extends CodebookEntry {
         }
     }
 
-    public static ArrayList<Integer> vectorMean2(final Stream<int[]> vectorStream,
-                                                 final int vectorCount,
-                                                 final int vectorSize) {
+    public static ArrayList<Integer> vectorMean(final Stream<int[]> vectorStream,
+                                                final int vectorCount,
+                                                final int vectorSize) {
         double[] vectorSum = new double[vectorSize];
 
         vectorStream.forEach(vector -> {
@@ -85,25 +85,12 @@ public class LearningCodebookEntry extends CodebookEntry {
         return average;
     }
 
-    //    public static ArrayList<Integer> vectorMean(final int[][] vectors) {
-    //        final int vectorSize = vectors[0].length;
-    //        double[] vectorSum = new double[vectorSize];
-    //
-    //        for (final int[] vector : vectors) {
-    //            for (int vecIndex = 0; vecIndex < vectorSize; vecIndex++) {
-    //                vectorSum[vecIndex] += (double) vector[vecIndex];
-    //            }
-    //        }
-    //
-    //        ArrayList<Integer> average = new ArrayList<>(vectorSize);
-    //        for (double sum : vectorSum) {
-    //            average.add((int) Math.round(sum / (double) vectors.length));
-    //        }
-    //        return average;
-    //    }
-
     public void removeTrainingVectorAndDistance(int index) {
         trainingVectors.remove(index);
         trainingVectorsDistances.remove(index);
+    }
+
+    public boolean isEmpty() {
+        return (trainingVectors.isEmpty());
     }
 }

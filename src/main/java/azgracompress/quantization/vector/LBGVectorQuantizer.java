@@ -104,9 +104,9 @@ public class LBGVectorQuantizer {
         ArrayList<LearningCodebookEntry> codebook = new ArrayList<>(codebookSize);
         // Initialize first codebook entry as average of training vectors
         int k = 1;
-        ArrayList<Integer> initialEntry = LearningCodebookEntry.vectorMean2(Arrays.stream(trainingVectors),
-                                                                            trainingVectors.length,
-                                                                            vectorSize);
+        ArrayList<Integer> initialEntry = LearningCodebookEntry.vectorMean(Arrays.stream(trainingVectors),
+                                                                           trainingVectors.length,
+                                                                           vectorSize);
 
         codebook.add(new LearningCodebookEntry(initialEntry));
 
@@ -264,7 +264,7 @@ public class LBGVectorQuantizer {
     }
 
 
-    private void fixEmptyEntries(final ArrayList<LearningCodebookEntry> codebook, final boolean verbose) {
+    private void fixEmptyEntries(ArrayList<LearningCodebookEntry> codebook, final boolean verbose) {
         LearningCodebookEntry emptyEntry = null;
         for (final LearningCodebookEntry potentiallyEmptyEntry : codebook) {
             if (potentiallyEmptyEntry.getTrainingVectors().size() < 2) { // < 2
@@ -279,6 +279,9 @@ public class LBGVectorQuantizer {
                     emptyEntry = potentionallyEmptyEntry;
                 }
             }
+        }
+        for (final LearningCodebookEntry lce : codebook) {
+            assert (!lce.isEmpty()) : "LearningCodebookEntry is empty!";
         }
     }
 
@@ -334,8 +337,8 @@ public class LBGVectorQuantizer {
             }
         }
 
-        assert (biggestPartition.getTrainingVectors().size() > 0) : "Biggest partition is empty";
-        assert (newEntry.getTrainingVectors().size() > 0) : "New entry is empty";
+//        assert (biggestPartition.getTrainingVectors().size() > 0) : "Biggest partition is empty";
+//        assert (newEntry.getTrainingVectors().size() > 0) : "New entry is empty";
     }
 
     public int getVectorSize() {

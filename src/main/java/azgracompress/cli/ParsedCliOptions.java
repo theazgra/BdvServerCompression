@@ -231,7 +231,7 @@ public class ParsedCliOptions {
     }
 
     private void parseCompressionType(CommandLine cmd, StringBuilder errorBuilder) {
-        if (method == ProgramMethod.Compress) {
+        if ((method == ProgramMethod.Compress) || (method == ProgramMethod.Benchmark)) {
             if (cmd.hasOption(CliConstants.SCALAR_QUANTIZATION_LONG)) {
                 quantizationType = QuantizationType.Scalar;
             } else if (cmd.hasOption(CliConstants.VECTOR_QUANTIZATION_LONG)) {
@@ -414,7 +414,7 @@ public class ParsedCliOptions {
 
 
         sb.append("BitsPerPixel: ").append(bitsPerPixel).append('\n');
-        sb.append("OutputDirectory: ").append(outputFile).append('\n');
+        sb.append("Output: ").append(outputFile).append('\n');
         sb.append("InputFile: ").append(inputFile).append('\n');
 
         if (method == ProgramMethod.Compress) {

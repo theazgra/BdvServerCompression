@@ -55,6 +55,7 @@ public class DataCompressor {
                 return;
             }
             case Benchmark: {
+                System.out.println(parsedCliOptions.report());
                 CompressionBenchmark.runBenchmark(parsedCliOptions);
                 return;
             }

@@ -16,7 +16,7 @@ abstract class BenchmarkBase {
 
     protected final static String QUANTIZED_FILE_TEMPLATE = "%d_cb%d.raw";
     protected final static String DIFFERENCE_FILE_TEMPLATE = "%d_cb%d.data";
-    protected final static String ABSOLUTE_DIFFERENCE_FILE_TEMPLATE = "%d_cb%d.data";
+    protected final static String ABSOLUTE_DIFFERENCE_FILE_TEMPLATE = "%d_cb%d_abs.data";
 
     protected final String inputFile;
     protected final String outputDirectory;
@@ -62,8 +62,8 @@ abstract class BenchmarkBase {
             }
         } else {
             final int planeCount = options.getImageDimension().getZ();
-            this.planes = new int[planeCount];
-            for (int i = 0; i < planeCount; i++) {
+            this.planes = new int[planeCount + 1];
+            for (int i = 0; i <= planeCount; i++) {
                 this.planes[i] = i;
             }
         }
