@@ -54,14 +54,32 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
     }
 
     public void startBenchmark(final V2i qVector) {
+        if (planes.length < 1) {
+            return;
+        }
         // TODO(Moravec): Support parsed CLI options.
         if (qVector.getY() > 1) {
             System.out.println("2D qVector");
         } else {
             System.out.println("1D qVector");
         }
-
         boolean dirCreated = new File(this.outputDirectory).mkdirs();
+
+        VectorQuantizer quantizer = null;
+
+        if (hasReferencePlane) {
+            final ImageU16 plane = loadPlane(referencePlaneIndex);
+
+            if (plane == null) {
+                System.err.println("Failed to load reference plane data.");
+                return;
+            }
+
+            final int[][] refPlaneData = getPlaneVectors(plane, qVector);
+            LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData, codebookSize);
+            final LBGResult vqResult = vqInitializer.findOptimalCodebook();
+            quantizer = new VectorQuantizer(vqResult.getCodebook());
+        }
 
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
@@ -76,35 +94,29 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
 
             final int[][] planeData = getPlaneVectors(plane, qVector);
 
-
-            // Test codebook sizes from 2^2 to 2^8
-            for (int bitCount = 2; bitCount <= 8; bitCount++) {
-                final int codebookSize = (int) Math.pow(2, bitCount);
-                System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
-
+            System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
+            if (!hasReferencePlane) {
                 LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData, codebookSize);
                 LBGResult vqResult = vqInitializer.findOptimalCodebook();
-
-                VectorQuantizer quantizer = new VectorQuantizer(vqResult.getCodebook());
-
-                final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
-                final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
-                final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
-
-//                final String codebookFile = String.format("p%d_cb%d_vectors.txt", planeIndex, codebookSize);
-//                saveCodebook(vqResult.getCodebook(), codebookFile);
-
-                final int[][] quantizedData = quantizer.quantize(planeData);
-
-                final ImageU16 quantizedImage = reconstructImageFromQuantizedVectors(plane, quantizedData, qVector);
-
-                if (!saveQuantizedPlaneData(quantizedImage.getData(), quantizedFile)) {
-                    System.err.println("Failed to save quantized plane.");
-                    return;
-                }
-
-                saveDifference(plane.getData(), quantizedImage.getData(), diffFile, absoluteDiffFile);
+                quantizer = new VectorQuantizer(vqResult.getCodebook());
             }
+
+            final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
+            final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
+            final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
+                                                          planeIndex,
+                                                          codebookSize);
+
+            final int[][] quantizedData = quantizer.quantize(planeData);
+
+            final ImageU16 quantizedImage = reconstructImageFromQuantizedVectors(plane, quantizedData, qVector);
+
+            if (!saveQuantizedPlaneData(quantizedImage.getData(), quantizedFile)) {
+                System.err.println("Failed to save quantized plane.");
+                return;
+            }
+
+            saveDifference(plane.getData(), quantizedImage.getData(), diffFile, absoluteDiffFile);
         }
     }
 

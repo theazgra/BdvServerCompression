@@ -31,57 +31,62 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
 
     @Override
     public void startBenchmark() {
-        // TODO(Moravec): Support parsed CLI options.
+        if (planes.length < 1) {
+            return;
+        }
         boolean dirCreated = new File(this.outputDirectory).mkdirs();
+
+        ScalarQuantizer quantizer = null;
+        if (hasReferencePlane) {
+            final int[] refPlaneData = loadPlaneData(referencePlaneIndex);
+            if (refPlaneData.length == 0) {
+                System.err.println("Failed to load reference plane data.");
+                return;
+            }
+            if (useDiffEvolution) {
+                quantizer = trainDifferentialEvolution(refPlaneData, codebookSize);
+            } else {
+                quantizer = trainLloydMaxQuantizer(refPlaneData, codebookSize);
+            }
+        }
+
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
             // NOTE(Moravec): Actual planeIndex is zero based.
-            final int[] planeData = loadPlaneData(planeIndex - 1);
+            final int[] planeData = loadPlaneData(planeIndex);
             if (planeData.length == 0) {
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
                 return;
             }
+            System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
 
-            // Test codebook sizes from 2^2 to 2^8
-            for (int bitCount = 2; bitCount <= 8; bitCount++) {
-                final int codebookSize = (int) Math.pow(2, bitCount);
-                System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
-
-                ScalarQuantizer quantizer = null;
+            if (!hasReferencePlane) {
                 if (useDiffEvolution) {
-                    quantizer = trainDifferentialEvolution(planeData, codebookSize, planeIndex);
+                    quantizer = trainDifferentialEvolution(planeData, codebookSize);
                 } else {
-                    quantizer = trainLloydMaxQuantizer(planeData, codebookSize, planeIndex);
+                    quantizer = trainLloydMaxQuantizer(planeData, codebookSize);
                 }
-                if (quantizer == null) {
-                    System.err.println("Failed to initialize scalar quantizer. Skipping plane.");
-                    return;
-                }
-                System.out.println("Scalar quantizer ready.");
-
-//                final String method = useDiffEvolution ? "ilshade" : "lloyd";
-//                final String centroidsFile = String.format("p%d_cb%d%s_centroids.txt",
-//                                                           planeIndex,
-//                                                           codebookSize,
-//                                                           method);
-//                saveCentroids(quantizer.getCentroids(), centroidsFile);
-
-
-                final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
-                final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
-                final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
-                                                              planeIndex,
-                                                              codebookSize);
-
-                final int[] quantizedData = quantizer.quantize(planeData);
-
-                if (!saveQuantizedPlaneData(quantizedData, quantizedFile)) {
-                    System.err.println("Failed to save quantized plane.");
-                    return;
-                }
-
-                saveDifference(planeData, quantizedData, diffFile, absoluteDiffFile);
             }
+            if (quantizer == null) {
+                System.err.println("Failed to initialize scalar quantizer.");
+                return;
+            }
+            System.out.println("Scalar quantizer ready.");
+
+            final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
+            final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
+            final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
+                                                          planeIndex,
+                                                          codebookSize);
+
+            final int[] quantizedData = quantizer.quantize(planeData);
+
+            if (!saveQuantizedPlaneData(quantizedData, quantizedFile)) {
+                System.err.println("Failed to save quantized plane.");
+                return;
+            }
+
+            saveDifference(planeData, quantizedData, diffFile, absoluteDiffFile);
         }
     }
 
@@ -110,29 +115,26 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
         }
     }
 
-    private ScalarQuantizer trainLloydMaxQuantizer(final int[] data, final int codebookSize, final int planeIndex) {
+    private ScalarQuantizer trainLloydMaxQuantizer(final int[] data, final int codebookSize) {
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(data, codebookSize);
         QTrainIteration[] trainingReport = lloydMax.train(true);
 
-        saveQTrainLog(String.format("p%d_cb_%d_lloyd.csv", planeIndex, codebookSize), trainingReport);
+        //saveQTrainLog(String.format("p%d_cb_%d_lloyd.csv", planeIndex, codebookSize), trainingReport);
 
         return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCentroids());
     }
 
     private ScalarQuantizer trainDifferentialEvolution(final int[] data,
-                                                       final int codebookSize,
-                                                       final int planeIndex) {
+                                                       final int codebookSize) {
         ILShadeSolver ilshade = new ILShadeSolver(codebookSize, 100, 2000, 15);
         ilshade.setTrainingData(data);
 
-        QTrainIteration[] trainingReport = null;
         try {
-            trainingReport = ilshade.train();
+            ilshade.train();
         } catch (DeException deEx) {
             deEx.printStackTrace();
             return null;
         }
-        saveQTrainLog(String.format("p%d_cb_%d_il_shade.csv", planeIndex, codebookSize), trainingReport);
         return new ScalarQuantizer(U16.Min, U16.Max, ilshade.getBestSolution().getAttributes());
     }
 

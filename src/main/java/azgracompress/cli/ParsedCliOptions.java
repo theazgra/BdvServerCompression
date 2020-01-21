@@ -27,7 +27,7 @@ public class ParsedCliOptions {
     private int planeIndex;
 
     private boolean refPlaneIndexSet = false;
-    private int referencePlaneIndex;
+    private int referencePlaneIndex = -1;
 
     private boolean verbose;
 
@@ -49,15 +49,22 @@ public class ParsedCliOptions {
         String defaultValue = outputFile.getAbsolutePath();
 
         switch (method) {
-            case Compress:
+            case Compress: {
                 defaultValue += CompressorDecompressorBase.EXTENSTION;
-                break;
+            }
+            break;
             case Decompress: {
                 if (defaultValue.toUpperCase().endsWith(CompressorDecompressorBase.EXTENSTION)) {
                     defaultValue = defaultValue.substring(0,
                                                           defaultValue.length() - CompressorDecompressorBase.EXTENSTION.length());
                 }
             }
+            break;
+            case Benchmark: {
+                defaultValue = new File(inputFile.getParent(), "benchmark").getAbsolutePath();
+            }
+            break;
+
             case PrintHelp:
                 break;
             case InspectFile:

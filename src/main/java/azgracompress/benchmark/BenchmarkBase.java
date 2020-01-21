@@ -23,8 +23,9 @@ abstract class BenchmarkBase {
     protected final int[] planes;
     protected final V3i rawImageDims;
 
-    protected boolean hasReferencePlane = false;
-    protected int referencePlaneIndex = -1;
+    protected final boolean hasReferencePlane;
+    protected final int referencePlaneIndex;
+    protected final int codebookSize;
 
     protected BenchmarkBase(final String inputFile,
                             final String outputDirectory,
@@ -34,6 +35,10 @@ abstract class BenchmarkBase {
         this.outputDirectory = outputDirectory;
         this.planes = planes;
         this.rawImageDims = rawImageDims;
+
+        hasReferencePlane = false;
+        referencePlaneIndex = -1;
+        codebookSize = 256;
     }
 
     protected BenchmarkBase(final ParsedCliOptions options) {
@@ -41,9 +46,8 @@ abstract class BenchmarkBase {
         this.outputDirectory = options.getOutputFile();
         this.rawImageDims = options.getImageDimension();
         this.hasReferencePlane = options.hasReferencePlaneIndex();
-        if (this.hasReferencePlane) {
-            this.referencePlaneIndex = options.getReferencePlaneIndex();
-        }
+        this.referencePlaneIndex = options.getReferencePlaneIndex();
+        this.codebookSize = (int) Math.pow(2, options.getBitsPerPixel());
 
         if (options.hasPlaneIndexSet()) {
             this.planes = new int[]{options.getPlaneIndex()};
