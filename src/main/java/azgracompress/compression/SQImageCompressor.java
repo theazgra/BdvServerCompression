@@ -2,6 +2,7 @@ package azgracompress.compression;
 
 import azgracompress.U16;
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.ImageU16;
 import azgracompress.io.OutBitStream;
 import azgracompress.io.RawDataIO;

@@ -1,5 +1,7 @@
 package azgracompress.compression;
 
+import azgracompress.compression.exception.ImageCompressionException;
+
 import java.io.DataOutputStream;
 
 public interface IImageCompressor {

@@ -1,6 +1,7 @@
 package azgracompress.compression;
 
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.fileformat.QCMPFileHeader;
 
 import java.io.*;

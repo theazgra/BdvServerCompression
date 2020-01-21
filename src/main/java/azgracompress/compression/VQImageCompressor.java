@@ -1,6 +1,7 @@
 package azgracompress.compression;
 
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Chunk2D;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V2i;

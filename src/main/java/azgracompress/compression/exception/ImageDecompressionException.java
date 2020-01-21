@@ -1,4 +1,4 @@
-package azgracompress.compression;
+package azgracompress.compression.exception;
 
 public class ImageDecompressionException extends Exception {
     private final Exception innerException;
