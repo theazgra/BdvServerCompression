@@ -3,6 +3,7 @@ package azgracompress.compression;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.io.InBitStream;
+import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.TypeConverter;
 
 import java.io.DataInputStream;
@@ -57,8 +58,9 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             quantizationValues = readScalarQuantizationValues(compressedStream, codebookSize);
         }
 
-
+        Stopwatch stopwatch = new Stopwatch();
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
+            stopwatch.restart();
             if (header.isCodebookPerPlane()) {
                 Log("Loading plane codebook...");
                 quantizationValues = readScalarQuantizationValues(compressedStream, codebookSize);
@@ -78,7 +80,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             final byte[] decompressedPlaneData = TypeConverter.unsignedShortArrayToByteArray(decompressedValues, false);
 
             decompressStream.write(decompressedPlaneData);
-            Log(String.format("Decompressed plane %d.", planeIndex));
+            stopwatch.stop();
+            Log(String.format("Decompressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString()));
         }
 
     }

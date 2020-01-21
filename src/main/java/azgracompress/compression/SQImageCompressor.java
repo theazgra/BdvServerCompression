@@ -7,6 +7,7 @@ import azgracompress.io.OutBitStream;
 import azgracompress.io.RawDataIO;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
 import azgracompress.quantization.scalar.ScalarQuantizer;
+import azgracompress.utilities.Stopwatch;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -55,19 +56,23 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      */
     public void compress(DataOutputStream compressStream) throws Exception {
         ScalarQuantizer quantizer = null;
+        Stopwatch stopwatch = new Stopwatch();
         if (options.hasReferencePlaneIndex()) {
+            stopwatch.restart();
             final ImageU16 referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
                                                                    options.getImageDimension(),
                                                                    options.getReferencePlaneIndex());
 
             Log(String.format("Training scalar quantizer from reference plane %d.", options.getReferencePlaneIndex()));
             quantizer = trainScalarQuantizerFromData(referencePlane.getData());
+            stopwatch.stop();
             writeCodebookToOutputStream(quantizer, compressStream);
+            Log("Reference codebook created in: " + stopwatch.getElapsedTimeString());
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression();
-
         for (final int planeIndex : planeIndices) {
+            stopwatch.restart();
             Log(String.format("Loading plane %d.", planeIndex));
             final ImageU16 plane = RawDataIO.loadImageU16(options.getInputFile(),
                                                           options.getImageDimension(),
@@ -89,7 +94,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             } catch (IOException ioEx) {
                 ioEx.printStackTrace();
             }
-
+            stopwatch.stop();
+            Log("Plane time: " + stopwatch.getElapsedTimeString());
             Log(String.format("Finished processing of plane %d", planeIndex));
         }
     }

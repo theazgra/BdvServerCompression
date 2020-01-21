@@ -316,7 +316,7 @@ public class LBGVectorQuantizer {
         biggestPartition.removeTrainingVectorAndDistance(randomIndex);
 
         // Redistribute biggest partition training vectors
-        @SuppressWarnings("unchecked") final ArrayList<int[]> partitionVectors =
+        final ArrayList<int[]> partitionVectors =
                 (ArrayList<int[]>) biggestPartition.getTrainingVectors().clone();
 
         biggestPartition.clearTrainingData();
