@@ -58,14 +58,15 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         StringBuilder logBuilder = new StringBuilder();
         boolean validFile = true;
 
-
-        var fileInputStream = new FileInputStream(options.getInputFile());
-        var dataInputStream = new DataInputStream(fileInputStream);
-
-        final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
-
-        fileInputStream.close();
-        dataInputStream.close();
+        QCMPFileHeader header = null;
+        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFile());
+             DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
+            header = readQCMPFileHeader(dataInputStream);
+        }
+        catch (IOException ioEx){
+            ioEx.printStackTrace();
+            return "";
+        }
 
         if (header == null) {
             logBuilder.append("Input file is not valid QCMPFile\n");
@@ -109,7 +110,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
 
             final long fileSize = new File(options.getInputFile()).length();
             final long dataSize = fileSize - QCMPFileHeader.QCMP_HEADER_SIZE;
-            final var decompressor = getImageDecompressor(header);
+            final IImageDecompressor decompressor = getImageDecompressor(header);
             if (decompressor != null) {
                 final long expectedDataSize = decompressor.getExpectedDataSize(header);
                 validFile = (dataSize == expectedDataSize);

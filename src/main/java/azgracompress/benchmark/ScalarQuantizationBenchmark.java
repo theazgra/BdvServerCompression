@@ -31,6 +31,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
 
     @Override
     public void startBenchmark() {
+        // TODO(Moravec): Support parsed CLI options.
         boolean dirCreated = new File(this.outputDirectory).mkdirs();
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
@@ -93,7 +94,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
             StringBuilder sb = new StringBuilder();
 
 
-            for (final var entry : centroids) {
+            for (final int entry : centroids) {
                 sb.append(entry);
                 sb.append('\n');
             }

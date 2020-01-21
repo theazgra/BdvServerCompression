@@ -34,7 +34,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
                                                           final V2i qVector) {
         Chunk2D reconstructedChunk = new Chunk2D(new V2i(rawImageDims.getX(), rawImageDims.getY()), new V2l(0, 0));
         if (qVector.getY() > 1) {
-            var chunks = plane.as2dChunk().divideIntoChunks(qVector);
+            Chunk2D[] chunks = plane.as2dChunk().divideIntoChunks(qVector);
             Chunk2D.updateChunkData(chunks, vectors);
             reconstructedChunk.reconstructFromChunks(chunks);
 
@@ -54,7 +54,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
     }
 
     public void startBenchmark(final V2i qVector) {
-
+        // TODO(Moravec): Support parsed CLI options.
         if (qVector.getY() > 1) {
             System.out.println("2D qVector");
         } else {
@@ -114,7 +114,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
             FileOutputStream fileStream = new FileOutputStream(outFile);
             OutputStreamWriter writer = new OutputStreamWriter(fileStream);
 
-            for (final var entry : codebook) {
+            for (final CodebookEntry entry : codebook) {
                 writer.write(entry.getVectorString());
             }
 

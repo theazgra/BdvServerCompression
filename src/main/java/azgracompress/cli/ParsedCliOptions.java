@@ -121,8 +121,8 @@ public class ParsedCliOptions {
                     if (rangeSepIndex != -1) {
                         final String fromIndexString = fileInfo[2].substring(0, rangeSepIndex);
                         final String toIndexString = fileInfo[2].substring(rangeSepIndex + 1);
-                        final var indexFromResult = tryParseInt(fromIndexString);
-                        final var indexToResult = tryParseInt(toIndexString);
+                        final ParseResult<Integer> indexFromResult = tryParseInt(fromIndexString);
+                        final ParseResult<Integer> indexToResult = tryParseInt(toIndexString);
 
                         if (indexFromResult.isSuccess() && indexToResult.isSuccess()) {
                             fromPlaneIndex = indexFromResult.getValue();
@@ -134,7 +134,7 @@ public class ParsedCliOptions {
                                     fileInfo[2]).append('\n');
                         }
                     } else {
-                        final var parseResult = tryParseInt(fileInfo[2]);
+                        final ParseResult<Integer> parseResult = tryParseInt(fileInfo[2]);
                         if (parseResult.isSuccess()) {
                             planeIndexSet = true;
                             planeIndex = parseResult.getValue();
@@ -162,8 +162,8 @@ public class ParsedCliOptions {
 
         final int secondDelimIndex = secondPart.indexOf('x');
         if (secondDelimIndex == -1) {
-            final var n1Result = tryParseInt(num1String);
-            final var n2Result = tryParseInt(secondPart);
+            final ParseResult<Integer> n1Result = tryParseInt(num1String);
+            final ParseResult<Integer> n2Result = tryParseInt(secondPart);
             if (n1Result.isSuccess() && n2Result.isSuccess()) {
                 imageDimension = new V3i(n1Result.getValue(), n2Result.getValue(), 1);
             } else {
@@ -175,9 +175,9 @@ public class ParsedCliOptions {
             final String num2String = secondPart.substring(0, secondDelimIndex);
             final String num3String = secondPart.substring(secondDelimIndex + 1);
 
-            final var n1Result = tryParseInt(num1String);
-            final var n2Result = tryParseInt(num2String);
-            final var n3Result = tryParseInt(num3String);
+            final ParseResult<Integer> n1Result = tryParseInt(num1String);
+            final ParseResult<Integer> n2Result = tryParseInt(num2String);
+            final ParseResult<Integer> n3Result = tryParseInt(num3String);
 
             if (n1Result.isSuccess() && n2Result.isSuccess() && n3Result.isSuccess()) {
                 imageDimension = new V3i(n1Result.getValue(), n2Result.getValue(), n3Result.getValue());
@@ -193,7 +193,7 @@ public class ParsedCliOptions {
     private void parseReferencePlaneIndex(CommandLine cmd, StringBuilder errorBuilder) {
         if (cmd.hasOption(CliConstants.REFERENCE_PLANE_LONG)) {
             final String rpString = cmd.getOptionValue(CliConstants.REFERENCE_PLANE_LONG);
-            final var parseResult = tryParseInt(rpString);
+            final ParseResult<Integer> parseResult = tryParseInt(rpString);
             if (parseResult.isSuccess()) {
                 referencePlaneIndex = parseResult.getValue();
                 refPlaneIndexSet = true;
@@ -210,7 +210,7 @@ public class ParsedCliOptions {
     private void parseBitsPerPixel(CommandLine cmd, StringBuilder errorBuilder) {
         if (cmd.hasOption(CliConstants.BITS_LONG)) {
             final String bitsString = cmd.getOptionValue(CliConstants.BITS_LONG);
-            final var parseResult = tryParseInt(bitsString);
+            final ParseResult<Integer> parseResult = tryParseInt(bitsString);
             if (parseResult.isSuccess()) {
                 bitsPerPixel = parseResult.getValue();
             } else {
@@ -232,7 +232,7 @@ public class ParsedCliOptions {
 
                 final int delimiterIndex = vectorDefinition.indexOf('x');
                 if (delimiterIndex == -1) {
-                    final var parseResult = tryParseInt(vectorDefinition);
+                    final ParseResult<Integer> parseResult = tryParseInt(vectorDefinition);
                     if (parseResult.isSuccess()) {
                         quantizationType = QuantizationType.Vector1D;
                         vectorDimension = new V2i(parseResult.getValue(), 1);
@@ -245,8 +245,8 @@ public class ParsedCliOptions {
                     final String firstNumberString = vectorDefinition.substring(0, delimiterIndex);
                     final String secondNumberString = vectorDefinition.substring(delimiterIndex + 1);
 
-                    final var firstNumberParseResult = tryParseInt(firstNumberString);
-                    final var secondNumberParseResult = tryParseInt(secondNumberString);
+                    final ParseResult<Integer> firstNumberParseResult = tryParseInt(firstNumberString);
+                    final ParseResult<Integer> secondNumberParseResult = tryParseInt(secondNumberString);
                     if (firstNumberParseResult.isSuccess() && secondNumberParseResult.isSuccess()) {
                         vectorDimension = new V2i(firstNumberParseResult.getValue(),
                                                   secondNumberParseResult.getValue());

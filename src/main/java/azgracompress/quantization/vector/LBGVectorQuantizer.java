@@ -136,7 +136,9 @@ public class LBGVectorQuantizer {
 
                 // We always want to carry zero vector to next iteration.
                 if (entryToSplit.isZeroVector()) {
-                    System.out.println("--------------------------IS zero vector");
+                    if (verbose) {
+                        System.out.println("--------------------------IS zero vector");
+                    }
                     newCodebook.add(entryToSplit);
 
                     ArrayList<Integer> rndEntryValues = new ArrayList<>(prtV.length);

@@ -99,7 +99,7 @@ abstract class BenchmarkBase {
      * @return U16 array of image plane data.
      */
     protected int[] loadPlaneData(final int planeIndex) {
-        var plane = loadPlane(planeIndex);
+        ImageU16 plane = loadPlane(planeIndex);
 
         return (plane != null) ? plane.getData() : new int[0];
     }
