@@ -27,7 +27,7 @@ public class ChunkIO {
                 byte[] chunkData = new byte[dataLen];
                 buffer.get(chunkData);
 
-                chunks.add(new Chunk3D(chunkDims, chunkOffset, TypeConverter.shortBytesToIntArray(chunkData)));
+                chunks.add(new Chunk3D(chunkDims, chunkOffset, TypeConverter.unsignedShortBytesToIntArray(chunkData)));
             }
 
         } catch (IOException e) {

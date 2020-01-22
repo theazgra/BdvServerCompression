@@ -8,7 +8,7 @@ public class TypeConverter {
         return ((value & 0xFF00) | (value & 0x00FF));
     }
 
-    public static int[] shortBytesToIntArray(final byte[] bytes) {
+    public static int[] unsignedShortBytesToIntArray(final byte[] bytes) {
         assert (bytes.length % 2 == 0);
         int[] values = new int[bytes.length / 2];
 

@@ -4,9 +4,7 @@ import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.utilities.TypeConverter;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 public class RawDataIO {
     /**
@@ -19,34 +17,55 @@ public class RawDataIO {
      */
     public static ImageU16 loadImageU16(final String rawFile,
                                         final V3i rawDataDimension,
-                                        final int plane) throws Exception {
-        FileInputStream fileStream = new FileInputStream(rawFile);
+                                        final int plane) throws IOException {
 
-        final long planeSize = (long) rawDataDimension.getX() * (long) rawDataDimension.getY() * 2;
-        final long expectedFileSize = planeSize * rawDataDimension.getZ();
-        final long fileSize = fileStream.getChannel().size();
+        byte[] buffer;
+        try (FileInputStream fileStream = new FileInputStream(rawFile)) {
+            final long planeSize = (long) rawDataDimension.getX() * (long) rawDataDimension.getY() * 2;
+            final long expectedFileSize = planeSize * rawDataDimension.getZ();
+            final long fileSize = fileStream.getChannel().size();
 
 
-        if (expectedFileSize != fileSize) {
-            throw new Exception(
-                    "File specified by `rawFile` doesn't contains raw data for image of dimensions `rawDataDimension`");
+            if (expectedFileSize != fileSize) {
+                throw new IOException(
+                        "File specified by `rawFile` doesn't contains raw data for image of dimensions " +
+                                "`rawDataDimension`");
+            }
+
+            final long planeOffset = plane * planeSize;
+
+            buffer = new byte[(int) planeSize];
+            if (fileStream.skip(planeOffset) != planeOffset) {
+                throw new IOException("Failed to skip.");
+            }
+            if (fileStream.read(buffer, 0, (int) planeSize) != planeSize) {
+                throw new IOException("Read wrong number of bytes.");
+            }
         }
-
-        final long planeOffset = plane * planeSize;
-
-        byte[] buffer = new byte[(int) planeSize];
-        if (fileStream.skip(planeOffset) != planeOffset) {
-            throw new Exception("Failed to skip.");
-        }
-        if (fileStream.read(buffer, 0, (int) planeSize) != planeSize) {
-            throw new Exception("Read wrong number of bytes.");
-        }
-
-        fileStream.close();
 
         return new ImageU16(rawDataDimension.getX(),
                             rawDataDimension.getY(),
-                            TypeConverter.shortBytesToIntArray(buffer));
+                            TypeConverter.unsignedShortBytesToIntArray(buffer));
+    }
+
+    public static int[] loadAllPlanesData(final String rawFile, final V3i imageDims) throws IOException {
+
+        final long dataSize = (long) imageDims.getX() * (long) imageDims.getY() * (long) imageDims.getZ();
+        int[] values = new int[(int) dataSize];
+
+        if (dataSize > (long) Integer.MAX_VALUE) {
+            throw new IOException("RawFile size is too big.");
+        }
+
+        try (FileInputStream fileStream = new FileInputStream(rawFile);
+             DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
+
+            for (int i = 0; i < (int) dataSize; i++) {
+                values[i] = dis.readUnsignedShort();
+            }
+        }
+
+        return values;
     }
 
     public static void writeImageU16(final String rawFile,

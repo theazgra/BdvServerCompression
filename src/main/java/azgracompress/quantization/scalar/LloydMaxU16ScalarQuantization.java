@@ -2,7 +2,7 @@ package azgracompress.quantization.scalar;
 
 import azgracompress.U16;
 import azgracompress.quantization.QTrainIteration;
-import azgracompress.utilities.TypeConverter;
+import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.Utils;
 
 import java.util.ArrayList;
@@ -16,13 +16,16 @@ public class LloydMaxU16ScalarQuantization {
     private int[] boundaryPoints;
     private double[] pdf;
 
-    public LloydMaxU16ScalarQuantization(final int[] trainData, final int codebookSize) {
+    private final int workerCount;
+
+    public LloydMaxU16ScalarQuantization(final int[] trainData, final int codebookSize, final int workerCount) {
         trainingData = trainData;
         this.codebookSize = codebookSize;
+        this.workerCount = workerCount;
     }
 
-    public LloydMaxU16ScalarQuantization(final short[] trainData, final int codebookSize) {
-        this(TypeConverter.shortArrayToIntArray(trainData), codebookSize);
+    public LloydMaxU16ScalarQuantization(final int[] trainData, final int codebookSize) {
+        this(trainData, codebookSize,1);
     }
 
     private void initialize() {
@@ -41,9 +44,14 @@ public class LloydMaxU16ScalarQuantization {
 
     private void initializeProbabilityDensityFunction() {
         pdf = new double[U16.Max + 1];
+        // Speedup
+        Stopwatch s = new Stopwatch();
+        s.start();
         for (int i = 0; i < trainingData.length; i++) {
             pdf[trainingData[i]] += 1;
         }
+        s.stop();
+        System.out.println("Init_PDF: " + s.getElapsedTimeString());
     }
 
     private void recalculateBoundaryPoints() {
@@ -53,14 +61,11 @@ public class LloydMaxU16ScalarQuantization {
     }
 
     private void recalculateCentroids() {
-        // NOTE(Moravec): We cann't create floating points in here because we are trying to quantize to integer values.
-
         double numerator = 0.0;
         double denominator = 0.0;
 
         int lowerBound, upperBound;
 
-        // NOTE(Moravec): Leave the first centroid at zero.
         for (int j = 0; j < codebookSize; j++) {
 
             numerator = 0.0;
@@ -75,7 +80,6 @@ public class LloydMaxU16ScalarQuantization {
             }
 
             if (denominator > 0) {
-                // NOTE: Maybe try ceil instead of floor.
                 centroids[j] = (int) Math.floor(numerator / denominator);
             }
         }
@@ -92,15 +96,59 @@ public class LloydMaxU16ScalarQuantization {
 
     private double getCurrentMse() {
         double mse = 0.0;
-        for (int i = 0; i < trainingData.length; i++) {
-            int quantizedValue = quantize(trainingData[i]);
-            mse += Math.pow((double) trainingData[i] - (double) quantizedValue, 2);
+
+        if (workerCount > 1) {
+            Stopwatch s = new Stopwatch();
+            s.start();
+            // Speedup
+
+            final int workSize = trainingData.length / workerCount;
+
+            RunnableLloydMseCalc[] runnables = new RunnableLloydMseCalc[workerCount];
+            Thread[] workers = new Thread[workerCount];
+            for (int wId = 0; wId < workerCount; wId++) {
+                final int fromIndex = wId * workSize;
+                final int toIndex = (wId == workerCount - 1) ? trainingData.length : (workSize + (wId * workSize));
+
+
+                runnables[wId] = new RunnableLloydMseCalc(trainingData,
+                                                          fromIndex,
+                                                          toIndex,
+                                                          centroids,
+                                                          boundaryPoints,
+                                                          codebookSize);
+                workers[wId] = new Thread(runnables[wId]);
+            }
+
+            for (int wId = 0; wId < workerCount; wId++) {
+                workers[wId].start();
+            }
+
+
+            try {
+                for (int wId = 0; wId < workerCount; wId++) {
+                    workers[wId].join();
+                    mse += runnables[wId].getMse();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            s.stop();
+            System.out.println("\ngetCurrentMse time: " + s.getElapsedTimeString());
+        } else {
+            for (final int trainingDatum : trainingData) {
+                int quantizedValue = quantize(trainingDatum);
+                mse += Math.pow((double) trainingDatum - (double) quantizedValue, 2);
+            }
         }
+
         mse /= (double) trainingData.length;
+
         return mse;
     }
 
     public QTrainIteration[] train(final boolean verbose) {
+        System.out.println("Data len: " + trainingData.length);
         initialize();
         initializeProbabilityDensityFunction();
 
@@ -108,15 +156,14 @@ public class LloydMaxU16ScalarQuantization {
         double currentMse = 1.0;
         double psnr;
 
-        ArrayList<QTrainIteration> solutionHistory = new ArrayList<QTrainIteration>();
+        ArrayList<QTrainIteration> solutionHistory = new ArrayList<>();
 
         recalculateBoundaryPoints();
         recalculateCentroids();
 
-        // printCurrentConfigration();
-
         currentMse = getCurrentMse();
         psnr = Utils.calculatePsnr(currentMse, U16.Max);
+
         if (verbose) {
             System.out.println(String.format("Initial MSE: %f", currentMse));
         }
@@ -128,8 +175,6 @@ public class LloydMaxU16ScalarQuantization {
         do {
             recalculateBoundaryPoints();
             recalculateCentroids();
-
-            // printCurrentConfigration();
 
             prevMse = currentMse;
             currentMse = getCurrentMse();
@@ -147,23 +192,7 @@ public class LloydMaxU16ScalarQuantization {
         if (verbose) {
             System.out.println("\nFinished training.");
         }
-        // printCurrentConfigration();
         return solutionHistory.toArray(new QTrainIteration[0]);
-    }
-
-    private void printCurrentConfigration() {
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Centroids: ");
-        for (int i = 0; i < centroids.length; i++) {
-            sb.append(String.format("a[%d]=%d;", i, centroids[i]));
-        }
-        sb.append("\n");
-        sb.append("Boundaries: ");
-        for (int i = 0; i < boundaryPoints.length; i++) {
-            sb.append(String.format("b[%d]=%d;", i, boundaryPoints[i]));
-        }
-        System.out.println(sb);
     }
 
     public int[] getCentroids() {

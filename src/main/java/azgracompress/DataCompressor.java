@@ -5,6 +5,8 @@ import azgracompress.cli.CliConstants;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.ImageCompressor;
 import azgracompress.compression.ImageDecompressor;
+import azgracompress.quantization.QuantizationValueCache;
+import azgracompress.quantization.vector.CodebookEntry;
 import org.apache.commons.cli.*;
 import org.jetbrains.annotations.NotNull;
 
