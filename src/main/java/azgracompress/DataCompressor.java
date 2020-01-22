@@ -5,8 +5,6 @@ import azgracompress.cli.CliConstants;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.ImageCompressor;
 import azgracompress.compression.ImageDecompressor;
-import azgracompress.quantization.QuantizationValueCache;
-import azgracompress.quantization.vector.CodebookEntry;
 import org.apache.commons.cli.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,7 +36,9 @@ public class DataCompressor {
             return;
         }
 
-        //        System.out.println(parsedCliOptions.report());
+        if (parsedCliOptions.isVerbose()) {
+            System.out.println(parsedCliOptions.report());
+        }
 
         switch (parsedCliOptions.getMethod()) {
 
@@ -57,8 +57,14 @@ public class DataCompressor {
                 return;
             }
             case Benchmark: {
-                System.out.println(parsedCliOptions.report());
                 CompressionBenchmark.runBenchmark(parsedCliOptions);
+                return;
+            }
+            case TrainCodebook: {
+                ImageCompressor compressor = new ImageCompressor(parsedCliOptions);
+                if (!compressor.trainAndSaveCodebook()) {
+                    System.err.println("Errors occurred during training/saving of codebook.");
+                }
                 return;
             }
             case PrintHelp: {
@@ -104,6 +110,11 @@ public class DataCompressor {
                                          false,
                                          "Benchmark"));
 
+        methodGroup.addOption(new Option(CliConstants.TRAIN_SHORT,
+                                         CliConstants.TRAIN_LONG,
+                                         false,
+                                         "Train codebook and save learned codebook to cache file."));
+
         methodGroup.addOption(new Option(CliConstants.HELP_SHORT, CliConstants.HELP_LONG, false, "Print help"));
 
         OptionGroup compressionMethodGroup = new OptionGroup();
@@ -128,7 +139,12 @@ public class DataCompressor {
                                      CliConstants.VERBOSE_LONG,
                                      false,
                                      "Make program verbose"));
-        //        options.addRequiredOption(INPUT_SHORT, INPUT_LONG, true, "Input file");
+
+        options.addOption(new Option(CliConstants.WORKER_COUNT_SHORT,
+                                     CliConstants.WORKER_COUNT_LONG,
+                                     true,
+                                     "Number of worker threads"));
+
         options.addOption(CliConstants.OUTPUT_SHORT, CliConstants.OUTPUT_LONG, true, "Custom output file");
         return options;
     }

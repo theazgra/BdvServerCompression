@@ -1,6 +1,10 @@
 package azgracompress.compression;
 
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.compression.exception.ImageCompressionException;
+import azgracompress.io.RawDataIO;
+
+import java.io.IOException;
 
 public abstract class CompressorDecompressorBase {
     public static final String EXTENSTION = ".QCMP";
@@ -38,6 +42,38 @@ public abstract class CompressorDecompressorBase {
         }
         return planeIndices;
     }
+
+    protected int[] loadConfiguredPlanesData() throws ImageCompressionException {
+        int[] trainData = null;
+        if (options.hasPlaneIndexSet()) {
+            try {
+                Log("Loading single plane data.");
+                trainData = RawDataIO.loadImageU16(options.getInputFile(),
+                                                   options.getImageDimension(),
+                                                   options.getPlaneIndex()).getData();
+            } catch (IOException e) {
+                throw new ImageCompressionException("Failed to load reference image data.", e);
+            }
+        } else if (options.hasPlaneRangeSet()) {
+            Log("Loading plane range data.");
+            final int[] planes = getPlaneIndicesForCompression();
+            try {
+                trainData = RawDataIO.loadPlanesData(options.getInputFile(), options.getImageDimension(), planes);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new ImageCompressionException("Failed to load plane range data.", e);
+            }
+        } else {
+            Log("Loading all planes data.");
+            try {
+                trainData = RawDataIO.loadAllPlanesData(options.getInputFile(), options.getImageDimension());
+            } catch (IOException e) {
+                throw new ImageCompressionException("Failed to load all planes data.", e);
+            }
+        }
+        return trainData;
+    }
+
 
     protected void Log(final String message) {
         if (options.isVerbose()) {

@@ -147,5 +147,10 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         }
     }
 
+    @Override
+    public void trainAndSaveCodebook() throws ImageCompressionException {
+        throw new ImageCompressionException("Not implemented yet");
+    }
+
 
 }

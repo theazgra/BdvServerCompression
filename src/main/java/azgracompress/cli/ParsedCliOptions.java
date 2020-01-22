@@ -38,6 +38,8 @@ public class ParsedCliOptions {
     private int fromPlaneIndex;
     private int toPlaneIndex;
 
+    private int workerCount = 1;
+
     public ParsedCliOptions(CommandLine cmdInput) {
         parseCLI(cmdInput);
     }
@@ -93,6 +95,17 @@ public class ParsedCliOptions {
         parseInputFilePart(errorBuilder, fileInfo);
 
         verbose = cmd.hasOption(CliConstants.VERBOSE_LONG);
+
+        if (cmd.hasOption(CliConstants.WORKER_COUNT_LONG)) {
+            final String wcString = cmd.getOptionValue(CliConstants.WORKER_COUNT_LONG);
+            ParseResult<Integer> pr = tryParseInt(wcString);
+            if (pr.isSuccess()) {
+                workerCount = pr.getValue();
+            } else {
+                errorOccurred = true;
+                errorBuilder.append("Unable to parse worker count. Expected int got: ").append(wcString).append('\n');
+            }
+        }
 
         if (!errorOccurred) {
             outputFile = cmd.getOptionValue(CliConstants.OUTPUT_LONG, getDefaultOutputFilePath(inputFile));
@@ -230,8 +243,15 @@ public class ParsedCliOptions {
         }
     }
 
+    private boolean hasQuantizationType(final ProgramMethod method) {
+        return (method == ProgramMethod.Compress) ||
+                (method == ProgramMethod.Benchmark) ||
+                (method == ProgramMethod.TrainCodebook);
+    }
+
     private void parseCompressionType(CommandLine cmd, StringBuilder errorBuilder) {
-        if ((method == ProgramMethod.Compress) || (method == ProgramMethod.Benchmark)) {
+        if (hasQuantizationType(method)) {
+
             if (cmd.hasOption(CliConstants.SCALAR_QUANTIZATION_LONG)) {
                 quantizationType = QuantizationType.Scalar;
             } else if (cmd.hasOption(CliConstants.VECTOR_QUANTIZATION_LONG)) {
@@ -293,6 +313,8 @@ public class ParsedCliOptions {
             method = ProgramMethod.Decompress;
         } else if (cmd.hasOption(CliConstants.BENCHMARK_LONG)) {
             method = ProgramMethod.Benchmark;
+        } else if (cmd.hasOption(CliConstants.TRAIN_LONG)) {
+            method = ProgramMethod.TrainCodebook;
         } else if (cmd.hasOption(CliConstants.INSPECT_LONG)) {
             method = ProgramMethod.InspectFile;
         } else {
@@ -378,6 +400,10 @@ public class ParsedCliOptions {
         return toPlaneIndex;
     }
 
+    public int getWorkerCount() {
+        return workerCount;
+    }
+
     public String report() {
         StringBuilder sb = new StringBuilder();
 
@@ -397,7 +423,8 @@ public class ParsedCliOptions {
                 break;
         }
 
-        if (method == ProgramMethod.Compress) {
+
+        if (hasQuantizationType(method)) {
             sb.append("Quantization type: ");
             switch (quantizationType) {
                 case Scalar:
@@ -417,7 +444,7 @@ public class ParsedCliOptions {
         sb.append("Output: ").append(outputFile).append('\n');
         sb.append("InputFile: ").append(inputFile).append('\n');
 
-        if (method == ProgramMethod.Compress) {
+        if (hasQuantizationType(method)) {
             sb.append("Input image dims: ").append(imageDimension.toString()).append('\n');
         }
 
@@ -431,6 +458,9 @@ public class ParsedCliOptions {
             sb.append("FromPlaneIndex: ").append(fromPlaneIndex).append('\n');
             sb.append("ToPlaneIndex: ").append(toPlaneIndex).append('\n');
         }
+
+        sb.append("Verbose: ").append(verbose).append('\n');
+        sb.append("ThreadWorkerCount: ").append(workerCount).append('\n');
 
 
         return sb.toString();

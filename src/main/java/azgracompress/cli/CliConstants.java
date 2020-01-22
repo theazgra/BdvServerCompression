@@ -16,6 +16,9 @@ public class CliConstants {
     public static final String BENCHMARK_SHORT = "bench";
     public static final String BENCHMARK_LONG = "benchmark";
 
+    public static final String TRAIN_SHORT = "tcb";
+    public static final String TRAIN_LONG = "train-codebook";
+
     public static final String INSPECT_SHORT = "i";
     public static final String INSPECT_LONG = "inspect";
 
@@ -27,6 +30,9 @@ public class CliConstants {
 
     public static final String VERBOSE_SHORT = "v";
     public static final String VERBOSE_LONG = "verbose";
+
+    public static final String WORKER_COUNT_SHORT = "wc";
+    public static final String WORKER_COUNT_LONG = "worker-count";
 
     public static final String SCALAR_QUANTIZATION_SHORT = "sq";
     public static final String SCALAR_QUANTIZATION_LONG = "scalar-quantization";

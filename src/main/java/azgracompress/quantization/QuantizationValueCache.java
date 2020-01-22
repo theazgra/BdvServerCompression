@@ -14,8 +14,9 @@ public class QuantizationValueCache {
     }
 
     private File getCacheFileForScalarValues(final String trainFile, final int quantizationValueCount) {
+        final File inputFile = new File(trainFile);
         final File cacheFile = new File(cacheFolder, String.format("%s_%d_bits.qvc",
-                                                                   trainFile, quantizationValueCount));
+                                                                   inputFile.getName(), quantizationValueCount));
         return cacheFile;
     }
 
@@ -23,12 +24,13 @@ public class QuantizationValueCache {
                                              final int codebookSize,
                                              final int entryWidth,
                                              final int entryHeight) {
+        final File inputFile = new File(trainFile);
         final File cacheFile = new File(cacheFolder, String.format("%s_%d_%dx%d.qvc",
-                                                                   trainFile, codebookSize, entryWidth, entryHeight));
+                                                                   inputFile.getName(), codebookSize, entryWidth, entryHeight));
         return cacheFile;
     }
 
-    public void saveQuantizationValues(final String trainFile, final int[] quantizationValues) {
+    public void saveQuantizationValues(final String trainFile, final int[] quantizationValues) throws IOException {
         final int quantizationValueCount = quantizationValues.length;
         final String cacheFile = getCacheFileForScalarValues(trainFile, quantizationValueCount).getAbsolutePath();
 
@@ -38,13 +40,14 @@ public class QuantizationValueCache {
             for (final int qv : quantizationValues) {
                 dos.writeInt(qv);
             }
-        } catch (IOException ioEx) {
-            System.err.println("Failed to save scalar quantization values to cache.");
-            ioEx.printStackTrace();
+        } catch (IOException ex) {
+            throw new IOException(String.format("Failed to write cache to file: %s.\nInner Ex:\n%s",
+                                                cacheFile,
+                                                ex.getMessage()));
         }
     }
 
-    public void saveQuantizationValues(final String trainFile, final CodebookEntry[] entries) {
+    public void saveQuantizationValues(final String trainFile, final CodebookEntry[] entries) throws IOException {
         final int codebookSize = entries.length;
         final int entryWidth = entries[0].getWidth();
         final int entryHeight = entries[0].getHeight();
@@ -66,9 +69,6 @@ public class QuantizationValueCache {
                     dos.writeInt(vectorValue);
                 }
             }
-        } catch (IOException ioEx) {
-            System.err.println("Failed to save quantization vectors to cache.");
-            ioEx.printStackTrace();
         }
     }
 

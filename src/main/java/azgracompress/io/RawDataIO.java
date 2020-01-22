@@ -5,6 +5,7 @@ import azgracompress.data.V3i;
 import azgracompress.utilities.TypeConverter;
 
 import java.io.*;
+import java.util.Arrays;
 
 public class RawDataIO {
     /**
@@ -46,6 +47,52 @@ public class RawDataIO {
         return new ImageU16(rawDataDimension.getX(),
                             rawDataDimension.getY(),
                             TypeConverter.unsignedShortBytesToIntArray(buffer));
+    }
+
+    public static int[] loadPlanesData(final String rawFile,
+                                       final V3i rawDataDims,
+                                       int[] planes) throws IOException {
+
+        if (planes.length < 1)
+            return new int[0];
+
+        final int planeValueCount = rawDataDims.getX() * rawDataDims.getY();
+        final long planeDataSize = 2 * (long) planeValueCount;
+
+        final long totalValueCount = (long) planeValueCount * planes.length;
+        int[] values = new int[(int) totalValueCount];
+
+
+        if (totalValueCount > (long) Integer.MAX_VALUE) {
+            throw new IOException("Integer count is too big.");
+        }
+
+        Arrays.sort(planes);
+
+        try (FileInputStream fileStream = new FileInputStream(rawFile);
+             DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
+
+            int lastIndex = 0;
+            int valIndex = 0;
+
+            for (final int planeIndex : planes) {
+                // Skip specific number of bytes to get to the next plane.
+                final int requestedSkip = (planeIndex == 0) ? 0 : ((planeIndex - lastIndex) - 1) * (int) planeDataSize;
+                lastIndex = planeIndex;
+
+                final int actualSkip = dis.skipBytes(requestedSkip);
+                if (requestedSkip != actualSkip) {
+                    throw new IOException("Skip operation failed.");
+                }
+
+                for (int i = 0; i < planeValueCount; i++) {
+                    values[valIndex++] = dis.readUnsignedShort();
+                }
+
+            }
+        }
+
+        return values;
     }
 
     public static int[] loadAllPlanesData(final String rawFile, final V3i imageDims) throws IOException {
@@ -93,4 +140,6 @@ public class RawDataIO {
         fileStream.flush();
         fileStream.close();
     }
+
+
 }

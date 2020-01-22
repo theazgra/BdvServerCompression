@@ -18,6 +18,8 @@ public class LloydMaxU16ScalarQuantization {
 
     private final int workerCount;
 
+    private boolean verbose = false;
+
     public LloydMaxU16ScalarQuantization(final int[] trainData, final int codebookSize, final int workerCount) {
         trainingData = trainData;
         this.codebookSize = codebookSize;
@@ -25,7 +27,7 @@ public class LloydMaxU16ScalarQuantization {
     }
 
     public LloydMaxU16ScalarQuantization(final int[] trainData, final int codebookSize) {
-        this(trainData, codebookSize,1);
+        this(trainData, codebookSize, 1);
     }
 
     private void initialize() {
@@ -51,7 +53,9 @@ public class LloydMaxU16ScalarQuantization {
             pdf[trainingData[i]] += 1;
         }
         s.stop();
-        System.out.println("Init_PDF: " + s.getElapsedTimeString());
+        if (verbose) {
+            System.out.println("Init_PDF: " + s.getElapsedTimeString());
+        }
     }
 
     private void recalculateBoundaryPoints() {
@@ -97,9 +101,9 @@ public class LloydMaxU16ScalarQuantization {
     private double getCurrentMse() {
         double mse = 0.0;
 
+        Stopwatch s = new Stopwatch();
+        s.start();
         if (workerCount > 1) {
-            Stopwatch s = new Stopwatch();
-            s.start();
             // Speedup
 
             final int workSize = trainingData.length / workerCount;
@@ -133,13 +137,15 @@ public class LloydMaxU16ScalarQuantization {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            s.stop();
-            System.out.println("\ngetCurrentMse time: " + s.getElapsedTimeString());
         } else {
             for (final int trainingDatum : trainingData) {
                 int quantizedValue = quantize(trainingDatum);
                 mse += Math.pow((double) trainingDatum - (double) quantizedValue, 2);
             }
+        }
+        s.stop();
+        if (verbose) {
+            System.out.println("\ngetCurrentMse time: " + s.getElapsedTimeString());
         }
 
         mse /= (double) trainingData.length;
@@ -147,8 +153,12 @@ public class LloydMaxU16ScalarQuantization {
         return mse;
     }
 
-    public QTrainIteration[] train(final boolean verbose) {
-        System.out.println("Data len: " + trainingData.length);
+    public QTrainIteration[] train(final boolean shouldBeVerbose) {
+        this.verbose = shouldBeVerbose;
+        if (verbose) {
+            System.out.println("Training data count: " + trainingData.length);
+        }
+
         initialize();
         initializeProbabilityDensityFunction();
 
@@ -184,7 +194,7 @@ public class LloydMaxU16ScalarQuantization {
             dist = (prevMse - currentMse) / currentMse;
 
             if (verbose) {
-                System.out.print(String.format("\rCurrent MSE: %.4f PSNR: %.4f dB", currentMse, psnr));
+                System.out.println(String.format("Current MSE: %.4f PSNR: %.4f dB", currentMse, psnr));
             }
 
 

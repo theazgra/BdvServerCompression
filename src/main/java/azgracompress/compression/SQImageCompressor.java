@@ -6,6 +6,7 @@ import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.ImageU16;
 import azgracompress.io.OutBitStream;
 import azgracompress.io.RawDataIO;
+import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
 import azgracompress.quantization.scalar.ScalarQuantizer;
 import azgracompress.utilities.Stopwatch;
@@ -118,5 +119,30 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             Log("Plane time: " + stopwatch.getElapsedTimeString());
             Log(String.format("Finished processing of plane %d", planeIndex));
         }
+    }
+
+    @Override
+    public void trainAndSaveCodebook() throws ImageCompressionException {
+
+
+        int[] trainData = loadConfiguredPlanesData();
+
+        LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(trainData,
+                                                                                   codebookSize,
+                                                                                   options.getWorkerCount());
+
+        Log("Starting LloydMax training.");
+        lloydMax.train(options.isVerbose());
+        final int[] qValues = lloydMax.getCentroids();
+        Log("Finished LloydMax training.");
+
+        Log(String.format("Saving cache file to %s", options.getOutputFile()));
+        QuantizationValueCache cache = new QuantizationValueCache(options.getOutputFile());
+        try {
+            cache.saveQuantizationValues(options.getInputFile(), qValues);
+        } catch (IOException e) {
+            throw new ImageCompressionException("Unable to write cache.", e);
+        }
+        Log("Operation completed.");
     }
 }

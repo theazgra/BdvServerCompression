@@ -44,6 +44,22 @@ public class ImageCompressor extends CompressorDecompressorBase {
         System.out.println(String.format("Compression ratio: %.5f", compressionRatio));
     }
 
+    public boolean trainAndSaveCodebook() {
+        Log("=== Training codebook ===");
+        IImageCompressor imageCompressor = getImageCompressor();
+        if (imageCompressor == null) {
+            return false;
+        }
+        try {
+            imageCompressor.trainAndSaveCodebook();
+        } catch (ImageCompressionException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
     public boolean compress() {
         IImageCompressor imageCompressor = getImageCompressor();
 
