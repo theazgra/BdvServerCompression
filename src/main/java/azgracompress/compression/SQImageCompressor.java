@@ -121,6 +121,37 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         }
     }
 
+    private int[] loadConfiguredPlanesData() throws ImageCompressionException {
+        int[] trainData = null;
+        if (options.hasPlaneIndexSet()) {
+            try {
+                Log("Loading single plane data.");
+                trainData = RawDataIO.loadImageU16(options.getInputFile(),
+                                                   options.getImageDimension(),
+                                                   options.getPlaneIndex()).getData();
+            } catch (IOException e) {
+                throw new ImageCompressionException("Failed to load reference image data.", e);
+            }
+        } else if (options.hasPlaneRangeSet()) {
+            Log("Loading plane range data.");
+            final int[] planes = getPlaneIndicesForCompression();
+            try {
+                trainData = RawDataIO.loadPlanesData(options.getInputFile(), options.getImageDimension(), planes);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new ImageCompressionException("Failed to load plane range data.", e);
+            }
+        } else {
+            Log("Loading all planes data.");
+            try {
+                trainData = RawDataIO.loadAllPlanesData(options.getInputFile(), options.getImageDimension());
+            } catch (IOException e) {
+                throw new ImageCompressionException("Failed to load all planes data.", e);
+            }
+        }
+        return trainData;
+    }
+
     @Override
     public void trainAndSaveCodebook() throws ImageCompressionException {
 
