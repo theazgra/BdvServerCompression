@@ -55,4 +55,21 @@ public class ImageU16 {
     public int getHeight() {
         return height;
     }
+
+    /**
+     * Chunk the image data into quantization vectors of requested dimension.
+     *
+     * @param qVectorDims Quantization vector dimension.
+     * @return Array of quantization vectors.
+     */
+    public int[][] toQuantizationVectors(final V2i qVectorDims) {
+        if (qVectorDims.getY() == 1) {
+            // 1D row vectors.
+            return as2dChunk().divideInto1DVectors(qVectorDims.getX());
+        } else {
+            // 2D matrix vectors.
+            return as2dChunk().divideInto2DVectors(qVectorDims);
+            //return Chunk2D.chunksAsImageVectors(as2dChunk().divideIntoChunks(qVectorDims));
+        }
+    }
 }

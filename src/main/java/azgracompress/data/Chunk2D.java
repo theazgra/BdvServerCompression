@@ -1,7 +1,5 @@
 package azgracompress.data;
 
-import azgracompress.utilities.TypeConverter;
-
 public class Chunk2D {
     private final int FILL_VALUE = 0;
     private int[] data;
@@ -73,7 +71,6 @@ public class Chunk2D {
     }
 
     public Chunk2D[] divideIntoChunks(final V2i chunkDims) {
-
         final int xSize = dims.getX();
         final int ySize = dims.getY();
 
@@ -88,6 +85,27 @@ public class Chunk2D {
             }
         }
         return chunks;
+    }
+
+    public int[][] divideInto2DVectors(final V2i qVectorDims) {
+        final int xSize = dims.getX();
+        final int ySize = dims.getY();
+
+        final int chunkXSize = qVectorDims.getX();
+        final int chunkYSize = qVectorDims.getY();
+        final int chunkSize = chunkXSize * chunkYSize;
+
+        final int chunkCount = getRequiredChunkCount(qVectorDims);
+
+        int[][] vectors = new int[chunkCount][chunkSize];
+        int vecIndex = 0;
+
+        for (int chunkYOffset = 0; chunkYOffset < ySize; chunkYOffset += chunkYSize) {
+            for (int chunkXOffset = 0; chunkXOffset < xSize; chunkXOffset += chunkXSize) {
+                copyDataToVector(vectors[vecIndex++], qVectorDims, chunkXOffset, chunkYOffset);
+            }
+        }
+        return vectors;
     }
 
     private int getRequiredChunkCount(final V2i chunkDims) {
@@ -152,6 +170,20 @@ public class Chunk2D {
         return new Chunk2D(chunkDims, chunkOffset.toV2l(), chunkData);
     }
 
+    private void copyDataToVector(int[] vector, final V2i qVectorDims, final int chunkXOffset, final int chunkYOffset) {
+        int srcX, srcY;
+        final int qVecYSize = qVectorDims.getY();
+        final int qVecXSize = qVectorDims.getX();
+        for (int y = 0; y < qVecYSize; y++) {
+            srcY = chunkYOffset + y;
+            for (int x = 0; x < qVecXSize; x++) {
+                srcX = chunkXOffset + x;
+                final int dstIndex = index(x, y, qVectorDims);
+                vector[dstIndex] = isInside(srcX, srcY) ? data[index(srcX, srcY)] : FILL_VALUE;
+            }
+        }
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Chunk2D) {
@@ -198,6 +230,7 @@ public class Chunk2D {
         return imageVectors;
     }
 
+
     public void reconstructFromVectors(int[][] vectors) {
         if (vectors.length == 0) {
             return;
@@ -223,7 +256,7 @@ public class Chunk2D {
     }
 
     public ImageU16 asImageU16() {
-//        return new ImageU16(dims.getX(), dims.getY(), TypeConverter.intArrayToShortArray(data));
+        //        return new ImageU16(dims.getX(), dims.getY(), TypeConverter.intArrayToShortArray(data));
         return new ImageU16(dims.getX(), dims.getY(), data);
     }
 
@@ -232,20 +265,20 @@ public class Chunk2D {
         data = newData;
     }
 
-    public static int[][] chunksAsImageVectors(final Chunk2D[] chunks) {
-        if (chunks.length == 0) {
-            return new int[0][0];
-        }
-        final int vectorCount = chunks.length;
-        final int vectorSize = chunks[0].data.length;
-        int[][] imageVectors = new int[vectorCount][vectorSize];
-
-        for (int i = 0; i < vectorCount; i++) {
-            assert (chunks[i].data.length == vectorSize);
-            System.arraycopy(chunks[i].data,0,imageVectors[i],0, vectorSize);
-        }
-        return imageVectors;
-    }
+//    public static int[][] chunksAsImageVectors(final Chunk2D[] chunks) {
+//        if (chunks.length == 0) {
+//            return new int[0][0];
+//        }
+//        final int vectorCount = chunks.length;
+//        final int vectorSize = chunks[0].data.length;
+//        int[][] imageVectors = new int[vectorCount][vectorSize];
+//
+//        for (int i = 0; i < vectorCount; i++) {
+//            assert (chunks[i].data.length == vectorSize);
+//            System.arraycopy(chunks[i].data, 0, imageVectors[i], 0, vectorSize);
+//        }
+//        return imageVectors;
+//    }
 
     public static void updateChunkData(Chunk2D[] chunks, final int[][] newData) {
         assert (chunks.length == newData.length) : "chunks len newData len mismatch.";

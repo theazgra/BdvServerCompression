@@ -45,12 +45,8 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
         return reconstructedChunk.asImageU16();
     }
 
-    private int[][] getPlaneVectors(ImageU16 plane, V2i qVector) {
-        if (qVector.getY() > 1) {
-            return Chunk2D.chunksAsImageVectors(plane.as2dChunk().divideIntoChunks(qVector));
-        } else {
-            return plane.as2dChunk().divideInto1DVectors(qVector.getX());
-        }
+    private int[][] getPlaneVectors(final ImageU16 plane, final V2i qVector) {
+        return plane.toQuantizationVectors(qVector);
     }
 
     public void startBenchmark(final V2i qVector) {
