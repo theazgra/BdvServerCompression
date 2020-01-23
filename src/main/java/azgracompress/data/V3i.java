@@ -54,4 +54,13 @@ public class V3i {
     public V3l toV3l() {
         return new V3l(x, y, z);
     }
+
+    /**
+     * Convert this vector to V2i by dropping the Z value.
+     *
+     * @return V2i vector with X and Y values.
+     */
+    public V2i toV2i() {
+        return new V2i(x, y);
+    }
 }

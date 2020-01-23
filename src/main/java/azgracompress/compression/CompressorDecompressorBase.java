@@ -46,6 +46,12 @@ public abstract class CompressorDecompressorBase {
         }
     }
 
+    protected void Log(final String format, final Object... args) {
+        if (options.isVerbose()) {
+            System.out.println(String.format(format, args));
+        }
+    }
+
     protected void DebugLog(final String message) {
         System.out.println(message);
     }

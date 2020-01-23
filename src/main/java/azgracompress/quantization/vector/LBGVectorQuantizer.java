@@ -1,6 +1,7 @@
 package azgracompress.quantization.vector;
 
 import azgracompress.U16;
+import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.Utils;
 
 import java.util.ArrayList;
@@ -15,6 +16,8 @@ public class LBGVectorQuantizer {
     private final int[][] trainingVectors;
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
 
+    boolean verbose = false;
+
     public LBGVectorQuantizer(final int[][] trainingVectors, final int codebookSize) {
 
         assert (trainingVectors.length > 0) : "No training vectors provided";
@@ -28,12 +31,13 @@ public class LBGVectorQuantizer {
         return findOptimalCodebook(true);
     }
 
-    public LBGResult findOptimalCodebook(boolean verbose) {
-        ArrayList<LearningCodebookEntry> codebook = initializeCodebook(verbose);
+    public LBGResult findOptimalCodebook(boolean isVerbose) {
+        this.verbose = isVerbose;
+        ArrayList<LearningCodebookEntry> codebook = initializeCodebook();
         if (verbose) {
             System.out.println("Got initial codebook. Improving codebook...");
         }
-        LBG(codebook, EPSILON * 0.01, verbose);
+        LBG(codebook, EPSILON * 0.01);
         final double finalMse = averageMse(codebook);
         final double psnr = Utils.calculatePsnr(finalMse, U16.Max);
         if (verbose) {
@@ -100,7 +104,7 @@ public class LBGVectorQuantizer {
     }
 
 
-    private ArrayList<LearningCodebookEntry> initializeCodebook(final boolean verbose) {
+    private ArrayList<LearningCodebookEntry> initializeCodebook() {
         ArrayList<LearningCodebookEntry> codebook = new ArrayList<>(codebookSize);
         // Initialize first codebook entry as average of training vectors
         int k = 1;
@@ -182,7 +186,7 @@ public class LBGVectorQuantizer {
             if (verbose) {
                 System.out.println("Improving current codebook...");
             }
-            LBG(codebook, verbose);
+            LBG(codebook);
 
 
             if (verbose) {
@@ -194,11 +198,13 @@ public class LBGVectorQuantizer {
     }
 
 
-    private void LBG(ArrayList<LearningCodebookEntry> codebook, final boolean verbose) {
-        LBG(codebook, EPSILON, verbose);
+    private void LBG(ArrayList<LearningCodebookEntry> codebook) {
+        LBG(codebook, EPSILON);
     }
 
-    private void LBG(ArrayList<LearningCodebookEntry> codebook, final double epsilon, final boolean verbose) {
+    private void LBG(ArrayList<LearningCodebookEntry> codebook, final double epsilon) {
+        Stopwatch totalLbgFun = Stopwatch.startNew("Whole LBG function");
+
         codebook.forEach(entry -> {
             entry.clearTrainingData();
             assert (entry.getTrainingVectors().size() == 0) : "Using entries which are not cleared.";
@@ -207,9 +213,17 @@ public class LBGVectorQuantizer {
         double previousDistortion = Double.POSITIVE_INFINITY;
 
         int iteration = 1;
+        Stopwatch innerLoopStopwatch = new Stopwatch("LBG inner loop");
+        Stopwatch findingClosestEntryStopwatch = new Stopwatch("FindingClosestEntry");
+        Stopwatch distCalcStopwatch = new Stopwatch("DistortionCalc");
+        Stopwatch fixEmptyStopwatch = new Stopwatch("FixEmpty");
         while (true) {
+            System.out.println("================");
+            innerLoopStopwatch.restart();
 
             // Step 1
+            // Speedup - speed the finding of the closest codebook entry.
+            findingClosestEntryStopwatch.restart();
             for (final int[] trainingVec : trainingVectors) {
                 double minDist = Double.POSITIVE_INFINITY;
                 LearningCodebookEntry closestEntry = null;
@@ -232,20 +246,29 @@ public class LBGVectorQuantizer {
                     System.err.println("Did not found closest entry.");
                 }
             }
+            findingClosestEntryStopwatch.stop();
+            System.out.println(findingClosestEntryStopwatch);
 
+            fixEmptyStopwatch.restart();
             fixEmptyEntries(codebook, verbose);
+            fixEmptyStopwatch.stop();
+            System.out.println(fixEmptyStopwatch);
 
             // Step 2
+            distCalcStopwatch.restart();
             double avgDistortion = 0;
             for (LearningCodebookEntry entry : codebook) {
                 avgDistortion += entry.getAverageDistortion();
             }
             avgDistortion /= (double) codebook.size();
+            distCalcStopwatch.stop();
+
+            System.out.println(distCalcStopwatch);
 
             // Step 3
             double dist = (previousDistortion - avgDistortion) / avgDistortion;
             if (verbose) {
-                System.out.println(String.format("It: %d Distortion: %.5f", iteration++, dist));
+                //                System.out.println(String.format("It: %d Distortion: %.5f", iteration++, dist));
             }
 
             if (dist < epsilon) {
@@ -260,7 +283,14 @@ public class LBGVectorQuantizer {
                     entry.clearTrainingData();
                 }
             }
+            innerLoopStopwatch.stop();
+
+            System.out.println(innerLoopStopwatch);
+            System.out.println("================");
         }
+
+        totalLbgFun.stop();
+        System.out.println(totalLbgFun);
     }
 
 
@@ -324,6 +354,7 @@ public class LBGVectorQuantizer {
         biggestPartition.clearTrainingData();
         newEntry.clearTrainingData();
 
+        // Speedup - speed the look for closest entry.
         for (final int[] trVec : partitionVectors) {
             double originalPartitionDist = VectorQuantizer.distanceBetweenVectors(biggestPartition.getVector(),
                                                                                   trVec,
@@ -337,8 +368,8 @@ public class LBGVectorQuantizer {
             }
         }
 
-//        assert (biggestPartition.getTrainingVectors().size() > 0) : "Biggest partition is empty";
-//        assert (newEntry.getTrainingVectors().size() > 0) : "New entry is empty";
+        //        assert (biggestPartition.getTrainingVectors().size() > 0) : "Biggest partition is empty";
+        //        assert (newEntry.getTrainingVectors().size() > 0) : "New entry is empty";
     }
 
     public int getVectorSize() {

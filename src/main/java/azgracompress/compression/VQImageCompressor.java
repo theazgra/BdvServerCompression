@@ -4,9 +4,9 @@ import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Chunk2D;
 import azgracompress.data.ImageU16;
-import azgracompress.data.V2i;
 import azgracompress.io.OutBitStream;
 import azgracompress.io.RawDataIO;
+import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.vector.CodebookEntry;
 import azgracompress.quantization.vector.LBGResult;
 import azgracompress.quantization.vector.LBGVectorQuantizer;
@@ -29,15 +29,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @return Image vectors.
      */
     private int[][] getPlaneVectors(final ImageU16 plane) {
-        final V2i qVector = options.getVectorDimension();
-
-        if (qVector.getY() > 1) {
-            // 2D Quantization, return `matrices`.
-            return Chunk2D.chunksAsImageVectors(plane.as2dChunk().divideIntoChunks(qVector));
-        } else {
-            // 1D Quantization, return row vectors.
-            return plane.as2dChunk().divideInto1DVectors(qVector.getX());
-        }
+        return plane.toQuantizationVectors(options.getVectorDimension());
     }
 
     /**
@@ -147,9 +139,83 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         }
     }
 
+    /**
+     * Load plane and convert the plane into quantization vectors.
+     *
+     * @param planeIndex Zero based plane index.
+     * @return Quantization vectors of configured quantization.
+     * @throws IOException When reading fails.
+     */
+    private int[][] loadPlaneQuantizationVectors(final int planeIndex) throws IOException {
+        ImageU16 refPlane = RawDataIO.loadImageU16(options.getInputFile(),
+                                                   options.getImageDimension(),
+                                                   planeIndex);
+
+        return refPlane.toQuantizationVectors(options.getVectorDimension());
+    }
+
+    private int[][] loadConfiguredPlanesData() throws ImageCompressionException {
+        final int vectorSize = options.getVectorDimension().getX() * options.getVectorDimension().getY();
+        int[][] trainData = null;
+        Stopwatch s = new Stopwatch();
+        s.start();
+        if (options.hasPlaneIndexSet()) {
+            Log("VQ: Loading single plane data.");
+            try {
+                trainData = loadPlaneQuantizationVectors(options.getPlaneIndex());
+            } catch (IOException e) {
+                throw new ImageCompressionException("Failed to load reference image data.", e);
+            }
+        } else {
+            Log(options.hasPlaneRangeSet() ? "Loading plane range data." : "Loading all planes data.");
+            final int[] planeIndices = getPlaneIndicesForCompression();
+
+            final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCountPerPlane(
+                    options.getImageDimension().toV2i(),
+                    options.getVectorDimension());
+            final int totalChunkCount = chunkCountPerPlane * planeIndices.length;
+
+            trainData = new int[totalChunkCount][vectorSize];
+
+            int[][] planeVectors;
+            int planeCounter = 0;
+            for (final int planeIndex : planeIndices) {
+                Log("Loading plane %d vectors", planeIndex);
+                try {
+                    planeVectors = loadPlaneQuantizationVectors(planeIndex);
+                    assert (planeVectors.length == chunkCountPerPlane) : "Wrong chunk count per plane";
+                } catch (IOException e) {
+                    throw new ImageCompressionException(String.format("Failed to load plane %d image data.",
+                                                                      planeIndex), e);
+                }
+
+                System.arraycopy(planeVectors, 0, trainData, (planeCounter * chunkCountPerPlane), chunkCountPerPlane);
+                ++planeCounter;
+            }
+        }
+        s.stop();
+        Log("Quantization vector load took: " + s.getElapsedTimeString());
+        return trainData;
+    }
+
     @Override
     public void trainAndSaveCodebook() throws ImageCompressionException {
-        throw new ImageCompressionException("Not implemented yet");
+        final int[][] trainingData = loadConfiguredPlanesData();
+
+        LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData, codebookSize);
+        Log("Starting LBG optimization.");
+        LBGResult lbgResult = vqInitializer.findOptimalCodebook(options.isVerbose());
+        Log("Learned the optimal codebook.");
+
+
+        Log("Saving cache file to %s", options.getOutputFile());
+        QuantizationValueCache cache = new QuantizationValueCache(options.getOutputFile());
+        try {
+            cache.saveQuantizationValues(options.getInputFile(), lbgResult.getCodebook());
+        } catch (IOException e) {
+            throw new ImageCompressionException("Unable to write cache.", e);
+        }
+        Log("Operation completed.");
     }
 
 

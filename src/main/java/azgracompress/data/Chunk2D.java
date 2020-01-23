@@ -74,7 +74,7 @@ public class Chunk2D {
         final int xSize = dims.getX();
         final int ySize = dims.getY();
 
-        final int chunkCount = getRequiredChunkCount(chunkDims);
+        final int chunkCount = calculateRequiredChunkCountPerPlane(chunkDims);
 
         Chunk2D[] chunks = new Chunk2D[chunkCount];
         int chunkIndex = 0;
@@ -95,7 +95,7 @@ public class Chunk2D {
         final int chunkYSize = qVectorDims.getY();
         final int chunkSize = chunkXSize * chunkYSize;
 
-        final int chunkCount = getRequiredChunkCount(qVectorDims);
+        final int chunkCount = calculateRequiredChunkCountPerPlane(qVectorDims);
 
         int[][] vectors = new int[chunkCount][chunkSize];
         int vecIndex = 0;
@@ -108,9 +108,13 @@ public class Chunk2D {
         return vectors;
     }
 
-    private int getRequiredChunkCount(final V2i chunkDims) {
-        final int xChunkCount = (int) Math.ceil(dims.getX() / (double) chunkDims.getX());
-        final int yChunkCount = (int) Math.ceil(dims.getY() / (double) chunkDims.getY());
+    private int calculateRequiredChunkCountPerPlane(final V2i chunkDims) {
+        return calculateRequiredChunkCountPerPlane(dims, chunkDims);
+    }
+
+    public static int calculateRequiredChunkCountPerPlane(final V2i imageDims, final V2i chunkDims) {
+        final int xChunkCount = (int) Math.ceil(imageDims.getX() / (double) chunkDims.getX());
+        final int yChunkCount = (int) Math.ceil(imageDims.getY() / (double) chunkDims.getY());
 
         return (xChunkCount * yChunkCount);
     }
@@ -119,7 +123,7 @@ public class Chunk2D {
         assert (chunks.length > 0) : "No chunks in reconstruct";
         final V2i chunkDims = chunks[0].getDims();
 
-        assert (getRequiredChunkCount(chunkDims) == chunks.length) : "Wrong chunk count in reconstruct";
+        assert (calculateRequiredChunkCountPerPlane(chunkDims) == chunks.length) : "Wrong chunk count in reconstruct";
         for (final Chunk2D chunk : chunks) {
             copyFromChunk(chunk);
         }
@@ -265,20 +269,20 @@ public class Chunk2D {
         data = newData;
     }
 
-//    public static int[][] chunksAsImageVectors(final Chunk2D[] chunks) {
-//        if (chunks.length == 0) {
-//            return new int[0][0];
-//        }
-//        final int vectorCount = chunks.length;
-//        final int vectorSize = chunks[0].data.length;
-//        int[][] imageVectors = new int[vectorCount][vectorSize];
-//
-//        for (int i = 0; i < vectorCount; i++) {
-//            assert (chunks[i].data.length == vectorSize);
-//            System.arraycopy(chunks[i].data, 0, imageVectors[i], 0, vectorSize);
-//        }
-//        return imageVectors;
-//    }
+    //    public static int[][] chunksAsImageVectors(final Chunk2D[] chunks) {
+    //        if (chunks.length == 0) {
+    //            return new int[0][0];
+    //        }
+    //        final int vectorCount = chunks.length;
+    //        final int vectorSize = chunks[0].data.length;
+    //        int[][] imageVectors = new int[vectorCount][vectorSize];
+    //
+    //        for (int i = 0; i < vectorCount; i++) {
+    //            assert (chunks[i].data.length == vectorSize);
+    //            System.arraycopy(chunks[i].data, 0, imageVectors[i], 0, vectorSize);
+    //        }
+    //        return imageVectors;
+    //    }
 
     public static void updateChunkData(Chunk2D[] chunks, final int[][] newData) {
         assert (chunks.length == newData.length) : "chunks len newData len mismatch.";
