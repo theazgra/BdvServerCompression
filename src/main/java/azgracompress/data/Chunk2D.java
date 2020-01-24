@@ -70,22 +70,22 @@ public class Chunk2D {
         return String.format("2D shape %s %d values", dims.toString(), data.length);
     }
 
-    public Chunk2D[] divideIntoChunks(final V2i chunkDims) {
-        final int xSize = dims.getX();
-        final int ySize = dims.getY();
-
-        final int chunkCount = calculateRequiredChunkCountPerPlane(chunkDims);
-
-        Chunk2D[] chunks = new Chunk2D[chunkCount];
-        int chunkIndex = 0;
-
-        for (int chunkYOffset = 0; chunkYOffset < ySize; chunkYOffset += chunkDims.getY()) {
-            for (int chunkXOffset = 0; chunkXOffset < xSize; chunkXOffset += chunkDims.getX()) {
-                chunks[chunkIndex++] = copyToChunk(chunkDims, new V2i(chunkXOffset, chunkYOffset));
-            }
-        }
-        return chunks;
-    }
+//    public Chunk2D[] divideIntoChunks(final V2i chunkDims) {
+//        final int xSize = dims.getX();
+//        final int ySize = dims.getY();
+//
+//        final int chunkCount = calculateRequiredChunkCountPerPlane(chunkDims);
+//
+//        Chunk2D[] chunks = new Chunk2D[chunkCount];
+//        int chunkIndex = 0;
+//
+//        for (int chunkYOffset = 0; chunkYOffset < ySize; chunkYOffset += chunkDims.getY()) {
+//            for (int chunkXOffset = 0; chunkXOffset < xSize; chunkXOffset += chunkDims.getX()) {
+//                chunks[chunkIndex++] = copyToChunk(chunkDims, new V2i(chunkXOffset, chunkYOffset));
+//            }
+//        }
+//        return chunks;
+//    }
 
     public int[][] divideInto2DVectors(final V2i qVectorDims) {
         final int xSize = dims.getX();
@@ -137,60 +137,60 @@ public class Chunk2D {
         return (xChunkCount * yChunkCount);
     }
 
-    public void reconstructFromChunks(final Chunk2D[] chunks) {
-        assert (chunks.length > 0) : "No chunks in reconstruct";
-        final V2i chunkDims = chunks[0].getDims();
-
-        assert (calculateRequiredChunkCountPerPlane(chunkDims) == chunks.length) : "Wrong chunk count in reconstruct";
-        for (final Chunk2D chunk : chunks) {
-            copyFromChunk(chunk);
-        }
-    }
+//    public void reconstructFromChunks(final Chunk2D[] chunks) {
+//        assert (chunks.length > 0) : "No chunks in reconstruct";
+//        final V2i chunkDims = chunks[0].getDims();
+//
+//        assert (calculateRequiredChunkCountPerPlane(chunkDims) == chunks.length) : "Wrong chunk count in reconstruct";
+//        for (final Chunk2D chunk : chunks) {
+//            copyFromChunk(chunk);
+//        }
+//    }
 
 
     private boolean isInside(final int x, final int y) {
         return (((x >= 0) && (x < dims.getX())) && (y >= 0) && (y < dims.getY()));
     }
 
-    private void copyFromChunk(final Chunk2D chunk) {
+//    private void copyFromChunk(final Chunk2D chunk) {
+//
+//        final V2i chunkDims = chunk.getDims();
+//        final V2l localOffset = chunk.getOffset();
+//        int dstX, dstY;
+//
+//        for (int chunkY = 0; chunkY < chunkDims.getY(); chunkY++) {
+//            dstY = (int) localOffset.getY() + chunkY;
+//            for (int chunkX = 0; chunkX < chunkDims.getX(); chunkX++) {
+//                dstX = (int) localOffset.getX() + chunkX;
+//
+//                // NOTE(Moravec):   Negating this expression!
+//                //                  If dst coordinates are NOT outside bounds, copy the value.
+//                if (!(dstX >= dims.getX() || dstY >= dims.getY())) {
+//                    setValueAt(dstX, dstY, chunk.getValueAt(chunkX, chunkY));
+//                }
+//            }
+//        }
+//    }
 
-        final V2i chunkDims = chunk.getDims();
-        final V2l localOffset = chunk.getOffset();
-        int dstX, dstY;
-
-        for (int chunkY = 0; chunkY < chunkDims.getY(); chunkY++) {
-            dstY = (int) localOffset.getY() + chunkY;
-            for (int chunkX = 0; chunkX < chunkDims.getX(); chunkX++) {
-                dstX = (int) localOffset.getX() + chunkX;
-
-                // NOTE(Moravec):   Negating this expression!
-                //                  If dst coordinates are NOT outside bounds, copy the value.
-                if (!(dstX >= dims.getX() || dstY >= dims.getY())) {
-                    setValueAt(dstX, dstY, chunk.getValueAt(chunkX, chunkY));
-                }
-            }
-        }
-    }
-
-    private Chunk2D copyToChunk(final V2i chunkDims, final V2i chunkOffset) {
-        int[] chunkData = new int[(chunkDims.getX() * chunkDims.getY())];
-
-        int srcX, srcY;
-
-        for (int y = 0; y < chunkDims.getY(); y++) {
-            srcY = chunkOffset.getY() + y;
-            for (int x = 0; x < chunkDims.getX(); x++) {
-                srcX = chunkOffset.getX() + x;
-                final int dstIndex = index(x, y, chunkDims);
-                // NOTE(Moravec): Try repeat last value instead of FILL_VALUE.
-                chunkData[dstIndex] = isInside(srcX, srcY) ? data[index(srcX, srcY)] : FILL_VALUE;
-            }
-        }
-
-        // NOTE(Moravec):   We will save only local offset inside current box, which will be used
-        //                  to reconstruct the original box.
-        return new Chunk2D(chunkDims, chunkOffset.toV2l(), chunkData);
-    }
+//    private Chunk2D copyToChunk(final V2i chunkDims, final V2i chunkOffset) {
+//        int[] chunkData = new int[(chunkDims.getX() * chunkDims.getY())];
+//
+//        int srcX, srcY;
+//
+//        for (int y = 0; y < chunkDims.getY(); y++) {
+//            srcY = chunkOffset.getY() + y;
+//            for (int x = 0; x < chunkDims.getX(); x++) {
+//                srcX = chunkOffset.getX() + x;
+//                final int dstIndex = index(x, y, chunkDims);
+//                // NOTE(Moravec): Try repeat last value instead of FILL_VALUE.
+//                chunkData[dstIndex] = isInside(srcX, srcY) ? data[index(srcX, srcY)] : FILL_VALUE;
+//            }
+//        }
+//
+//        // NOTE(Moravec):   We will save only local offset inside current box, which will be used
+//        //                  to reconstruct the original box.
+//        return new Chunk2D(chunkDims, chunkOffset.toV2l(), chunkData);
+//    }
 
     private void copyDataToVector(int[] vector, final V2i qVectorDims, final int chunkXOffset, final int chunkYOffset) {
         int srcX, srcY;

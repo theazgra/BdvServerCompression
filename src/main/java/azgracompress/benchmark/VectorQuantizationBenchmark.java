@@ -34,10 +34,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
                                                           final V2i qVector) {
         Chunk2D reconstructedChunk = new Chunk2D(new V2i(rawImageDims.getX(), rawImageDims.getY()), new V2l(0, 0));
         if (qVector.getY() > 1) {
-            Chunk2D[] chunks = plane.as2dChunk().divideIntoChunks(qVector);
-            Chunk2D.updateChunkData(chunks, vectors);
-            reconstructedChunk.reconstructFromChunks(chunks);
-
+            reconstructedChunk.reconstructFrom2DVectors(vectors, qVector);
         } else {
             // 1D vector
             reconstructedChunk.reconstructFromVectors(vectors);
