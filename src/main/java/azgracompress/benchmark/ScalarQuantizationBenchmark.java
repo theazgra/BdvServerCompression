@@ -39,6 +39,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
         System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
         ScalarQuantizer quantizer = null;
         if (hasCacheFolder) {
+            System.out.println("Loading codebook from cache");
             QuantizationValueCache cache = new QuantizationValueCache(cacheFolder);
             try {
                 final int[] quantizationValues = cache.readCachedValues(inputFile, codebookSize);
@@ -48,6 +49,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                 e.printStackTrace();
                 return;
             }
+            System.out.println("Created quantizer from cache");
         } else if (hasReferencePlane) {
             final int[] refPlaneData = loadPlaneData(referencePlaneIndex);
             if (refPlaneData.length == 0) {

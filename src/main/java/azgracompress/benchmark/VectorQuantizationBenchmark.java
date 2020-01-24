@@ -61,6 +61,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
         VectorQuantizer quantizer = null;
 
         if (hasCacheFolder) {
+            System.out.println("Loading codebook from cache");
             QuantizationValueCache cache = new QuantizationValueCache(cacheFolder);
             try {
                 final CodebookEntry[] codebook = cache.readCachedValues(inputFile,
@@ -74,6 +75,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
                 System.err.println("Failed to read quantization vectors from cache.");
                 return;
             }
+            System.out.println("Created quantizer from cache");
         } else if (hasReferencePlane) {
             final ImageU16 plane = loadPlane(referencePlaneIndex);
 
