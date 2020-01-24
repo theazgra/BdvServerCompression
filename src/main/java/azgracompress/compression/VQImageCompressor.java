@@ -29,7 +29,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @return Trained vector quantizer with codebook of set size.
      */
     private VectorQuantizer trainVectorQuantizerFromPlaneVectors(final int[][] planeVectors) {
-        LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeVectors, codebookSize);
+        LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeVectors, codebookSize, options.getWorkerCount());
         LBGResult vqResult = vqInitializer.findOptimalCodebook(false);
         return new VectorQuantizer(vqResult.getCodebook());
     }
@@ -185,7 +185,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 throw new ImageCompressionException("Failed to load reference image data.", e);
             }
         } else {
-            Log(options.hasPlaneRangeSet() ? "Loading plane range data." : "Loading all planes data.");
+            Log(options.hasPlaneRangeSet() ? "VQ: Loading plane range data." : "VQ: Loading all planes data.");
             final int[] planeIndices = getPlaneIndicesForCompression();
 
             final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCountPerPlane(
@@ -198,7 +198,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             int[][] planeVectors;
             int planeCounter = 0;
             for (final int planeIndex : planeIndices) {
-                Log("Loading plane %d vectors", planeIndex);
                 try {
                     planeVectors = loadPlaneQuantizationVectors(planeIndex);
                     assert (planeVectors.length == chunkCountPerPlane) : "Wrong chunk count per plane";
@@ -220,7 +219,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     public void trainAndSaveCodebook() throws ImageCompressionException {
         final int[][] trainingData = loadConfiguredPlanesData();
 
-        LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData, codebookSize);
+        LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData, codebookSize, options.getWorkerCount());
         Log("Starting LBG optimization.");
         LBGResult lbgResult = vqInitializer.findOptimalCodebook(options.isVerbose());
         Log("Learned the optimal codebook.");

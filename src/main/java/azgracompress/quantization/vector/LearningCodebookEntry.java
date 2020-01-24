@@ -42,7 +42,7 @@ public class LearningCodebookEntry extends CodebookEntry {
         this.trainingVectors = trainingVectors;
     }
 
-    public void addTrainingVector(final int[] trainingVec, final double vecDist) {
+    public synchronized void addTrainingVector(final int[] trainingVec, final double vecDist) {
         trainingVectors.add(trainingVec);
         trainingVectorsDistances.add(vecDist);
     }

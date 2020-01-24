@@ -85,7 +85,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
             }
 
             final int[][] refPlaneData = getPlaneVectors(plane, qVector);
-            LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData, codebookSize);
+            LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData, codebookSize, 1);
             final LBGResult vqResult = vqInitializer.findOptimalCodebook();
             quantizer = new VectorQuantizer(vqResult.getCodebook());
             System.out.println("Created reference quantizer.");
@@ -106,7 +106,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
 
 
             if (!hasGeneralQuantizer) {
-                LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData, codebookSize);
+                LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData, codebookSize,1);
                 LBGResult vqResult = vqInitializer.findOptimalCodebook();
                 quantizer = new VectorQuantizer(vqResult.getCodebook());
                 System.out.println("Created plane quantizer.");

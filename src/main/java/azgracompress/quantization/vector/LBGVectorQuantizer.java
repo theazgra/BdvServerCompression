@@ -17,14 +17,16 @@ public class LBGVectorQuantizer {
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
 
     boolean verbose = false;
+    private final int workerCount;
 
-    public LBGVectorQuantizer(final int[][] trainingVectors, final int codebookSize) {
+    public LBGVectorQuantizer(final int[][] trainingVectors, final int codebookSize, final int workerCount) {
 
         assert (trainingVectors.length > 0) : "No training vectors provided";
 
         this.trainingVectors = trainingVectors;
         this.vectorSize = trainingVectors[0].length;
         this.codebookSize = codebookSize;
+        this.workerCount = workerCount;
     }
 
     public LBGResult findOptimalCodebook() {
@@ -212,7 +214,6 @@ public class LBGVectorQuantizer {
 
         double previousDistortion = Double.POSITIVE_INFINITY;
 
-        int iteration = 1;
         Stopwatch innerLoopStopwatch = new Stopwatch("LBG inner loop");
         Stopwatch findingClosestEntryStopwatch = new Stopwatch("FindingClosestEntry");
         Stopwatch distCalcStopwatch = new Stopwatch("DistortionCalc");
@@ -222,37 +223,20 @@ public class LBGVectorQuantizer {
             innerLoopStopwatch.restart();
 
             // Step 1
-            // Speedup - speed the finding of the closest codebook entry.
+
+
             findingClosestEntryStopwatch.restart();
-            for (final int[] trainingVec : trainingVectors) {
-                double minDist = Double.POSITIVE_INFINITY;
-                LearningCodebookEntry closestEntry = null;
 
-                for (LearningCodebookEntry entry : codebook) {
-                    double entryDistance = VectorQuantizer.distanceBetweenVectors(entry.getVector(),
-                                                                                  trainingVec,
-                                                                                  metric);
+            assignVectorsToClosestEntry(codebook);
 
-                    if (entryDistance < minDist) {
-                        minDist = entryDistance;
-                        closestEntry = entry;
-                    }
-                }
-
-                if (closestEntry != null) {
-                    closestEntry.addTrainingVector(trainingVec, minDist);
-                } else {
-                    assert (false) : "Did not found closest entry.";
-                    System.err.println("Did not found closest entry.");
-                }
-            }
             findingClosestEntryStopwatch.stop();
+
             System.out.println(findingClosestEntryStopwatch);
 
-            fixEmptyStopwatch.restart();
+            //            fixEmptyStopwatch.restart();
             fixEmptyEntries(codebook, verbose);
-            fixEmptyStopwatch.stop();
-            System.out.println(fixEmptyStopwatch);
+            //            fixEmptyStopwatch.stop();
+            //            System.out.println(fixEmptyStopwatch);
 
             // Step 2
             distCalcStopwatch.restart();
@@ -285,12 +269,89 @@ public class LBGVectorQuantizer {
             }
             innerLoopStopwatch.stop();
 
-            System.out.println(innerLoopStopwatch);
+            //            System.out.println(innerLoopStopwatch);
             System.out.println("================");
         }
 
         totalLbgFun.stop();
         System.out.println(totalLbgFun);
+    }
+
+    private void assignVectorsToClosestEntry(ArrayList<LearningCodebookEntry> codebook) {
+        if (workerCount > 1) {
+            Thread[] workers = new Thread[workerCount];
+
+            final int workSize = trainingVectors.length / workerCount;
+
+            for (int wId = 0; wId < workerCount; wId++) {
+                final int fromIndex = wId * workSize;
+                final int toIndex = (wId == workerCount - 1) ? trainingVectors.length : (workSize + (wId * workSize));
+
+                workers[wId] = new Thread(() -> {
+                    double minimalDistance, entryDistance;
+                    for (int vecIndex = fromIndex; vecIndex < toIndex; vecIndex++) {
+                        minimalDistance = Double.POSITIVE_INFINITY;
+                        LearningCodebookEntry closestEntry = null;
+
+                        for (LearningCodebookEntry entry : codebook) {
+                            entryDistance = VectorQuantizer.distanceBetweenVectors(entry.getVector(),
+                                                                                   trainingVectors[vecIndex],
+                                                                                   metric);
+
+                            if (entryDistance < minimalDistance) {
+                                minimalDistance = entryDistance;
+                                closestEntry = entry;
+                            }
+                        }
+
+                        if (closestEntry != null) {
+                            closestEntry.addTrainingVector(trainingVectors[vecIndex],
+                                                           minimalDistance);
+                        } else {
+                            assert (false) : "Did not found closest entry.";
+                            System.err.println("Did not found closest entry.");
+                        }
+                    }
+                });
+                workers[wId].start();
+            }
+
+            try {
+                for (int wId = 0; wId < workerCount; wId++) {
+                    workers[wId].join();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                assert (false) : "Failed parallel join";
+            }
+
+        } else {
+
+            //////////////////////////////////////////////////////////////////////////
+            // Speedup - speed the finding of the closest codebook entry.
+            for (final int[] trainingVec : trainingVectors) {
+                double minDist = Double.POSITIVE_INFINITY;
+                LearningCodebookEntry closestEntry = null;
+
+                for (LearningCodebookEntry entry : codebook) {
+                    double entryDistance = VectorQuantizer.distanceBetweenVectors(entry.getVector(),
+                                                                                  trainingVec,
+                                                                                  metric);
+
+                    if (entryDistance < minDist) {
+                        minDist = entryDistance;
+                        closestEntry = entry;
+                    }
+                }
+
+                if (closestEntry != null) {
+                    closestEntry.addTrainingVector(trainingVec, minDist);
+                } else {
+                    assert (false) : "Did not found closest entry.";
+                    System.err.println("Did not found closest entry.");
+                }
+            }
+        }
     }
 
 
@@ -318,9 +379,10 @@ public class LBGVectorQuantizer {
     private void fixSingleEmptyEntry(ArrayList<LearningCodebookEntry> codebook,
                                      final LearningCodebookEntry emptyEntry,
                                      final boolean verbose) {
-        if (verbose) {
-            System.out.println("******** FOUND EMPTY ENTRY ********");
-        }
+        //        if (verbose) {
+        //            System.out.println("******** FOUND EMPTY ENTRY ********");
+        //        }
+
         // Remove empty entry from codebook.
         codebook.remove(emptyEntry);
 

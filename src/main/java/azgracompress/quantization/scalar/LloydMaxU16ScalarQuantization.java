@@ -122,13 +122,8 @@ public class LloydMaxU16ScalarQuantization {
                                                           boundaryPoints,
                                                           codebookSize);
                 workers[wId] = new Thread(runnables[wId]);
-            }
-
-            for (int wId = 0; wId < workerCount; wId++) {
                 workers[wId].start();
             }
-
-
             try {
                 for (int wId = 0; wId < workerCount; wId++) {
                     workers[wId].join();
