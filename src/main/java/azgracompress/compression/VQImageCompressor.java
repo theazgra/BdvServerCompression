@@ -23,16 +23,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     /**
-     * Get image vectors from the plane. Vector dimensions are specified by parsed CLI options.
-     *
-     * @param plane Image plane.
-     * @return Image vectors.
-     */
-    private int[][] getPlaneVectors(final ImageU16 plane) {
-        return plane.toQuantizationVectors(options.getVectorDimension());
-    }
-
-    /**
      * Train vector quantizer from plane vectors.
      *
      * @param planeVectors Image vectors.
@@ -117,7 +107,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             }
 
             Log(String.format("Training vector quantizer from reference plane %d.", options.getReferencePlaneIndex()));
-            final int[][] refPlaneVectors = getPlaneVectors(referencePlane);
+            final int[][] refPlaneVectors = referencePlane.toQuantizationVectors(options.getVectorDimension());
             quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
             writeQuantizerToCompressStream(quantizer, compressStream);
             stopwatch.stop();
@@ -125,7 +115,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression();
-
 
         for (final int planeIndex : planeIndices) {
             stopwatch.restart();
@@ -140,7 +129,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 throw new ImageCompressionException("Unable to load plane data.", ex);
             }
 
-            final int[][] planeVectors = getPlaneVectors(plane);
+            final int[][] planeVectors = plane.toQuantizationVectors(options.getVectorDimension());
+            Log("PlaneVectorCount: %d", planeVectors.length);
 
             if (!hasGeneralQuantizer) {
                 Log(String.format("Training vector quantizer from plane %d.", planeIndex));

@@ -53,13 +53,13 @@ public class ParsedCliOptions {
 
         switch (method) {
             case Compress: {
-                defaultValue += CompressorDecompressorBase.EXTENSTION;
+                defaultValue += CompressorDecompressorBase.EXTENSION;
             }
             break;
             case Decompress: {
-                if (defaultValue.toUpperCase().endsWith(CompressorDecompressorBase.EXTENSTION)) {
+                if (defaultValue.toUpperCase().endsWith(CompressorDecompressorBase.EXTENSION)) {
                     defaultValue = defaultValue.substring(0,
-                                                          defaultValue.length() - CompressorDecompressorBase.EXTENSTION.length());
+                                                          defaultValue.length() - CompressorDecompressorBase.EXTENSION.length());
                 }
             }
             break;
@@ -488,7 +488,7 @@ public class ParsedCliOptions {
         if (hasPlaneIndexSet()) {
             return 1;
         } else if (hasPlaneRangeSet()) {
-            return (toPlaneIndex - fromPlaneIndex);
+            return ((toPlaneIndex + 1) - fromPlaneIndex);
         } else {
             return imageDimension.getZ();
         }
