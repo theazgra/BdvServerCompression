@@ -108,6 +108,24 @@ public class Chunk2D {
         return vectors;
     }
 
+    public void reconstructFrom2DVectors(final int[][] vectors, final V2i qVectorDims) {
+        final int xSize = dims.getX();
+        final int ySize = dims.getY();
+
+        final int chunkXSize = qVectorDims.getX();
+        final int chunkYSize = qVectorDims.getY();
+
+        int vecIndex = 0;
+
+        for (int chunkYOffset = 0; chunkYOffset < ySize; chunkYOffset += chunkYSize) {
+            for (int chunkXOffset = 0; chunkXOffset < xSize; chunkXOffset += chunkXSize) {
+                copyDataFromVector(vectors[vecIndex++], qVectorDims, chunkXOffset, chunkYOffset);
+            }
+        }
+        assert (vecIndex == vectors.length);
+    }
+
+
     private int calculateRequiredChunkCountPerPlane(final V2i chunkDims) {
         return calculateRequiredChunkCountPerPlane(dims, chunkDims);
     }
@@ -184,6 +202,26 @@ public class Chunk2D {
                 srcX = chunkXOffset + x;
                 final int dstIndex = index(x, y, qVectorDims);
                 vector[dstIndex] = isInside(srcX, srcY) ? data[index(srcX, srcY)] : FILL_VALUE;
+            }
+        }
+    }
+
+    private void copyDataFromVector(int[] vector,
+                                    final V2i qVectorDims,
+                                    final int chunkXOffset,
+                                    final int chunkYOffset) {
+
+        final int qVecYSize = qVectorDims.getY();
+        final int qVecXSize = qVectorDims.getX();
+        int dstX, dstY;
+
+        for (int chunkY = 0; chunkY < qVecYSize; chunkY++) {
+            dstY = chunkYOffset + chunkY;
+            for (int chunkX = 0; chunkX < qVecXSize; chunkX++) {
+                dstX = chunkXOffset + chunkX;
+                if (!(dstX >= dims.getX() || dstY >= dims.getY())) {
+                    setValueAt(dstX, dstY, vector[index(chunkX, chunkY, qVectorDims)]);
+                }
             }
         }
     }
@@ -291,4 +329,6 @@ public class Chunk2D {
             chunks[i].updateData(newData[i]);
         }
     }
+
+
 }
