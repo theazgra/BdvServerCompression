@@ -10,6 +10,12 @@ public class VectorQuantizer {
         vectorSize = codebook[0].getVector().length;
     }
 
+    public int[] quantize(final int[] dataVector) {
+        assert (dataVector.length > 0 && dataVector.length % vectorSize == 0) : "Wrong vector size";
+        final CodebookEntry closestEntry = findClosestCodebookEntry(dataVector, VectorDistanceMetric.Euclidean);
+        return closestEntry.getVector();
+    }
+
     public int[][] quantize(final int[][] dataVectors) {
         assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
         int[][] result = new int[dataVectors.length][vectorSize];
