@@ -26,7 +26,10 @@ public class QuantizationValueCache {
                                              final int entryHeight) {
         final File inputFile = new File(trainFile);
         final File cacheFile = new File(cacheFolder, String.format("%s_%d_%dx%d.qvc",
-                                                                   inputFile.getName(), codebookSize, entryWidth, entryHeight));
+                                                                   inputFile.getName(),
+                                                                   codebookSize,
+                                                                   entryWidth,
+                                                                   entryHeight));
         return cacheFile;
     }
 
@@ -72,7 +75,7 @@ public class QuantizationValueCache {
         }
     }
 
-    public int[] readCachedValues(final String trainFile, final int quantizationValueCount) {
+    public int[] readCachedValues(final String trainFile, final int quantizationValueCount) throws IOException {
         final File cacheFile = getCacheFileForScalarValues(trainFile, quantizationValueCount);
 
         int[] values = new int[quantizationValueCount];
@@ -82,10 +85,6 @@ public class QuantizationValueCache {
             for (int i = 0; i < quantizationValueCount; i++) {
                 values[i] = dis.readInt();
             }
-        } catch (IOException ioEx) {
-            System.err.println("Failed to read scalar quantization values from cache.");
-            ioEx.printStackTrace();
-            return new int[0];
         }
         return values;
     }
@@ -93,7 +92,7 @@ public class QuantizationValueCache {
     public CodebookEntry[] readCachedValues(final String trainFile,
                                             final int codebookSize,
                                             final int entryWidth,
-                                            final int entryHeight) {
+                                            final int entryHeight) throws IOException {
         final File cacheFile = getCacheFileForVectorValues(trainFile, codebookSize, entryWidth, entryHeight);
 
         CodebookEntry[] codebook = new CodebookEntry[codebookSize];
@@ -115,10 +114,6 @@ public class QuantizationValueCache {
                 }
                 codebook[i] = new CodebookEntry(vector);
             }
-        } catch (IOException ioEx) {
-            System.err.println("Failed to read quantization vectors from cache.");
-            ioEx.printStackTrace();
-            return new CodebookEntry[0];
         }
         return codebook;
 

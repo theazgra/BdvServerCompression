@@ -34,6 +34,9 @@ public class CliConstants {
     public static final String WORKER_COUNT_SHORT = "wc";
     public static final String WORKER_COUNT_LONG = "worker-count";
 
+    public static final String CODEBOOK_CACHE_FOLDER_SHORT = "wc";
+    public static final String CODEBOOK_CACHE_FOLDER_LONG = "worker-count";
+
     public static final String SCALAR_QUANTIZATION_SHORT = "sq";
     public static final String SCALAR_QUANTIZATION_LONG = "scalar-quantization";
 

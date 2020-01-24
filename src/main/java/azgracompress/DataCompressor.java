@@ -131,10 +131,12 @@ public class DataCompressor {
         options.addOptionGroup(methodGroup);
         options.addOptionGroup(compressionMethodGroup);
         options.addOption(CliConstants.BITS_SHORT, CliConstants.BITS_LONG, true, "Bit count per pixel [Default 8]");
+
         options.addOption(CliConstants.REFERENCE_PLANE_SHORT,
                           CliConstants.REFERENCE_PLANE_LONG,
                           true,
                           "Reference plane index");
+
         options.addOption(new Option(CliConstants.VERBOSE_SHORT,
                                      CliConstants.VERBOSE_LONG,
                                      false,
@@ -144,6 +146,11 @@ public class DataCompressor {
                                      CliConstants.WORKER_COUNT_LONG,
                                      true,
                                      "Number of worker threads"));
+
+        options.addOption(new Option(CliConstants.CODEBOOK_CACHE_FOLDER_SHORT,
+                                     CliConstants.CODEBOOK_CACHE_FOLDER_LONG,
+                                     true,
+                                     "Folder of codebook caches"));
 
         options.addOption(CliConstants.OUTPUT_SHORT, CliConstants.OUTPUT_LONG, true, "Custom output file");
         return options;

@@ -70,15 +70,41 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     /**
+     * Load quantizer from cached codebook.
+     *
+     * @return Vector quantizer with cached codebook.
+     * @throws ImageCompressionException when fails to read cached codebook.
+     */
+    private VectorQuantizer loadQuantizerFromCache() throws ImageCompressionException {
+        QuantizationValueCache cache = new QuantizationValueCache(options.getCodebookCacheFolder());
+        try {
+            final CodebookEntry[] codebook = cache.readCachedValues(options.getInputFile(),
+                                                                    codebookSize,
+                                                                    options.getVectorDimension().getX(),
+                                                                    options.getVectorDimension().getY());
+            return new VectorQuantizer(codebook);
+
+        } catch (IOException e) {
+            throw new ImageCompressionException("Failed to read quantization vectors from cache.", e);
+        }
+    }
+
+    /**
      * Compress the image file specified by parsed CLI options using vector quantization.
      *
      * @param compressStream Stream to which compressed data will be written.
      * @throws ImageCompressionException When compress process fails.
      */
     public void compress(DataOutputStream compressStream) throws ImageCompressionException {
-        VectorQuantizer quantizer = null;
         Stopwatch stopwatch = new Stopwatch();
-        if (options.hasReferencePlaneIndex()) {
+        final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.hasReferencePlaneIndex();
+        VectorQuantizer quantizer = null;
+
+        if (options.hasCodebookCacheFolder()) {
+            Log("Loading codebook from cache file.");
+            quantizer = loadQuantizerFromCache();
+            Log("Cached quantizer created.");
+        } else if (options.hasReferencePlaneIndex()) {
             stopwatch.restart();
 
             ImageU16 referencePlane = null;
@@ -116,7 +142,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             final int[][] planeVectors = getPlaneVectors(plane);
 
-            if (!options.hasReferencePlaneIndex()) {
+            if (!hasGeneralQuantizer) {
                 Log(String.format("Training vector quantizer from plane %d.", planeIndex));
                 quantizer = trainVectorQuantizerFromPlaneVectors(planeVectors);
                 writeQuantizerToCompressStream(quantizer, compressStream);
@@ -138,6 +164,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             Log(String.format("Finished processing of plane %d.", planeIndex));
         }
     }
+
 
     /**
      * Load plane and convert the plane into quantization vectors.

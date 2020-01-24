@@ -18,6 +18,7 @@ public class ParsedCliOptions {
 
     private String inputFile;
     private String outputFile;
+    private String codebookCacheFolder = null;
 
     private int bitsPerPixel;
     private V2i vectorDimension = new V2i(0);
@@ -106,6 +107,8 @@ public class ParsedCliOptions {
                 errorBuilder.append("Unable to parse worker count. Expected int got: ").append(wcString).append('\n');
             }
         }
+
+        codebookCacheFolder = cmd.getOptionValue(CliConstants.CODEBOOK_CACHE_FOLDER_LONG, null);
 
         if (!errorOccurred) {
             outputFile = cmd.getOptionValue(CliConstants.OUTPUT_LONG, getDefaultOutputFilePath(inputFile));
@@ -404,6 +407,14 @@ public class ParsedCliOptions {
         return workerCount;
     }
 
+    public String getCodebookCacheFolder() {
+        return codebookCacheFolder;
+    }
+
+    public boolean hasCodebookCacheFolder() {
+        return (codebookCacheFolder != null);
+    }
+
     public String report() {
         StringBuilder sb = new StringBuilder();
 
@@ -443,6 +454,9 @@ public class ParsedCliOptions {
         sb.append("BitsPerPixel: ").append(bitsPerPixel).append('\n');
         sb.append("Output: ").append(outputFile).append('\n');
         sb.append("InputFile: ").append(inputFile).append('\n');
+        if (hasCodebookCacheFolder()) {
+            sb.append("CodebookCacheFolder: ").append(codebookCacheFolder).append('\n');
+        }
 
         if (hasQuantizationType(method)) {
             sb.append("Input image dims: ").append(imageDimension.toString()).append('\n');
@@ -461,7 +475,6 @@ public class ParsedCliOptions {
 
         sb.append("Verbose: ").append(verbose).append('\n');
         sb.append("ThreadWorkerCount: ").append(workerCount).append('\n');
-
 
         return sb.toString();
     }

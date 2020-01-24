@@ -55,15 +55,38 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     /**
+     * Load quantization codebook from cache file.
+     *
+     * @return Scalar quantizer with cached codebook.
+     * @throws ImageCompressionException when fails to read cached codebook.
+     */
+    private ScalarQuantizer loadQuantizerFromCache() throws ImageCompressionException {
+        QuantizationValueCache cache = new QuantizationValueCache(options.getCodebookCacheFolder());
+        try {
+            final int[] quantizationValues = cache.readCachedValues(options.getInputFile(), codebookSize);
+            return new ScalarQuantizer(U16.Min, U16.Max, quantizationValues);
+        } catch (IOException e) {
+            throw new ImageCompressionException("Failed to read quantization values from cache file.", e);
+        }
+    }
+
+    /**
      * Compress the image file specified by parsed CLI options using scalar quantization.
      *
      * @param compressStream Stream to which compressed data will be written.
      * @throws ImageCompressionException When compress process fails.
      */
     public void compress(DataOutputStream compressStream) throws ImageCompressionException {
-        ScalarQuantizer quantizer = null;
         Stopwatch stopwatch = new Stopwatch();
-        if (options.hasReferencePlaneIndex()) {
+        final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.hasReferencePlaneIndex();
+
+        ScalarQuantizer quantizer = null;
+        if (options.hasCodebookCacheFolder()) {
+            Log("Loading codebook from cache file.");
+            quantizer = loadQuantizerFromCache();
+            Log("Cached quantizer created.");
+        } else if (options.hasReferencePlaneIndex()) {
+            // TODO(Moravec): Reference plane will be deprecated in favor of 'middle' plane.
             stopwatch.restart();
             ImageU16 referencePlane = null;
             try {
@@ -99,7 +122,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
                 throw new ImageCompressionException("Unable to load plane data.", ex);
             }
 
-            if (!options.hasReferencePlaneIndex()) {
+            if (!hasGeneralQuantizer) {
                 Log(String.format("Training scalar quantizer from plane %d.", planeIndex));
                 quantizer = trainScalarQuantizerFromData(plane.getData());
                 writeCodebookToOutputStream(quantizer, compressStream);
