@@ -94,6 +94,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             Log("Loading codebook from cache file.");
             quantizer = loadQuantizerFromCache();
             Log("Cached quantizer created.");
+            writeQuantizerToCompressStream(quantizer, compressStream);
         } else if (options.hasReferencePlaneIndex()) {
             stopwatch.restart();
 

@@ -85,6 +85,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             Log("Loading codebook from cache file.");
             quantizer = loadQuantizerFromCache();
             Log("Cached quantizer created.");
+            writeCodebookToOutputStream(quantizer, compressStream);
         } else if (options.hasReferencePlaneIndex()) {
             // TODO(Moravec): Reference plane will be deprecated in favor of 'middle' plane.
             stopwatch.restart();

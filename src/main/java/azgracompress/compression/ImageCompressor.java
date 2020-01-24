@@ -98,9 +98,13 @@ public class ImageCompressor extends CompressorDecompressorBase {
     private QCMPFileHeader createHeader() {
         QCMPFileHeader header = new QCMPFileHeader();
 
+
         header.setQuantizationType(options.getQuantizationType());
         header.setBitsPerPixel((byte) options.getBitsPerPixel());
-        header.setCodebookPerPlane(!options.hasReferencePlaneIndex());
+        
+        // Codebook per plane is used only if reference plane isn't set nor is the cache folder.
+        final boolean oneCodebook = options.hasReferencePlaneIndex() || options.hasCodebookCacheFolder();
+        header.setCodebookPerPlane(!oneCodebook);
 
         header.setImageSizeX(options.getImageDimension().getX());
         header.setImageSizeY(options.getImageDimension().getY());
