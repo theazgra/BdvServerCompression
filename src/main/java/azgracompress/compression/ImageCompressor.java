@@ -101,7 +101,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
         header.setQuantizationType(options.getQuantizationType());
         header.setBitsPerPixel((byte) options.getBitsPerPixel());
-        
+
         // Codebook per plane is used only if reference plane isn't set nor is the cache folder.
         final boolean oneCodebook = options.hasReferencePlaneIndex() || options.hasCodebookCacheFolder();
         header.setCodebookPerPlane(!oneCodebook);

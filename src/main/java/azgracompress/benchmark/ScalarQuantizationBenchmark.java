@@ -6,6 +6,7 @@ import azgracompress.data.V3i;
 import azgracompress.de.DeException;
 import azgracompress.de.shade.ILShadeSolver;
 import azgracompress.quantization.QTrainIteration;
+import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
 import azgracompress.quantization.scalar.ScalarQuantizer;
 
@@ -37,7 +38,17 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
         boolean dirCreated = new File(this.outputDirectory).mkdirs();
         System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
         ScalarQuantizer quantizer = null;
-        if (hasReferencePlane) {
+        if (hasCacheFolder) {
+            QuantizationValueCache cache = new QuantizationValueCache(cacheFolder);
+            try {
+                final int[] quantizationValues = cache.readCachedValues(inputFile, codebookSize);
+                quantizer = new ScalarQuantizer(U16.Min, U16.Max, quantizationValues);
+            } catch (IOException e) {
+                System.err.println("Failed to read quantization values from cache file.");
+                e.printStackTrace();
+                return;
+            }
+        } else if (hasReferencePlane) {
             final int[] refPlaneData = loadPlaneData(referencePlaneIndex);
             if (refPlaneData.length == 0) {
                 System.err.println("Failed to load reference plane data.");
@@ -61,7 +72,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
             }
 
 
-            if (!hasReferencePlane) {
+            if (!hasGeneralQuantizer) {
                 if (useDiffEvolution) {
                     quantizer = trainDifferentialEvolution(planeData, codebookSize);
                 } else {

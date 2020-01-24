@@ -26,6 +26,9 @@ abstract class BenchmarkBase {
     protected final boolean hasReferencePlane;
     protected final int referencePlaneIndex;
     protected final int codebookSize;
+    protected final boolean hasCacheFolder;
+    protected final String cacheFolder;
+    protected final boolean hasGeneralQuantizer;
 
     protected BenchmarkBase(final String inputFile,
                             final String outputDirectory,
@@ -39,6 +42,10 @@ abstract class BenchmarkBase {
         hasReferencePlane = false;
         referencePlaneIndex = -1;
         codebookSize = 256;
+
+        hasCacheFolder = false;
+        cacheFolder = null;
+        hasGeneralQuantizer = false;
     }
 
     protected BenchmarkBase(final ParsedCliOptions options) {
@@ -56,18 +63,21 @@ abstract class BenchmarkBase {
             final int to = options.getToPlaneIndex();
             final int count = to - from;
 
-            this.planes = new int[count];
-            for (int i = 0; i < count; i++) {
+            this.planes = new int[count + 1];
+            for (int i = 0; i <= count; i++) {
                 this.planes[i] = from + i;
             }
         } else {
             final int planeCount = options.getImageDimension().getZ();
-            this.planes = new int[planeCount + 1];
-            for (int i = 0; i <= planeCount; i++) {
+            this.planes = new int[planeCount];
+            for (int i = 0; i < planeCount; i++) {
                 this.planes[i] = i;
             }
         }
 
+        hasCacheFolder = options.hasCodebookCacheFolder();
+        cacheFolder = options.getCodebookCacheFolder();
+        hasGeneralQuantizer = hasReferencePlane || hasCacheFolder;
     }
 
     /**

@@ -2,6 +2,7 @@ package azgracompress.benchmark;
 
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.*;
+import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.vector.CodebookEntry;
 import azgracompress.quantization.vector.LBGResult;
 import azgracompress.quantization.vector.LBGVectorQuantizer;
@@ -59,7 +60,21 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
         System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
         VectorQuantizer quantizer = null;
 
-        if (hasReferencePlane) {
+        if (hasCacheFolder) {
+            QuantizationValueCache cache = new QuantizationValueCache(cacheFolder);
+            try {
+                final CodebookEntry[] codebook = cache.readCachedValues(inputFile,
+                                                                        codebookSize,
+                                                                        qVector.getX(),
+                                                                        qVector.getY());
+                quantizer = new VectorQuantizer(codebook);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.err.println("Failed to read quantization vectors from cache.");
+                return;
+            }
+        } else if (hasReferencePlane) {
             final ImageU16 plane = loadPlane(referencePlaneIndex);
 
             if (plane == null) {
@@ -88,7 +103,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
             final int[][] planeData = getPlaneVectors(plane, qVector);
 
 
-            if (!hasReferencePlane) {
+            if (!hasGeneralQuantizer) {
                 LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData, codebookSize);
                 LBGResult vqResult = vqInitializer.findOptimalCodebook();
                 quantizer = new VectorQuantizer(vqResult.getCodebook());
