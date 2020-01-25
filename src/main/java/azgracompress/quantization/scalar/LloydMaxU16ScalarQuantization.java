@@ -104,8 +104,6 @@ public class LloydMaxU16ScalarQuantization {
         Stopwatch s = new Stopwatch();
         s.start();
         if (workerCount > 1) {
-            // Speedup
-
             final int workSize = trainingData.length / workerCount;
 
             RunnableLloydMseCalc[] runnables = new RunnableLloydMseCalc[workerCount];
