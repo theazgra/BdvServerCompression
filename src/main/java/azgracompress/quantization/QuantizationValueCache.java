@@ -1,5 +1,6 @@
 package azgracompress.quantization;
 
+import azgracompress.data.V2i;
 import azgracompress.quantization.vector.CodebookEntry;
 
 import java.io.*;
@@ -50,10 +51,12 @@ public class QuantizationValueCache {
         }
     }
 
-    public void saveQuantizationValues(final String trainFile, final CodebookEntry[] entries) throws IOException {
+    public void saveQuantizationValues(final String trainFile,
+                                       final CodebookEntry[] entries,
+                                       final V2i qVecDims) throws IOException {
         final int codebookSize = entries.length;
-        final int entryWidth = entries[0].getWidth();
-        final int entryHeight = entries[0].getHeight();
+        final int entryWidth = qVecDims.getX();
+        final int entryHeight = qVecDims.getY();
         final String cacheFile = getCacheFileForVectorValues(trainFile,
                                                              codebookSize,
                                                              entryWidth,

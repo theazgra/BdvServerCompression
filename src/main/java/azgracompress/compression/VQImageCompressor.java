@@ -228,7 +228,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         Log("Saving cache file to %s", options.getOutputFile());
         QuantizationValueCache cache = new QuantizationValueCache(options.getOutputFile());
         try {
-            cache.saveQuantizationValues(options.getInputFile(), lbgResult.getCodebook());
+            cache.saveQuantizationValues(options.getInputFile(), lbgResult.getCodebook(), options.getVectorDimension());
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write cache.", e);
         }
