@@ -28,4 +28,9 @@ public class TrainingVector {
     public void setEntryDistance(double entryDistance) {
         this.entryDistance = entryDistance;
     }
+
+    public void setEntryInfo(final int closestEntryIndex, final double minDist) {
+        this.entryIndex = closestEntryIndex;
+        this.entryDistance = minDist;
+    }
 }

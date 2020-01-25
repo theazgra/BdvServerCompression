@@ -37,7 +37,7 @@ public class EntryInfo {
     public double[] calculatePRTVector() {
         double[] prtV = new double[vectorSize];
         for (int dim = 0; dim < vectorSize; dim++) {
-            prtV[dim] = (((double) max[dim] - (double) min[dim]) / LBGVectorQuantizer.PRT_VECTOR_DIVIDER);
+            prtV[dim] =  ((double) max[dim] - (double) min[dim]) / LBGVectorQuantizer.PRT_VECTOR_DIVIDER;
         }
         return prtV;
     }

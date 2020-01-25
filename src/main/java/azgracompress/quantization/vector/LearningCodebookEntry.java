@@ -53,57 +53,15 @@ public class LearningCodebookEntry extends CodebookEntry {
     }
 
     public void setInfo(final EntryInfo info) {
-        vectorCount = info.vectorCount;
-        averageDistortion = info.calculateAverageDistortion();
+        this.vectorCount = info.vectorCount;
+        this.averageDistortion = info.calculateAverageDistortion();
         setCentroid(info.calculateCentroid());
-        perturbationVector = info.calculatePRTVector();
+        this.perturbationVector = info.calculatePRTVector();
     }
-
-    //    public double getAverageDistortion() {
-    //        assert (trainingVectors.size() == trainingVectorsDistances.size());
-    //        assert (trainingVectors.size() > 0) : "Empty entry!";
-    //        double totalDistortion = Utils.arrayListSum(trainingVectorsDistances);
-    //        return (totalDistortion / (double) trainingVectors.size());
-    //    }
-
-    //    public ArrayList<int[]> getTrainingVectors() {
-    //        return trainingVectors;
-    //    }
 
     public ArrayList<Integer> getVectorAsArrayList() {
         return Arrays.stream(vector).boxed().collect(Collectors.toCollection(ArrayList::new));
     }
-
-
-    //
-    //    public void setTrainingVectors(ArrayList<int[]> trainingVectors) {
-    //        this.trainingVectors = trainingVectors;
-    //    }
-
-    //    public void addTrainingVector(final int[] trainingVec, final double vecDist) {
-    //        trainingVectors.add(trainingVec);
-    //        trainingVectorsDistances.add(vecDist);
-    //    }
-    //
-    //    public void clearTrainingData() {
-    //        trainingVectors.clear();
-    //        trainingVectorsDistances.clear();
-    //    }
-
-    //    public void calculateCentroid() {
-    //        // If we dont have any training vectors we cannot recalculate the centroid.
-    //        if (trainingVectors.size() > 0) {
-    //            ArrayList<Integer> mean = vectorMean(trainingVectors.stream(),
-    //                                                 trainingVectors.size(),
-    //                                                 trainingVectors.get(0).length);
-    //            assert (mean.size() == vector.length) : "Mismatched collection sizes";
-    //            for (int i = 0; i < vector.length; i++) {
-    //                vector[i] = mean.get(i);
-    //                assert (vector[i] >= 0) : "Centroid value is too low";
-    //                assert (vector[i] <= U16.Max) : "Centroid value is too big";
-    //            }
-    //        }
-    //    }
 
     public static ArrayList<Integer> vectorMean(final Stream<int[]> vectorStream,
                                                 final int vectorCount,

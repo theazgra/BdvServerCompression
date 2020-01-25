@@ -14,8 +14,6 @@ public class LBGVectorQuantizer {
     private final double EPSILON = 0.005;
     private final int vectorSize;
     private final int codebookSize;
-    private int currentCodebookSize = 0;
-    //    private final int[][] vectors;
     private final TrainingVector[] trainingVectors;
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
 
@@ -41,6 +39,7 @@ public class LBGVectorQuantizer {
     }
 
     public LBGResult findOptimalCodebook(boolean isVerbose) {
+        Stopwatch stopwatch = Stopwatch.startNew("findOptimalCodebook");
         this.verbose = isVerbose;
 
         // TODO(Moravec): Remove in production.
@@ -57,6 +56,10 @@ public class LBGVectorQuantizer {
             System.out.println(String.format("Improved codebook, final average MSE: %.4f PSNR: %.4f (dB)",
                                              finalMse,
                                              psnr));
+        }
+        stopwatch.stop();
+        if (verbose) {
+            System.out.println(stopwatch);
         }
         return new LBGResult(learningCodebookToCodebook(codebook), finalMse, psnr);
     }
@@ -92,8 +95,7 @@ public class LBGVectorQuantizer {
             }
         }
 
-        final double avgMse = mse / (double) (trainingVectors.length * vectorSize);
-        return avgMse;
+        return (mse / (double) (trainingVectors.length * vectorSize));
     }
 
     private double[] getPerturbationVector(final Stream<TrainingVector> vectors) {
@@ -117,7 +119,6 @@ public class LBGVectorQuantizer {
 
         double[] perturbationVector = new double[vectorSize];
         for (int i = 0; i < vectorSize; i++) {
-            // NOTE(Moravec): Divide by 16 instead of 4, because we are dealing with maximum difference of 65535.
             perturbationVector[i] = ((double) max[i] - (double) min[i]) / PRT_VECTOR_DIVIDER;
         }
         return perturbationVector;
@@ -140,7 +141,7 @@ public class LBGVectorQuantizer {
 
     private LearningCodebookEntry[] initializeCodebook() {
 
-        currentCodebookSize = 1;
+        int currentCodebookSize = 1;
         LearningCodebookEntry[] codebook = new LearningCodebookEntry[currentCodebookSize];
         codebook[0] = new LearningCodebookEntry(createInitialEntry());
 
@@ -224,44 +225,19 @@ public class LBGVectorQuantizer {
     }
 
     private void LBG(LearningCodebookEntry[] codebook, final double epsilon) {
-        Stopwatch totalLbgFun = Stopwatch.startNew("Whole LBG function");
-
         double previousDistortion = Double.POSITIVE_INFINITY;
-
-        Stopwatch innerLoopStopwatch = new Stopwatch("LBG inner loop");
-        Stopwatch findingClosestEntryStopwatch = new Stopwatch("FindingClosestEntry");
-        Stopwatch distCalcStopwatch = new Stopwatch("DistortionCalc");
-        Stopwatch fixEmptyStopwatch = new Stopwatch("FixEmpty");
         int iteration = 1;
         while (true) {
-            innerLoopStopwatch.restart();
-
             // Step 1
-
-
-            findingClosestEntryStopwatch.restart();
-
             assignVectorsToClosestEntry(codebook);
-
-            findingClosestEntryStopwatch.stop();
-
-            //            System.out.println(findingClosestEntryStopwatch);
-
-            //            fixEmptyStopwatch.restart();
             fixEmptyEntries(codebook);
-            //            fixEmptyStopwatch.stop();
-            //            System.out.println(fixEmptyStopwatch);
 
             // Step 2
-            distCalcStopwatch.restart();
             double avgDistortion = 0;
             for (LearningCodebookEntry entry : codebook) {
                 avgDistortion += entry.getAverageDistortion();
             }
             avgDistortion /= codebook.length;
-            distCalcStopwatch.stop();
-
-            //            System.out.println(distCalcStopwatch);
 
             // Step 3
             double dist = (previousDistortion - avgDistortion) / avgDistortion;
@@ -270,33 +246,17 @@ public class LBGVectorQuantizer {
             }
 
             if (dist < epsilon) {
-                // NOTE(Moravec):   We will leave training data in entries so we can use them for
-                //                  PRT vector calculation.
                 break;
             } else {
                 previousDistortion = avgDistortion;
-
-
-                // Step 4
-                // NOTE: Centroid is already calculated.
-                //                for (LearningCodebookEntry entry : codebook) {
-                //                    entry.calculateCentroid();
-                //                    entry.clearTrainingData();
-                //                }
             }
-            innerLoopStopwatch.stop();
-
-            //            System.out.println(innerLoopStopwatch);
         }
-
-        totalLbgFun.stop();
-        System.out.println(totalLbgFun);
     }
 
     private void assignVectorsToClosestEntry(LearningCodebookEntry[] codebook) {
-        for (int i = 0; i < codebook.length; i++) {
-            codebook[i].setVectorCount(-1);
-        }
+        //        for (int i = 0; i < codebook.length; i++) {
+        //            codebook[i].setVectorCount(-1);
+        //        }
         if (workerCount > 1) {
             Thread[] workers = new Thread[workerCount];
             final int workSize = trainingVectors.length / workerCount;
@@ -344,11 +304,12 @@ public class LBGVectorQuantizer {
             }
 
         } else {
-            //////////////////////////////////////////////////////////////////////////
-            // Speedup - speed the finding of the closest codebook entry.
+            double minDist;
+            int closestEntryIndex;
+
             for (TrainingVector trainingVector : trainingVectors) {
-                double minDist = Double.POSITIVE_INFINITY;
-                int closestEntryIndex = -1;
+                minDist = Double.POSITIVE_INFINITY;
+                closestEntryIndex = -1;
 
                 for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
                     double entryDistance = VectorQuantizer.distanceBetweenVectors(codebook[entryIndex].getVector(),
@@ -362,67 +323,48 @@ public class LBGVectorQuantizer {
                 }
 
                 if (closestEntryIndex != -1) {
-                    trainingVector.setEntryIndex(closestEntryIndex);
-                    trainingVector.setEntryDistance(minDist);
+                    assert (closestEntryIndex < codebook.length);
+                    trainingVector.setEntryInfo(closestEntryIndex, minDist);
                 } else {
                     assert (false) : "Did not found closest entry.";
                     System.err.println("Did not found closest entry.");
                 }
             }
-
         }
+        // Calculate all the entry properties.
+        calculateEntryProperties(codebook);
+    }
 
-        int[] vectorCounts = new int[codebook.length];
-        double[] distanceSums = new double[codebook.length];
-        double[][] dimensionSum = new double[codebook.length][vectorSize];
-
-        // Max is initialized to zero that is ok.
-        int[][] maxs = new int[codebook.length][vectorSize];
-        // We have to initialize min to Max values.
-        int[][] mins = new int[codebook.length][vectorSize];
-        for (int cbInd = 0; cbInd < codebook.length; cbInd++) {
-            Arrays.fill(mins[cbInd], U16.Max);
-        }
+    private void calculateEntryProperties(LearningCodebookEntry[] codebook) {
 
         int value;
-        for (final TrainingVector trainingVector : trainingVectors) {
-            final int entryIndex = trainingVector.getEntryIndex();
-            assert (entryIndex >= 0);
+        EntryInfo[] entryInfos = new EntryInfo[codebook.length];
+        for (int i = 0; i < entryInfos.length; i++) {
+            entryInfos[i] = new EntryInfo(vectorSize);
+        }
 
-            ++vectorCounts[entryIndex];
-            distanceSums[entryIndex] += trainingVector.getEntryDistance();
+        for (final TrainingVector trainingVector : trainingVectors) {
+            final int eIndex = trainingVector.getEntryIndex();
+
+            entryInfos[eIndex].vectorCount += 1;
+            entryInfos[eIndex].distanceSum += trainingVector.getEntryDistance();
 
             for (int dim = 0; dim < vectorSize; dim++) {
                 value = trainingVector.getVector()[dim];
 
-                dimensionSum[entryIndex][dim] += value;
+                entryInfos[eIndex].dimensionSum[dim] += value;
 
-                if (value < mins[entryIndex][dim]) {
-                    mins[entryIndex][dim] = value;
+
+                if (value < entryInfos[eIndex].min[dim]) {
+                    entryInfos[eIndex].min[dim] = value;
                 }
-                if (value > maxs[entryIndex][dim]) {
-                    maxs[entryIndex][dim] = value;
+                if (value > entryInfos[eIndex].max[dim]) {
+                    entryInfos[eIndex].max[dim] = value;
                 }
             }
         }
-
-        int[] centroid = new int[vectorSize];
-        double[] perturbationVector = new double[vectorSize];
-
-        for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
-            LearningCodebookEntry entry = codebook[entryIndex];
-            entry.setVectorCount(vectorCounts[entryIndex]);
-            entry.setAverageDistortion(distanceSums[entryIndex] / (double) vectorCounts[entryIndex]);
-
-            for (int dim = 0; dim < vectorSize; dim++) {
-                centroid[dim] = (int) Math.round(dimensionSum[entryIndex][dim] / (double) vectorCounts[entryIndex]);
-
-                perturbationVector[dim] =
-                        ((double) maxs[entryIndex][dim] - (double) mins[entryIndex][dim]) / PRT_VECTOR_DIVIDER;
-            }
-
-            entry.setCentroid(centroid);
-            entry.setPerturbationVector(perturbationVector);
+        for (int i = 0; i < codebook.length; i++) {
+            codebook[i].setInfo(entryInfos[i]);
         }
     }
 
@@ -451,154 +393,100 @@ public class LBGVectorQuantizer {
     }
 
     private void fixSingleEmptyEntry(LearningCodebookEntry[] codebook, final int emptyEntryIndex) {
-        //        if (verbose) {
-        //            System.out.println("******** FOUND EMPTY ENTRY ********");
-        //        }
-
-        // Remove empty entry from codebook.
-        //        codebook.remove(emptyEntry);
-
         // Find biggest partition.
         int largestEntryIndex = emptyEntryIndex;
         int largestEntrySize = codebook[emptyEntryIndex].getVectorCount();
+        // NOTE(Moravec): We can't select random training vector, because zero vector would create another zero vector.
         for (int i = 0; i < codebook.length; i++) {
-            // NOTE(Moravec):   We can not select random training vector from zero vector
-            //                  because we would just create another zero vector.
             if ((codebook[i].getVectorCount() > largestEntrySize) && !codebook[i].isZeroVector()) {
                 largestEntryIndex = i;
+                largestEntrySize = codebook[i].getVectorCount();
             }
         }
 
-        // Assert that we have found some.
+        // Assert that we have found some non empty codebook entry.
         assert (largestEntryIndex != emptyEntryIndex) : "Unable to find biggest partition.";
         assert (codebook[largestEntryIndex].getVectorCount() > 0) : "Biggest partitions was empty before split";
 
-        TrainingVector[] largestPartitionVectors = getTrainingVectorFromEntry(largestEntryIndex,
-                                                                              codebook[largestEntryIndex].getVectorCount());
+        // Get training vectors assigned to the largest codebook entry.
+        final TrainingVector[] largestPartitionVectors = getEntryTrainingVectors(largestEntryIndex,
+                                                                                 codebook[largestEntryIndex].getVectorCount());
 
         // Choose random trainingVector from biggest partition and set it as new entry.
         int randomIndex = new Random().nextInt(largestPartitionVectors.length);
-
-        LearningCodebookEntry newEntry = new LearningCodebookEntry(largestPartitionVectors[randomIndex].getVector());
-        // Add new entry to the codebook on plane of the empty entry.
-        codebook[emptyEntryIndex] = newEntry;
-
-        // Remove that vector from training vectors of biggest partition
-        //        largestPartitionVectors[randomIndex].setEntryIndex(-1);
-        //        largestPartitionVectors[randomIndex].setEntryDistance(Double.POSITIVE_INFINITY);
+        // Plane the new entry on the index of the empty entry.
+        codebook[emptyEntryIndex] = new LearningCodebookEntry(largestPartitionVectors[randomIndex].getVector());
 
 
         // Speedup - speed the look for closest entry.
 
-        int oldEntryVectorCount = 0;
-        int newEntryVectorCount = 0;
+        EntryInfo oldEntryInfo = new EntryInfo(vectorSize);
+        EntryInfo newEntryInfo = new EntryInfo(vectorSize);
 
-        int[] oldMin = new int[vectorSize];
-        int[] oldMax = new int[vectorSize];
-        int[] newMin = new int[vectorSize];
-        int[] newMax = new int[vectorSize];
-        Arrays.fill(oldMin, U16.Max);
-        Arrays.fill(newMin, U16.Max);
-
-        double oldDistSum = 0.0;
-        double newDistSum = 0.0;
-
-        double[] oldDimensionSum = new double[vectorSize];
-        double[] newDimensionSum = new double[vectorSize];
-
-        int value;
-        double oldDistance, newDistance;
-        for (TrainingVector trainingVector : largestPartitionVectors) {
-            oldDistance = VectorQuantizer.distanceBetweenVectors(trainingVector.getVector(),
+        int value, entryIndex;
+        double oldDistance, newDistance, distance;
+        for (int vIndex = 0; vIndex < largestPartitionVectors.length; vIndex++) {
+            oldDistance = VectorQuantizer.distanceBetweenVectors(largestPartitionVectors[vIndex].getVector(),
                                                                  codebook[largestEntryIndex].getVector(),
                                                                  metric);
-            newDistance = VectorQuantizer.distanceBetweenVectors(trainingVector.getVector(),
+            newDistance = VectorQuantizer.distanceBetweenVectors(largestPartitionVectors[vIndex].getVector(),
                                                                  codebook[emptyEntryIndex].getVector(),
                                                                  metric);
 
-            //            final int index = oldDistance < newDistance ? largestEntryIndex : emptyEntryIndex;
+            distance = Math.min(oldDistance, newDistance);
 
-            if (oldDistance < newDistance) {
-                trainingVector.setEntryIndex(largestEntryIndex);
-                trainingVector.setEntryDistance(oldDistance);
-
-                ++oldEntryVectorCount;
-                oldDistSum += oldDistance;
-
-                for (int dim = 0; dim < vectorSize; dim++) {
-                    value = trainingVector.getVector()[dim];
-
-                    oldDimensionSum[dim] += value;
-
-                    if (value < oldMin[dim]) {
-                        oldMin[dim] = value;
-                    }
-                    if (value > oldMax[dim]) {
-                        oldMax[dim] = value;
-                    }
+            EntryInfo closerEntryInfo = null;
+            if (newDistance == oldDistance) {
+                // If old and new distance are equal we assign the vector to the smaller of the two.
+                if (newEntryInfo.vectorCount < oldEntryInfo.vectorCount) {
+                    closerEntryInfo = newEntryInfo;
+                    entryIndex = emptyEntryIndex;
+                } else {
+                    closerEntryInfo = oldEntryInfo;
+                    entryIndex = largestEntryIndex;
                 }
+            } else if (newDistance < oldDistance) {
+                closerEntryInfo = newEntryInfo;
+                entryIndex = emptyEntryIndex;
             } else {
-                trainingVector.setEntryIndex(emptyEntryIndex);
-                trainingVector.setEntryDistance(newDistance);
+                closerEntryInfo = oldEntryInfo;
+                entryIndex = largestEntryIndex;
+            }
 
-                ++newEntryVectorCount;
-                newDistSum += newDistance;
+            largestPartitionVectors[vIndex].setEntryInfo(entryIndex, distance);
 
-                for (int dim = 0; dim < vectorSize; dim++) {
-                    value = trainingVector.getVector()[dim];
+            ++closerEntryInfo.vectorCount;
+            closerEntryInfo.distanceSum += distance;
 
-                    newDimensionSum[dim] += value;
+            for (int dim = 0; dim < vectorSize; dim++) {
+                value = largestPartitionVectors[vIndex].getVector()[dim];
 
-                    if (value < newMin[dim]) {
-                        newMin[dim] = value;
-                    }
-                    if (value > newMax[dim]) {
-                        newMax[dim] = value;
-                    }
+                closerEntryInfo.dimensionSum[dim] += value;
+
+
+                if (value < closerEntryInfo.min[dim]) {
+                    closerEntryInfo.min[dim] = value;
+                }
+                if (value > closerEntryInfo.max[dim]) {
+                    closerEntryInfo.max[dim] = value;
                 }
             }
         }
 
-        int[] oldCentroid = new int[vectorSize];
-        int[] newCentroid = new int[vectorSize];
-        double[] oldPerturbationVector = new double[vectorSize];
-        double[] newPerturbationVector = new double[vectorSize];
-
-        codebook[largestEntryIndex].setVectorCount(oldEntryVectorCount);
-        codebook[emptyEntryIndex].setVectorCount(newEntryVectorCount);
-
-        codebook[largestEntryIndex].setAverageDistortion(oldDistSum / (double) oldEntryVectorCount);
-        codebook[emptyEntryIndex].setAverageDistortion(newDistSum / (double) newEntryVectorCount);
-
-        for (int dim = 0; dim < vectorSize; dim++) {
-
-            oldCentroid[dim] = (int) Math.round(oldDimensionSum[dim] / (double) oldEntryVectorCount);
-            oldPerturbationVector[dim] = ((double) oldMax[dim] - (double) oldMin[dim]) / PRT_VECTOR_DIVIDER;
-
-            newCentroid[dim] = (int) Math.round(newDimensionSum[dim] / (double) newEntryVectorCount);
-            newPerturbationVector[dim] = ((double) newMax[dim] - (double) newMin[dim]) / PRT_VECTOR_DIVIDER;
-        }
-
-        codebook[largestEntryIndex].setCentroid(oldCentroid);
-        codebook[emptyEntryIndex].setCentroid(newCentroid);
-
-        codebook[largestEntryIndex].setPerturbationVector(oldPerturbationVector);
-        codebook[emptyEntryIndex].setPerturbationVector(newPerturbationVector);
+        codebook[largestEntryIndex].setInfo(oldEntryInfo);
+        codebook[emptyEntryIndex].setInfo(newEntryInfo);
     }
 
-    private TrainingVector[] getTrainingVectorFromEntry(final int entryIndex, final int vectorCount) {
-        //        TrainingVector[] vectors = new TrainingVector[vectorCount];
-        ArrayList<TrainingVector> ints = new ArrayList<>(vectorCount);
+    private TrainingVector[] getEntryTrainingVectors(final int entryIndex, final int vectorCount) {
+        TrainingVector[] vectors = new TrainingVector[vectorCount];
         int index = 0;
         for (final TrainingVector trainingVector : trainingVectors) {
             if (trainingVector.getEntryIndex() == entryIndex) {
-                //                vectors[index++] = trainingVector;
-                ints.add(trainingVector);
+                vectors[index++] = trainingVector;
             }
         }
-        //        assert (index == vectorCount);
-        return ints.toArray(new TrainingVector[0]);
-        //        return vectors;
+        assert (index == vectorCount);
+        return vectors;
     }
 
     public int getVectorSize() {
