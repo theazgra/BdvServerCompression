@@ -4,8 +4,12 @@ import azgracompress.U16;
 
 import java.util.Arrays;
 
+/**
+ * This object works as C struct and help in calculation of Codebook entry properties.
+ */
 public class EntryInfo {
     public int vectorCount;
+
     public int[] min;
     public int[] max;
     public double distanceSum;
@@ -22,10 +26,20 @@ public class EntryInfo {
         dimensionSum = new double[vectorSize];
     }
 
+    /**
+     * Calculate the average distortion as average distance of all vectors from centroid.
+     *
+     * @return Average distance of vectors.
+     */
     public double calculateAverageDistortion() {
         return (distanceSum / (double) vectorCount);
     }
 
+    /**
+     * Calculate the centroid from dimension sums.
+     *
+     * @return Centroid of the vectors.
+     */
     public int[] calculateCentroid() {
         int[] centroid = new int[vectorSize];
         for (int dim = 0; dim < vectorSize; dim++) {
@@ -34,10 +48,15 @@ public class EntryInfo {
         return centroid;
     }
 
+    /**
+     * Calculate the perturbation vector from mins and maxes.
+     *
+     * @return Perturbation vector of the vectors.
+     */
     public double[] calculatePRTVector() {
         double[] prtV = new double[vectorSize];
         for (int dim = 0; dim < vectorSize; dim++) {
-            prtV[dim] =  ((double) max[dim] - (double) min[dim]) / LBGVectorQuantizer.PRT_VECTOR_DIVIDER;
+            prtV[dim] = ((double) max[dim] - (double) min[dim]) / LBGVectorQuantizer.PRT_VECTOR_DIVIDER;
         }
         return prtV;
     }

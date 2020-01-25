@@ -1,93 +1,57 @@
 package azgracompress.quantization.vector;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 public class LearningCodebookEntry extends CodebookEntry {
-    //    private ArrayList<Double> trainingVectorsDistances;
-    //    private ArrayList<int[]> trainingVectors;
 
-    private double averageDistortion = -1.0f;
     private int vectorCount = -1;
+    private double averageDistortion = -1.0f;
     private double[] perturbationVector;
 
     public LearningCodebookEntry(int[] codebook) {
         super(codebook);
-        //        trainingVectors = new ArrayList<>();
-        //        trainingVectorsDistances = new ArrayList<>();
     }
 
-    public LearningCodebookEntry(final ArrayList<Integer> codebook) {
-        this(codebook.stream().mapToInt(i -> i).toArray());
+    /**
+     * Set codebook entry properties from helper object.
+     *
+     * @param info Helper object with property informations.
+     */
+    public void setInfo(final EntryInfo info) {
+        this.vectorCount = info.vectorCount;
+        this.averageDistortion = info.calculateAverageDistortion();
+
+        final int[] newCentroid = info.calculateCentroid();
+        assert (newCentroid.length == vector.length);
+        System.arraycopy(newCentroid, 0, this.vector, 0, newCentroid.length);
+
+        this.perturbationVector = info.calculatePRTVector();
     }
 
-    public void setAverageDistortion(final double averageDistortion) {
-        this.averageDistortion = averageDistortion;
-    }
-
-    public void setVectorCount(final int vectorCount) {
-        this.vectorCount = vectorCount;
-    }
-
+    /**
+     * Get perturbation vector for splitting this entry.
+     *
+     * @return Array of doubles.
+     */
     public double[] getPerturbationVector() {
         return perturbationVector;
     }
 
-    public void setCentroid(final int[] centroid) {
-        assert (centroid.length == this.vector.length);
-        System.arraycopy(centroid, 0, this.vector, 0, centroid.length);
-    }
-
+    /**
+     * Get average distortion of this codebook entry.
+     *
+     * @return Double value.
+     */
     public double getAverageDistortion() {
         return averageDistortion;
     }
 
+    /**
+     * Get number of vectors which are closer to this codebook entry that to every other entry.
+     *
+     * @return Number of associated vectors.
+     */
     public int getVectorCount() {
         return vectorCount;
     }
 
-    public void setPerturbationVector(double[] perturbationVector) {
-        this.perturbationVector = perturbationVector;
-    }
 
-    public void setInfo(final EntryInfo info) {
-        this.vectorCount = info.vectorCount;
-        this.averageDistortion = info.calculateAverageDistortion();
-        setCentroid(info.calculateCentroid());
-        this.perturbationVector = info.calculatePRTVector();
-    }
-
-    public ArrayList<Integer> getVectorAsArrayList() {
-        return Arrays.stream(vector).boxed().collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    public static ArrayList<Integer> vectorMean(final Stream<int[]> vectorStream,
-                                                final int vectorCount,
-                                                final int vectorSize) {
-        double[] vectorSum = new double[vectorSize];
-
-        vectorStream.forEach(vector -> {
-            for (int i = 0; i < vectorSize; i++) {
-                vectorSum[i] += (double) vector[i];
-            }
-        });
-
-        ArrayList<Integer> average = new ArrayList<>(vectorSize);
-        for (double sum : vectorSum) {
-            average.add((int) Math.round(sum / (double) vectorCount));
-        }
-        return average;
-    }
-
-    //    public void removeTrainingVectorAndDistance(int index) {
-    //        trainingVectors.remove(index);
-    //        trainingVectorsDistances.remove(index);
-    //    }
-    //
-    //    public boolean isEmpty() {
-    //
-    //        return (trainingVectors.isEmpty());
-    //    }
 }

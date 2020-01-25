@@ -4,26 +4,25 @@ import azgracompress.U16;
 import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.Utils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.stream.Stream;
 
 public class LBGVectorQuantizer {
     public final static double PRT_VECTOR_DIVIDER = 4.0;
     private final double EPSILON = 0.005;
     private final int vectorSize;
     private final int codebookSize;
+    private final int workerCount;
+
     private final TrainingVector[] trainingVectors;
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
 
     boolean verbose = false;
-    private final int workerCount;
 
     public LBGVectorQuantizer(final int[][] vectors, final int codebookSize, final int workerCount) {
 
         assert (vectors.length > 0) : "No training vectors provided";
-        //        this.vectors = vectors;
+
         this.trainingVectors = new TrainingVector[vectors.length];
         for (int i = 0; i < vectors.length; i++) {
             trainingVectors[i] = new TrainingVector(vectors[i]);
@@ -34,16 +33,24 @@ public class LBGVectorQuantizer {
         this.workerCount = workerCount;
     }
 
+    /**
+     * Find the optimal codebook of vectors, used for vector quantization.
+     *
+     * @return Result of the search.
+     */
     public LBGResult findOptimalCodebook() {
         return findOptimalCodebook(true);
     }
 
+    /**
+     * Find the optimal codebook of vectors, used for vector quantization.
+     *
+     * @param isVerbose True if program algorithm should be verbose.
+     * @return Result of the search.
+     */
     public LBGResult findOptimalCodebook(boolean isVerbose) {
         Stopwatch stopwatch = Stopwatch.startNew("findOptimalCodebook");
         this.verbose = isVerbose;
-
-        // TODO(Moravec): Remove in production.
-        this.verbose = true;
 
         LearningCodebookEntry[] codebook = initializeCodebook();
         if (verbose) {
@@ -64,6 +71,12 @@ public class LBGVectorQuantizer {
         return new LBGResult(learningCodebookToCodebook(codebook), finalMse, psnr);
     }
 
+    /**
+     * Convert LearningCodebookEntry array to CodebookEntry array.
+     *
+     * @param learningCodebook Source array of LearningCodebookEntry.
+     * @return Array of CodebookEntries.
+     */
     private CodebookEntry[] learningCodebookToCodebook(final LearningCodebookEntry[] learningCodebook) {
         CodebookEntry[] codebook = new CodebookEntry[learningCodebook.length];
         for (int i = 0; i < codebook.length; i++) {
@@ -72,33 +85,53 @@ public class LBGVectorQuantizer {
         return codebook;
     }
 
+    /**
+     * Helper methods which quantizes the training vectors.
+     *
+     * @param quantizer Vector quantizer.
+     * @return Quantized vectors.
+     */
     private int[][] quantizeTrainingVectors(final VectorQuantizer quantizer) {
+        Stopwatch s = Stopwatch.startNew("quantizeTrainingVectors");
         int[][] result = new int[trainingVectors.length][vectorSize];
         for (int i = 0; i < trainingVectors.length; i++) {
             result[i] = quantizer.quantize(trainingVectors[i].getVector());
         }
+        s.stop();
+        System.out.println(s);
         return result;
     }
 
+    /**
+     * Calculate the average mean square error of the codebook.
+     *
+     * @param codebook Codebook of vectors.
+     * @return Mean square error.
+     */
     private double averageMse(final LearningCodebookEntry[] codebook) {
         VectorQuantizer quantizer = new VectorQuantizer(learningCodebookToCodebook(codebook));
         final int[][] quantizedVectors = quantizeTrainingVectors(quantizer);
 
-        assert trainingVectors.length == quantizedVectors.length;
+        assert (trainingVectors.length == quantizedVectors.length);
         double mse = 0.0;
 
         for (int vIndex = 0; vIndex < trainingVectors.length; vIndex++) {
             for (int i = 0; i < vectorSize; i++) {
-                mse += Math.pow(
-                        ((double) trainingVectors[vIndex].getVector()[i] - (double) quantizedVectors[vIndex][i]),
-                        2);
+                mse += Math.pow(((double) trainingVectors[vIndex].getVector()[i] - (double) quantizedVectors[vIndex][i]),
+                                2);
             }
         }
 
         return (mse / (double) (trainingVectors.length * vectorSize));
     }
 
-    private double[] getPerturbationVector(final Stream<TrainingVector> vectors) {
+    /**
+     * Calculate the initial perturbation from training vectors.
+     *
+     * @param vectors Training vectors.
+     * @return Perturbation vector.
+     */
+    private double[] getPerturbationVector(final TrainingVector[] vectors) {
 
         // Max is initialized to zero that is ok.
         int[] max = new int[vectorSize];
@@ -106,7 +139,7 @@ public class LBGVectorQuantizer {
         int[] min = new int[vectorSize];
         Arrays.fill(min, U16.Max);
 
-        vectors.forEach(v -> {
+        for (final TrainingVector v : vectors) {
             for (int i = 0; i < vectorSize; i++) {
                 if (v.getVector()[i] < min[i]) {
                     min[i] = v.getVector()[i];
@@ -115,7 +148,7 @@ public class LBGVectorQuantizer {
                     max[i] = v.getVector()[i];
                 }
             }
-        });
+        }
 
         double[] perturbationVector = new double[vectorSize];
         for (int i = 0; i < vectorSize; i++) {
@@ -124,7 +157,12 @@ public class LBGVectorQuantizer {
         return perturbationVector;
     }
 
-    private int[] createInitialEntry() {
+    /**
+     * Create the initial entry as mean of all training vectors.
+     *
+     * @return Initial codebook entry.
+     */
+    private LearningCodebookEntry createInitialEntry() {
         double[] vectorSum = new double[vectorSize];
 
         for (final TrainingVector trainingVector : trainingVectors) {
@@ -136,14 +174,18 @@ public class LBGVectorQuantizer {
         for (int i = 0; i < vectorSize; i++) {
             result[i] = (int) Math.round(vectorSum[i] / (double) trainingVectors.length);
         }
-        return result;
+        return new LearningCodebookEntry(result);
     }
 
+    /**
+     * Initialize the LBG codebook be recursively splitting each entry into two new.
+     *
+     * @return The initial codebook to be improved by LBG.
+     */
     private LearningCodebookEntry[] initializeCodebook() {
 
         int currentCodebookSize = 1;
-        LearningCodebookEntry[] codebook = new LearningCodebookEntry[currentCodebookSize];
-        codebook[0] = new LearningCodebookEntry(createInitialEntry());
+        LearningCodebookEntry[] codebook = new LearningCodebookEntry[]{createInitialEntry()};
 
         while (currentCodebookSize != codebookSize) {
             int cbIndex = 0;
@@ -155,7 +197,7 @@ public class LBGVectorQuantizer {
                 if (codebook.length == 1) {
                     assert (trainingVectors.length > 0) :
                             "There are no vectors from which to create perturbation " + "vector";
-                    prtV = getPerturbationVector(Arrays.stream(trainingVectors));
+                    prtV = getPerturbationVector(trainingVectors);
                 } else {
                     assert (entryToSplit.getVectorCount() > 0) :
                             "There are no vectors from which to create perturbation vector";
@@ -170,12 +212,12 @@ public class LBGVectorQuantizer {
                     }
                     newCodebook[cbIndex++] = entryToSplit;
 
-                    ArrayList<Integer> rndEntryValues = new ArrayList<>(prtV.length);
-                    for (final double v : prtV) {
-                        final int value = (int) Math.floor(v);
+                    int[] rndEntryValues = new int[prtV.length];
+                    for (int i = 0; i < prtV.length; i++) {
+                        final int value = (int) Math.floor(prtV[i]);
                         assert (value >= 0) : "value is too low!";
                         assert (value <= U16.Max) : "value is too big!";
-                        rndEntryValues.add(value);
+                        rndEntryValues[i] = value;
                     }
                     newCodebook[cbIndex++] = new LearningCodebookEntry(rndEntryValues);
                     continue;
@@ -220,31 +262,45 @@ public class LBGVectorQuantizer {
     }
 
 
+    /**
+     * Execute the LBG algorithm with default epsilon value.
+     *
+     * @param codebook Codebook to improve.
+     */
     private void LBG(LearningCodebookEntry[] codebook) {
         LBG(codebook, EPSILON);
     }
 
+    /**
+     * Execute the LBG algorithm with specific epsilon value.
+     *
+     * @param codebook Codebook to improve.
+     * @param epsilon  Epsilon value.
+     */
     private void LBG(LearningCodebookEntry[] codebook, final double epsilon) {
         double previousDistortion = Double.POSITIVE_INFINITY;
         int iteration = 1;
         while (true) {
-            // Step 1
+            // Assign training vectors to the closest codebook entry and calculate the entry properties.
             assignVectorsToClosestEntry(codebook);
+
+            // Fix empty codebook entries.
             fixEmptyEntries(codebook);
 
-            // Step 2
+            // Calculate average distortion of the codebook.
             double avgDistortion = 0;
             for (LearningCodebookEntry entry : codebook) {
                 avgDistortion += entry.getAverageDistortion();
             }
             avgDistortion /= codebook.length;
 
-            // Step 3
+            // Calculate distortion
             double dist = (previousDistortion - avgDistortion) / avgDistortion;
             if (verbose) {
                 System.out.println(String.format("---- It: %d Distortion: %.5f", iteration++, dist));
             }
 
+            // Check distortion against epsilon
             if (dist < epsilon) {
                 break;
             } else {
@@ -253,10 +309,12 @@ public class LBGVectorQuantizer {
         }
     }
 
+    /**
+     * Assign each training vector to the closest codebook entry.
+     *
+     * @param codebook Vector codebook.
+     */
     private void assignVectorsToClosestEntry(LearningCodebookEntry[] codebook) {
-        //        for (int i = 0; i < codebook.length; i++) {
-        //            codebook[i].setVectorCount(-1);
-        //        }
         if (workerCount > 1) {
             Thread[] workers = new Thread[workerCount];
             final int workSize = trainingVectors.length / workerCount;
@@ -283,8 +341,7 @@ public class LBGVectorQuantizer {
                         }
 
                         if (closestEntryIndex != -1) {
-                            trainingVectors[vecIndex].setEntryIndex(closestEntryIndex);
-                            trainingVectors[vecIndex].setEntryDistance(minimalDistance);
+                            trainingVectors[vecIndex].setEntryInfo(closestEntryIndex, minimalDistance);
                         } else {
                             assert (false) : "Did not found closest entry.";
                             System.err.println("Did not found closest entry.");
@@ -335,6 +392,11 @@ public class LBGVectorQuantizer {
         calculateEntryProperties(codebook);
     }
 
+    /**
+     * Calculate properties (vector count, new centroid, distortion, perturbation vector) for codebook entries.
+     *
+     * @param codebook Vector codebook.
+     */
     private void calculateEntryProperties(LearningCodebookEntry[] codebook) {
 
         int value;
@@ -369,6 +431,11 @@ public class LBGVectorQuantizer {
     }
 
 
+    /**
+     * Fix all empty codebook entries.
+     *
+     * @param codebook Vector codebook.
+     */
     private void fixEmptyEntries(LearningCodebookEntry[] codebook) {
         int emptyEntryIndex = -1;
         for (int i = 0; i < codebook.length; i++) {
@@ -392,6 +459,12 @@ public class LBGVectorQuantizer {
         }
     }
 
+    /**
+     * Fix empty codebook entry by splitting the largest codebook entry.
+     *
+     * @param codebook        Vector codebook.
+     * @param emptyEntryIndex Index of the empty entry.
+     */
     private void fixSingleEmptyEntry(LearningCodebookEntry[] codebook, final int emptyEntryIndex) {
         // Find biggest partition.
         int largestEntryIndex = emptyEntryIndex;
@@ -477,6 +550,13 @@ public class LBGVectorQuantizer {
         codebook[emptyEntryIndex].setInfo(newEntryInfo);
     }
 
+    /**
+     * Get training vectors associated with entry index.
+     *
+     * @param entryIndex  Codebook entry index.
+     * @param vectorCount Codebook entry vector count.
+     * @return Array of training vectors.
+     */
     private TrainingVector[] getEntryTrainingVectors(final int entryIndex, final int vectorCount) {
         TrainingVector[] vectors = new TrainingVector[vectorCount];
         int index = 0;
@@ -489,10 +569,11 @@ public class LBGVectorQuantizer {
         return vectors;
     }
 
-    public int getVectorSize() {
-        return vectorSize;
-    }
-
+    /**
+     * Get codebook size.
+     *
+     * @return Codebook size.
+     */
     public int getCodebookSize() {
         return codebookSize;
     }
