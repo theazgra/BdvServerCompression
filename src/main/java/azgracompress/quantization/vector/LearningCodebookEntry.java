@@ -52,6 +52,13 @@ public class LearningCodebookEntry extends CodebookEntry {
         this.perturbationVector = perturbationVector;
     }
 
+    public void setInfo(final EntryInfo info) {
+        vectorCount = info.vectorCount;
+        averageDistortion = info.calculateAverageDistortion();
+        setCentroid(info.calculateCentroid());
+        perturbationVector = info.calculatePRTVector();
+    }
+
     //    public double getAverageDistortion() {
     //        assert (trainingVectors.size() == trainingVectorsDistances.size());
     //        assert (trainingVectors.size() > 0) : "Empty entry!";

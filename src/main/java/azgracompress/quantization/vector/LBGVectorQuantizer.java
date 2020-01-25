@@ -10,7 +10,7 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 public class LBGVectorQuantizer {
-    private final static double PRTV_DIVIDER = 4.0;
+    public final static double PRT_VECTOR_DIVIDER = 4.0;
     private final double EPSILON = 0.005;
     private final int vectorSize;
     private final int codebookSize;
@@ -118,7 +118,7 @@ public class LBGVectorQuantizer {
         double[] perturbationVector = new double[vectorSize];
         for (int i = 0; i < vectorSize; i++) {
             // NOTE(Moravec): Divide by 16 instead of 4, because we are dealing with maximum difference of 65535.
-            perturbationVector[i] = ((double) max[i] - (double) min[i]) / PRTV_DIVIDER;
+            perturbationVector[i] = ((double) max[i] - (double) min[i]) / PRT_VECTOR_DIVIDER;
         }
         return perturbationVector;
     }
@@ -418,7 +418,7 @@ public class LBGVectorQuantizer {
                 centroid[dim] = (int) Math.round(dimensionSum[entryIndex][dim] / (double) vectorCounts[entryIndex]);
 
                 perturbationVector[dim] =
-                        ((double) maxs[entryIndex][dim] - (double) mins[entryIndex][dim]) / PRTV_DIVIDER;
+                        ((double) maxs[entryIndex][dim] - (double) mins[entryIndex][dim]) / PRT_VECTOR_DIVIDER;
             }
 
             entry.setCentroid(centroid);
@@ -516,7 +516,7 @@ public class LBGVectorQuantizer {
                                                                  codebook[emptyEntryIndex].getVector(),
                                                                  metric);
 
-//            final int index = oldDistance < newDistance ? largestEntryIndex : emptyEntryIndex;
+            //            final int index = oldDistance < newDistance ? largestEntryIndex : emptyEntryIndex;
 
             if (oldDistance < newDistance) {
                 trainingVector.setEntryIndex(largestEntryIndex);
@@ -573,10 +573,10 @@ public class LBGVectorQuantizer {
         for (int dim = 0; dim < vectorSize; dim++) {
 
             oldCentroid[dim] = (int) Math.round(oldDimensionSum[dim] / (double) oldEntryVectorCount);
-            oldPerturbationVector[dim] = ((double) oldMax[dim] - (double) oldMin[dim]) / PRTV_DIVIDER;
+            oldPerturbationVector[dim] = ((double) oldMax[dim] - (double) oldMin[dim]) / PRT_VECTOR_DIVIDER;
 
             newCentroid[dim] = (int) Math.round(newDimensionSum[dim] / (double) newEntryVectorCount);
-            newPerturbationVector[dim] = ((double) newMax[dim] - (double) newMin[dim]) / PRTV_DIVIDER;
+            newPerturbationVector[dim] = ((double) newMax[dim] - (double) newMin[dim]) / PRT_VECTOR_DIVIDER;
         }
 
         codebook[largestEntryIndex].setCentroid(oldCentroid);
@@ -587,18 +587,18 @@ public class LBGVectorQuantizer {
     }
 
     private TrainingVector[] getTrainingVectorFromEntry(final int entryIndex, final int vectorCount) {
-//        TrainingVector[] vectors = new TrainingVector[vectorCount];
+        //        TrainingVector[] vectors = new TrainingVector[vectorCount];
         ArrayList<TrainingVector> ints = new ArrayList<>(vectorCount);
         int index = 0;
         for (final TrainingVector trainingVector : trainingVectors) {
             if (trainingVector.getEntryIndex() == entryIndex) {
-//                vectors[index++] = trainingVector;
+                //                vectors[index++] = trainingVector;
                 ints.add(trainingVector);
             }
         }
-//        assert (index == vectorCount);
+        //        assert (index == vectorCount);
         return ints.toArray(new TrainingVector[0]);
-//        return vectors;
+        //        return vectors;
     }
 
     public int getVectorSize() {
