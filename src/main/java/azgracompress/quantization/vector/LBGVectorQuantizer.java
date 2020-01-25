@@ -18,6 +18,7 @@ public class LBGVectorQuantizer {
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
 
     boolean verbose = false;
+    private double _mse = 0.0;
 
     public LBGVectorQuantizer(final int[][] vectors, final int codebookSize, final int workerCount) {
 
@@ -86,20 +87,12 @@ public class LBGVectorQuantizer {
     }
 
     /**
-     * Helper methods which quantizes the training vectors.
+     * Add value to the global mse in synchronized way.
      *
-     * @param quantizer Vector quantizer.
-     * @return Quantized vectors.
+     * @param threadMse Value to add.
      */
-    private int[][] quantizeTrainingVectors(final VectorQuantizer quantizer) {
-        Stopwatch s = Stopwatch.startNew("quantizeTrainingVectors");
-        int[][] result = new int[trainingVectors.length][vectorSize];
-        for (int i = 0; i < trainingVectors.length; i++) {
-            result[i] = quantizer.quantize(trainingVectors[i].getVector());
-        }
-        s.stop();
-        System.out.println(s);
-        return result;
+    private synchronized void updateMse(final double threadMse) {
+        _mse += threadMse;
     }
 
     /**
@@ -109,20 +102,64 @@ public class LBGVectorQuantizer {
      * @return Mean square error.
      */
     private double averageMse(final LearningCodebookEntry[] codebook) {
-        VectorQuantizer quantizer = new VectorQuantizer(learningCodebookToCodebook(codebook));
-        final int[][] quantizedVectors = quantizeTrainingVectors(quantizer);
-
-        assert (trainingVectors.length == quantizedVectors.length);
+        Stopwatch s = Stopwatch.startNew("averageMse");
         double mse = 0.0;
+        if (workerCount > 1) {
+            // Reset the global mse
+            _mse = 0.0;
+            Thread[] workers = new Thread[workerCount];
+            final int workSize = trainingVectors.length / workerCount;
+            for (int wId = 0; wId < workerCount; wId++) {
+                final int fromIndex = wId * workSize;
+                final int toIndex = (wId == workerCount - 1) ? trainingVectors.length : (workSize + (wId * workSize));
 
-        for (int vIndex = 0; vIndex < trainingVectors.length; vIndex++) {
-            for (int i = 0; i < vectorSize; i++) {
-                mse += Math.pow(((double) trainingVectors[vIndex].getVector()[i] - (double) quantizedVectors[vIndex][i]),
-                                2);
+                workers[wId] = new Thread(() -> {
+                    VectorQuantizer quantizer = new VectorQuantizer(learningCodebookToCodebook(codebook));
+                    double threadMse = 0.0;
+                    int cnt = 0;
+                    int[] vector;
+                    int[] quantizedVector;
+                    for (int i = fromIndex; i < toIndex; i++) {
+                        ++cnt;
+                        vector = trainingVectors[i].getVector();
+                        quantizedVector = quantizer.quantize(vector);
+
+                        for (int vI = 0; vI < vectorSize; vI++) {
+                            threadMse += Math.pow(((double) vector[vI] - (double) quantizedVector[vI]), 2);
+                        }
+                    }
+                    assert (cnt == toIndex - fromIndex);
+                    threadMse /= (double) (toIndex - fromIndex);
+
+                    // Update global mse, updateMse function is synchronized.
+                    updateMse(threadMse);
+                });
+                workers[wId].start();
+
             }
-        }
 
-        return (mse / (double) (trainingVectors.length * vectorSize));
+            try {
+                for (int wId = 0; wId < workerCount; wId++) {
+                    workers[wId].join();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            mse = _mse / (double) workerCount;
+        } else {
+            VectorQuantizer quantizer = new VectorQuantizer(learningCodebookToCodebook(codebook));
+            for (final TrainingVector trV : trainingVectors) {
+                int[] quantizedV = quantizer.quantize(trV.getVector());
+
+                for (int i = 0; i < vectorSize; i++) {
+                    mse += Math.pow(((double)trV.getVector()[i] - (double)quantizedV[i]),2);
+                }
+            }
+            mse /= (double)trainingVectors.length;
+        }
+        s.stop();
+        System.out.println(s);
+        return mse;
     }
 
     /**
