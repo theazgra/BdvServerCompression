@@ -356,84 +356,161 @@ public class LBGVectorQuantizer {
     private void assignVectorsToClosestEntry(LearningCodebookEntry[] codebook) {
         Stopwatch stopwatch = Stopwatch.startNew("assignVectorsToClosestEntry");
         if (workerCount > 1) {
-            Thread[] workers = new Thread[workerCount];
-            final int workSize = trainingVectors.length / workerCount;
-
-            for (int wId = 0; wId < workerCount; wId++) {
-                final int fromIndex = wId * workSize;
-                final int toIndex = (wId == workerCount - 1) ? trainingVectors.length : (workSize + (wId * workSize));
-
-                workers[wId] = new Thread(() -> {
-                    double minimalDistance, entryDistance;
-                    for (int vecIndex = fromIndex; vecIndex < toIndex; vecIndex++) {
-                        minimalDistance = Double.POSITIVE_INFINITY;
-                        int closestEntryIndex = -1;
-
-                        for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
-                            entryDistance = VectorQuantizer.distanceBetweenVectors(codebook[entryIndex].getVector(),
-                                                                                   trainingVectors[vecIndex].getVector(),
-                                                                                   metric);
-
-                            if (entryDistance < minimalDistance) {
-                                minimalDistance = entryDistance;
-                                closestEntryIndex = entryIndex;
-                            }
-                        }
-
-                        if (closestEntryIndex != -1) {
-                            trainingVectors[vecIndex].setEntryInfo(closestEntryIndex, minimalDistance);
-                        } else {
-                            assert (false) : "Did not found closest entry.";
-                            System.err.println("Did not found closest entry.");
-                        }
-                    }
-                });
-                workers[wId].start();
-            }
-
-            try {
-                for (int wId = 0; wId < workerCount; wId++) {
-                    workers[wId].join();
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                assert (false) : "Failed parallel join";
-            }
-
+            parallelAssignVectors(codebook);
+            // In parallel version entry properties are already calculated.
         } else {
-            double minDist;
-            int closestEntryIndex;
-
-            for (TrainingVector trainingVector : trainingVectors) {
-                minDist = Double.POSITIVE_INFINITY;
-                closestEntryIndex = -1;
-
-                for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
-                    double entryDistance = VectorQuantizer.distanceBetweenVectors(codebook[entryIndex].getVector(),
-                                                                                  trainingVector.getVector(),
-                                                                                  metric);
-
-                    if (entryDistance < minDist) {
-                        minDist = entryDistance;
-                        closestEntryIndex = entryIndex;
-                    }
-                }
-
-                if (closestEntryIndex != -1) {
-                    assert (closestEntryIndex < codebook.length);
-                    trainingVector.setEntryInfo(closestEntryIndex, minDist);
-                } else {
-                    assert (false) : "Did not found closest entry.";
-                    System.err.println("Did not found closest entry.");
-                }
-            }
+            defaultAssignVectors(codebook);
+            // Calculate all the entry properties.
+            calculateEntryProperties(codebook);
         }
         stopwatch.stop();
         if (this.verbose) {
             System.out.println(stopwatch);
         }
-        // Calculate all the entry properties.
-        calculateEntryProperties(codebook);
+
+    }
+
+    /**
+     * Default version (Single Thread) of assigning vectors to closest codebook entry.
+     *
+     * @param codebook Vector codebook.
+     */
+    private void defaultAssignVectors(LearningCodebookEntry[] codebook) {
+        double minDist;
+        int closestEntryIndex;
+
+        for (TrainingVector trainingVector : trainingVectors) {
+            minDist = Double.POSITIVE_INFINITY;
+            closestEntryIndex = -1;
+
+            for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
+                double entryDistance = VectorQuantizer.distanceBetweenVectors(codebook[entryIndex].getVector(),
+                                                                              trainingVector.getVector(),
+                                                                              metric);
+
+                if (entryDistance < minDist) {
+                    minDist = entryDistance;
+                    closestEntryIndex = entryIndex;
+                }
+            }
+
+            if (closestEntryIndex != -1) {
+                assert (closestEntryIndex < codebook.length);
+                trainingVector.setEntryInfo(closestEntryIndex, minDist);
+            } else {
+                assert (false) : "Did not found closest entry.";
+                System.err.println("Did not found closest entry.");
+            }
+        }
+    }
+
+    /**
+     * Multi-Threaded version of assigning vectors to closest codebook entry.
+     *
+     * @param codebook Vector codebook.
+     */
+    private void parallelAssignVectors(LearningCodebookEntry[] codebook) {
+        Thread[] workers = new Thread[workerCount];
+        final int workSize = trainingVectors.length / workerCount;
+        EntryInfo[][] threadEntryInfos = new EntryInfo[workerCount][codebook.length];
+
+
+        for (int wId = 0; wId < workerCount; wId++) {
+            final int fromIndex = wId * workSize;
+            final int toIndex = (wId == workerCount - 1) ? trainingVectors.length : (workSize + (wId * workSize));
+
+            threadEntryInfos[wId] = new EntryInfo[codebook.length];
+            final EntryInfo[] threadEntryInfoArray = threadEntryInfos[wId];
+
+            workers[wId] = new Thread(() -> {
+                for (int eI = 0; eI < codebook.length; eI++) {
+                    threadEntryInfoArray[eI] = new EntryInfo(vectorSize);
+                }
+                int value;
+                double minimalDistance, entryDistance;
+                for (int vecIndex = fromIndex; vecIndex < toIndex; vecIndex++) {
+                    minimalDistance = Double.POSITIVE_INFINITY;
+                    int closestEntryIndex = -1;
+
+                    for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
+                        entryDistance = VectorQuantizer.distanceBetweenVectors(codebook[entryIndex].getVector(),
+                                                                               trainingVectors[vecIndex].getVector(),
+                                                                               metric);
+
+                        if (entryDistance < minimalDistance) {
+                            minimalDistance = entryDistance;
+                            closestEntryIndex = entryIndex;
+                        }
+                    }
+
+                    if (closestEntryIndex != -1) {
+                        trainingVectors[vecIndex].setEntryInfo(closestEntryIndex, minimalDistance);
+
+                        threadEntryInfoArray[closestEntryIndex].vectorCount += 1;
+                        threadEntryInfoArray[closestEntryIndex].distanceSum += minimalDistance;
+                        for (int dim = 0; dim < vectorSize; dim++) {
+                            value = trainingVectors[vecIndex].getVector()[dim];
+
+                            threadEntryInfoArray[closestEntryIndex].dimensionSum[dim] += value;
+
+
+                            if (value < threadEntryInfoArray[closestEntryIndex].min[dim]) {
+                                threadEntryInfoArray[closestEntryIndex].min[dim] = value;
+                            }
+                            if (value > threadEntryInfoArray[closestEntryIndex].max[dim]) {
+                                threadEntryInfoArray[closestEntryIndex].max[dim] = value;
+                            }
+                        }
+
+                    } else {
+                        assert (false) : "Did not found closest entry.";
+                        System.err.println("Did not found closest entry.");
+                    }
+                }
+            });
+            workers[wId].start();
+        }
+
+        try {
+            for (int wId = 0; wId < workerCount; wId++) {
+                workers[wId].join();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            assert (false) : "Failed parallel join";
+        }
+
+        // Combine all thread entry infos to final array distributed to the entries.
+        EntryInfo[] entryInfos = new EntryInfo[codebook.length];
+        // Assign first thread infos and we can skip it later.
+        System.arraycopy(threadEntryInfos[0], 0, entryInfos, 0, codebook.length);
+
+        for (int tId = 1; tId < workerCount; tId++) {
+            for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
+                combine(entryInfos[entryIndex], threadEntryInfos[tId][entryIndex]);
+            }
+        }
+
+        for (int i = 0; i < codebook.length; i++) {
+            codebook[i].setInfo(entryInfos[i]);
+        }
+    }
+
+    private void combine(EntryInfo finalEntryInfo, final EntryInfo threadEntryInfo) {
+        finalEntryInfo.vectorCount += threadEntryInfo.vectorCount;
+        finalEntryInfo.distanceSum += threadEntryInfo.distanceSum;
+
+        for (int dim = 0; dim < vectorSize; dim++) {
+            finalEntryInfo.dimensionSum[dim] += threadEntryInfo.dimensionSum[dim];
+
+            if (threadEntryInfo.min[dim] < finalEntryInfo.min[dim]) {
+                finalEntryInfo.min[dim] = threadEntryInfo.min[dim];
+            }
+
+            if (threadEntryInfo.max[dim] > finalEntryInfo.max[dim]) {
+                finalEntryInfo.max[dim] = threadEntryInfo.max[dim];
+            }
+        }
     }
 
     /**
