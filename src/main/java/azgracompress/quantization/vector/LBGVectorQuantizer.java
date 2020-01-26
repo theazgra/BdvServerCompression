@@ -152,13 +152,15 @@ public class LBGVectorQuantizer {
                 int[] quantizedV = quantizer.quantize(trV.getVector());
 
                 for (int i = 0; i < vectorSize; i++) {
-                    mse += Math.pow(((double)trV.getVector()[i] - (double)quantizedV[i]),2);
+                    mse += Math.pow(((double) trV.getVector()[i] - (double) quantizedV[i]), 2);
                 }
             }
-            mse /= (double)trainingVectors.length;
+            mse /= (double) trainingVectors.length;
         }
         s.stop();
-        System.out.println(s);
+        if (this.verbose) {
+            System.out.println(s);
+        }
         return mse;
     }
 
@@ -352,6 +354,7 @@ public class LBGVectorQuantizer {
      * @param codebook Vector codebook.
      */
     private void assignVectorsToClosestEntry(LearningCodebookEntry[] codebook) {
+        Stopwatch stopwatch = Stopwatch.startNew("assignVectorsToClosestEntry");
         if (workerCount > 1) {
             Thread[] workers = new Thread[workerCount];
             final int workSize = trainingVectors.length / workerCount;
@@ -425,6 +428,10 @@ public class LBGVectorQuantizer {
                 }
             }
         }
+        stopwatch.stop();
+        if (this.verbose) {
+            System.out.println(stopwatch);
+        }
         // Calculate all the entry properties.
         calculateEntryProperties(codebook);
     }
@@ -436,6 +443,7 @@ public class LBGVectorQuantizer {
      */
     private void calculateEntryProperties(LearningCodebookEntry[] codebook) {
 
+        Stopwatch stopwatch = Stopwatch.startNew("calculateEntryProperties");
         int value;
         EntryInfo[] entryInfos = new EntryInfo[codebook.length];
         for (int i = 0; i < entryInfos.length; i++) {
@@ -464,6 +472,10 @@ public class LBGVectorQuantizer {
         }
         for (int i = 0; i < codebook.length; i++) {
             codebook[i].setInfo(entryInfos[i]);
+        }
+        stopwatch.stop();
+        if (this.verbose) {
+            System.out.println(stopwatch);
         }
     }
 
