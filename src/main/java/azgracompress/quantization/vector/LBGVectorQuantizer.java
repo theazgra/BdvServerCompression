@@ -57,7 +57,7 @@ public class LBGVectorQuantizer {
         if (verbose) {
             System.out.println("Got initial codebook. Improving codebook...");
         }
-        LBG(codebook, EPSILON * 0.01);
+        LBG(codebook, EPSILON * 0.1);
         final double finalMse = averageMse(codebook);
         final double psnr = Utils.calculatePsnr(finalMse, U16.Max);
         if (verbose) {
