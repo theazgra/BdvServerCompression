@@ -131,8 +131,8 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
     }
 
     private ScalarQuantizer trainLloydMaxQuantizer(final int[] data, final int codebookSize) {
-        LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(data, codebookSize);
-        QTrainIteration[] trainingReport = lloydMax.train(true);
+        LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(data, codebookSize, workerCount);
+        QTrainIteration[] trainingReport = lloydMax.train(false);
 
         //saveQTrainLog(String.format("p%d_cb_%d_lloyd.csv", planeIndex, codebookSize), trainingReport);
 

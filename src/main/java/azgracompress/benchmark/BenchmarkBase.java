@@ -30,6 +30,8 @@ abstract class BenchmarkBase {
     protected final String cacheFolder;
     protected final boolean hasGeneralQuantizer;
 
+    protected final int workerCount;
+
     protected BenchmarkBase(final String inputFile,
                             final String outputDirectory,
                             final int[] planes,
@@ -46,6 +48,8 @@ abstract class BenchmarkBase {
         hasCacheFolder = false;
         cacheFolder = null;
         hasGeneralQuantizer = false;
+
+        workerCount = 1;
     }
 
     protected BenchmarkBase(final ParsedCliOptions options) {
@@ -78,6 +82,7 @@ abstract class BenchmarkBase {
         hasCacheFolder = options.hasCodebookCacheFolder();
         cacheFolder = options.getCodebookCacheFolder();
         hasGeneralQuantizer = hasReferencePlane || hasCacheFolder;
+        workerCount = options.getWorkerCount();
     }
 
     /**

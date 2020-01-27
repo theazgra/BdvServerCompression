@@ -40,7 +40,7 @@ public class LBGVectorQuantizer {
      * @return Result of the search.
      */
     public LBGResult findOptimalCodebook() {
-        return findOptimalCodebook(true);
+        return findOptimalCodebook(false);
     }
 
     /**
@@ -319,6 +319,7 @@ public class LBGVectorQuantizer {
     private void LBG(LearningCodebookEntry[] codebook, final double epsilon) {
         double previousDistortion = Double.POSITIVE_INFINITY;
         int iteration = 1;
+        double lastDist = Double.POSITIVE_INFINITY;
         while (true) {
             // Assign training vectors to the closest codebook entry and calculate the entry properties.
             assignVectorsToClosestEntry(codebook);
@@ -337,6 +338,13 @@ public class LBGVectorQuantizer {
             double dist = (previousDistortion - avgDistortion) / avgDistortion;
             if (verbose) {
                 System.out.println(String.format("---- It: %d Distortion: %.5f", iteration++, dist));
+                System.out.println(String.format("Last Dist: %.5f Current dist: %.5f", lastDist, dist));
+            }
+            if (dist > lastDist) {
+                if (verbose) {
+                    System.out.println("Previous distortion was better. Ending LBG...");
+                }
+                break;
             }
 
             // Check distortion against epsilon
@@ -344,6 +352,7 @@ public class LBGVectorQuantizer {
                 break;
             } else {
                 previousDistortion = avgDistortion;
+                lastDist = dist;
             }
         }
     }

@@ -27,7 +27,9 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      * @return Trained scalar quantizer.
      */
     private ScalarQuantizer trainScalarQuantizerFromData(final int[] planeData) {
-        LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(planeData, codebookSize);
+        LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(planeData,
+                                                                                   codebookSize,
+                                                                                   options.getWorkerCount());
         lloydMax.train(false);
         return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCentroids());
     }

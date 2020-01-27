@@ -138,7 +138,7 @@ public class LloydMaxU16ScalarQuantization {
         }
         s.stop();
         if (verbose) {
-            System.out.println("\ngetCurrentMse time: " + s.getElapsedTimeString());
+            System.out.println("\nLloydMax: getCurrentMse time: " + s.getElapsedTimeString());
         }
 
         mse /= (double) trainingData.length;
