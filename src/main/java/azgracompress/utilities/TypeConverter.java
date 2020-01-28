@@ -51,10 +51,10 @@ public class TypeConverter {
         int j = 0;
         for (final int v : data) {
             if (littleEndian) {
-                buffer[j++] = (byte) ((v >>> 16) & 0xFF);
-                buffer[j++] = (byte) ((v >>> 24) & 0xFF);
+                buffer[j++] = (byte) (v & 0xFF);
+                buffer[j++] = (byte) ((v >> 8) & 0xFF);
             } else {
-                buffer[j++] = (byte) ((v >>> 8) & 0xFF);
+                buffer[j++] = (byte) ((v >> 8) & 0xFF);
                 buffer[j++] = (byte) (v & 0xFF);
             }
         }
