@@ -25,6 +25,7 @@ public class ScalarQuantizer {
 
     public int[] quantizeIntoIndices(int[] data) {
         int[] indices = new int[data.length];
+        // Speedup?
         for (int i = 0; i < data.length; i++) {
             final int index = quantizeIndex(data[i]);
             indices[i] = index;

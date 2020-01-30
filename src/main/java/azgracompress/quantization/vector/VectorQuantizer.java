@@ -20,6 +20,7 @@ public class VectorQuantizer {
         assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
         int[][] result = new int[dataVectors.length][vectorSize];
 
+        // Speedup
         for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
             final CodebookEntry closestEntry = findClosestCodebookEntry(dataVectors[vectorIndex],
                                                                         VectorDistanceMetric.Euclidean);
@@ -33,6 +34,7 @@ public class VectorQuantizer {
         assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
         int[] indices = new int[dataVectors.length];
 
+        // Speedup
         for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
             indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex],
                                                                  VectorDistanceMetric.Euclidean);
