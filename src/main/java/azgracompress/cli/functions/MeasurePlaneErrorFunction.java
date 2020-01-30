@@ -19,9 +19,47 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
 
     @Override
     public boolean run() {
+        //        if (reportPlaneDifference("D:\\biology\\tiff_data\\quantized\\fused_tp_10_ch_0_16bit_sq_cb256.raw",
+        //                                  "D:\\biology\\tiff_data\\quantized\\sq_cb256_plane_log.data")) {
+        //            return false;
+        //        }
+
+        if (reportPlaneDifference("D:\\biology\\tiff_data\\quantized\\fused_tp_10_ch_0_16bit_sq_cb128.raw",
+                                  "D:\\biology\\tiff_data\\quantized\\sq_cb128_plane_log.data")) {
+            return false;
+        }
+
+        if (reportPlaneDifference("D:\\biology\\tiff_data\\quantized\\fused_tp_10_ch_0_16bit_sq_cb64.raw",
+                                  "D:\\biology\\tiff_data\\quantized\\sq_cb64_plane_log.data")) {
+            return false;
+        }
+
+        if (reportPlaneDifference("D:\\biology\\tiff_data\\quantized\\fused_tp_10_ch_0_16bit_sq_cb32.raw",
+                                  "D:\\biology\\tiff_data\\quantized\\sq_cb32_plane_log.data")) {
+            return false;
+        }
+
+        if (reportPlaneDifference("D:\\biology\\tiff_data\\quantized\\fused_tp_10_ch_0_16bit_sq_cb16.raw",
+                                  "D:\\biology\\tiff_data\\quantized\\sq_cb16_plane_log.data")) {
+            return false;
+        }
+
+        if (reportPlaneDifference("D:\\biology\\tiff_data\\quantized\\fused_tp_10_ch_0_16bit_sq_cb8.raw",
+                                  "D:\\biology\\tiff_data\\quantized\\sq_cb8_plane_log.data")) {
+            return false;
+        }
+
+        if (reportPlaneDifference("D:\\biology\\tiff_data\\quantized\\fused_tp_10_ch_0_16bit_sq_cb4.raw",
+                                  "D:\\biology\\tiff_data\\quantized\\sq_cb4_plane_log.data")) {
+            return false;
+        }
+
+
+        return true;
+    }
+
+    private boolean reportPlaneDifference(final String compressedFile, final String reportFile) {
         final String referenceFile = "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw";
-        final String compressedFile = "D:\\biology\\tiff_data\\quantized\\fused_tp_10_ch_0_16bit_sq_cb256.raw";
-        final String reportFile = "D:\\biology\\tiff_data\\quantized\\sq_cb256_plane_log.data";
 
         final V3i dims = new V3i(1041, 996, 946);
         final int planePixelCount = dims.getX() * dims.getY();
@@ -39,7 +77,7 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
                 compressedPlane = RawDataIO.loadImageU16(compressedFile, dims, planeIndex);
             } catch (IOException e) {
                 e.printStackTrace();
-                return false;
+                return true;
             }
             final int[] diffData = Utils.getDifference(originalPlane.getData(), compressedPlane.getData());
             Utils.applyAbsFunction(diffData);
@@ -49,11 +87,12 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
             final double meanPixelError = absDiffSum / (double) planePixelCount;
 
             planeErrors[planeIndex] = new PlaneError(planeIndex, absDiffSum, meanPixelError);
-            System.out.println("Finished plane: " + planeIndex);
+//            System.out.println("Finished plane: " + planeIndex);
         }
 
         try (FileOutputStream fos = new FileOutputStream(reportFile, false);
              OutputStreamWriter writer = new OutputStreamWriter(fos)) {
+
             writer.write("PlaneIndex\tErrorSum\tMeanError\n");
 
             for (final PlaneError planeError : planeErrors) {
@@ -66,6 +105,7 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return true;
+        System.out.println("Finished reportPlaneDifference");
+        return false;
     }
 }
