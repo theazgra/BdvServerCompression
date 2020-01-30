@@ -6,5 +6,6 @@ public enum ProgramMethod {
     Benchmark,
     TrainCodebook,
     PrintHelp,
+    CustomFunction,
     InspectFile
 }

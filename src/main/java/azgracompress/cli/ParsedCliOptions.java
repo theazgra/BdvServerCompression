@@ -46,8 +46,12 @@ public class ParsedCliOptions {
     }
 
     private String getDefaultOutputFilePath(final String inputPath) {
+        if (method == ProgramMethod.CustomFunction)
+            return "";
+
         final File inputFile = new File(inputPath);
         final File outputFile = new File(Paths.get("").toAbsolutePath().toString(), inputFile.getName());
+
 
         String defaultValue = outputFile.getAbsolutePath();
 
@@ -67,7 +71,6 @@ public class ParsedCliOptions {
                 defaultValue = new File(inputFile.getParent(), "benchmark").getAbsolutePath();
             }
             break;
-
             case PrintHelp:
                 break;
             case InspectFile:
@@ -130,6 +133,9 @@ public class ParsedCliOptions {
 
             // We require the file path and dimensions, like input.raw 1920x1080x5
             if (fileInfo.length < 2) {
+                if (method == ProgramMethod.CustomFunction) {
+                    return;
+                }
                 errorOccurred = true;
                 errorBuilder.append("Both filepath and file dimensions are required arguments\n");
             } else {
@@ -320,6 +326,8 @@ public class ParsedCliOptions {
             method = ProgramMethod.TrainCodebook;
         } else if (cmd.hasOption(CliConstants.INSPECT_LONG)) {
             method = ProgramMethod.InspectFile;
+        } else if (cmd.hasOption(CliConstants.CUSTOM_FUNCTION_LONG)) {
+            method = ProgramMethod.CustomFunction;
         } else {
             errorOccurred = true;
             errorBuilder.append("No program method was matched\n");
