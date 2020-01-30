@@ -1,6 +1,6 @@
 package azgracompress.data;
 
-import azgracompress.U16;
+import azgracompress.utilities.Utils;
 
 public class ImageU16 {
 
@@ -26,13 +26,7 @@ public class ImageU16 {
 
     public ImageU16 difference(final ImageU16 other) {
         assert (width == other.width && height == other.height) : "Different image dimensions in difference()";
-        int[] diffData = new int[data.length];
-        int diffVal;
-        for (int i = 0; i < data.length; i++) {
-            diffVal = Math.abs(data[i] - other.data[i]);
-            assert (diffVal >= 0 && diffVal <= U16.Max) : "Diff value can not be converted to short.";
-            diffData[i] = diffVal;
-        }
+        final int[] diffData = Utils.getDifference(data, other.getData());
         return new ImageU16(width, height, diffData);
     }
 
