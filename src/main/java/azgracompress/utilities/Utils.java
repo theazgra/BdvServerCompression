@@ -68,12 +68,18 @@ public class Utils {
         return difference;
     }
 
-    public static int[] applyAbsToValues(int[] values) {
+    public static int[] asAbsoluteValues(int[] values) {
         int[] absValues = new int[values.length];
         for (int i = 0; i < values.length; i++) {
             absValues[i] = Math.abs(values[i]);
         }
         return absValues;
+    }
+
+    public static void applyAbsFunction(int[] values) {
+        for (int i = 0; i < values.length; i++) {
+            values[i] = Math.abs(values[i]);
+        }
     }
 
 

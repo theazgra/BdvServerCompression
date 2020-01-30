@@ -159,7 +159,7 @@ abstract class BenchmarkBase {
                                      final String absDiffFile) {
 
         final int[] differenceData = Utils.getDifference(originalData, transformedData);
-        final int[] absDifferenceData = Utils.applyAbsToValues(differenceData);
+        final int[] absDifferenceData = Utils.asAbsoluteValues(differenceData);
         final String diffFilePath = getFileNamePathIntoOutDir(diffFile);
         final String absDiffFilePath = getFileNamePathIntoOutDir(absDiffFile);
 
