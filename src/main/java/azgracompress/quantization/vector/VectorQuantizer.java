@@ -31,13 +31,47 @@ public class VectorQuantizer {
     }
 
     public int[] quantizeIntoIndices(final int[][] dataVectors) {
+        return quantizeIntoIndices(dataVectors, 1);
+    }
+
+
+    public int[] quantizeIntoIndices(final int[][] dataVectors, final int maxWorkerCount) {
+
         assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
         int[] indices = new int[dataVectors.length];
 
-        // Speedup
-        for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-            indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex],
-                                                                 VectorDistanceMetric.Euclidean);
+        if (maxWorkerCount == 1) {
+            for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
+                indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex],
+                                                                     VectorDistanceMetric.Euclidean);
+            }
+        } else {
+            // Cap the worker count on 8
+            final int workerCount = Math.min(maxWorkerCount, 8);
+            Thread[] workers = new Thread[workerCount];
+            final int workSize = dataVectors.length / workerCount;
+
+            for (int wId = 0; wId < workerCount; wId++) {
+                final int fromIndex = wId * workSize;
+                final int toIndex = (wId == workerCount - 1) ? dataVectors.length : (workSize + (wId * workSize));
+
+                workers[wId] = new Thread(() -> {
+                    for (int vectorIndex = fromIndex; vectorIndex < toIndex; vectorIndex++) {
+                        indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex],
+                                                                             VectorDistanceMetric.Euclidean);
+                    }
+                });
+
+                workers[wId].start();
+            }
+            try {
+                for (int wId = 0; wId < workerCount; wId++) {
+                    workers[wId].join();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         }
         return indices;
     }

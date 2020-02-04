@@ -143,7 +143,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             assert (quantizer != null);
 
             Log("Compression plane...");
-            final int[] indices = quantizer.quantizeIntoIndices(planeVectors);
+            final int[] indices = quantizer.quantizeIntoIndices(planeVectors, options.getWorkerCount());
 
             try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
                 outBitStream.write(indices);
