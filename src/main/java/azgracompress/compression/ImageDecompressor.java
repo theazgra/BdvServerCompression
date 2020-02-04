@@ -114,6 +114,10 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             if (decompressor != null) {
                 final long expectedDataSize = decompressor.getExpectedDataSize(header);
                 validFile = (dataSize == expectedDataSize);
+                logBuilder.append(String.format("File size:\t\t%d B (%d kB) (%d MB)\n",
+                                                fileSize,
+                                                (fileSize / 1000),
+                                                ((fileSize / 1000) / 1000)));
                 logBuilder.append("Data size:\t\t").append(dataSize).append(" Bytes ").append(dataSize == expectedDataSize ? "(correct)\n" : "(INVALID)\n");
             }
         }
