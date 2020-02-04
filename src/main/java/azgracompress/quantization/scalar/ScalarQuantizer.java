@@ -23,13 +23,41 @@ public class ScalarQuantizer {
         return result;
     }
 
-    public int[] quantizeIntoIndices(int[] data) {
+    public int[] quantizeIntoIndices(int[] data, final int maxWorkerCount) {
         int[] indices = new int[data.length];
         // Speedup?
-        for (int i = 0; i < data.length; i++) {
-            final int index = quantizeIndex(data[i]);
-            indices[i] = index;
+        if (maxWorkerCount == 1) {
+            for (int i = 0; i < data.length; i++) {
+                final int index = quantizeIndex(data[i]);
+                indices[i] = index;
+            }
+        } else {
+            // NOTE(Moravec): This function is fast enough single thread. So we use max 2 threads.
+            final int workerCount = Math.min(maxWorkerCount, 2);
+            Thread[] workers = new Thread[workerCount];
+            final int workSize = data.length / workerCount;
+
+            for (int wId = 0; wId < workerCount; wId++) {
+                final int fromIndex = wId * workSize;
+                final int toIndex = (wId == workerCount - 1) ? data.length : (workSize + (wId * workSize));
+
+                workers[wId] = new Thread(() -> {
+                    for (int vectorIndex = fromIndex; vectorIndex < toIndex; vectorIndex++) {
+                        indices[vectorIndex] = quantizeIndex(data[vectorIndex]);
+                    }
+                });
+
+                workers[wId].start();
+            }
+            try {
+                for (int wId = 0; wId < workerCount; wId++) {
+                    workers[wId].join();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
         return indices;
     }
 
