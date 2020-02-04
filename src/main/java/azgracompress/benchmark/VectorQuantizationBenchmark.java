@@ -118,7 +118,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
                                                           planeIndex,
                                                           codebookSize);
 
-            final int[][] quantizedData = quantizer.quantize(planeData);
+            final int[][] quantizedData = quantizer.quantize(planeData, workerCount);
 
             final ImageU16 quantizedImage = reconstructImageFromQuantizedVectors(plane, quantizedData, qVector);
 

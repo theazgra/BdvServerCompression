@@ -16,15 +16,21 @@ public class VectorQuantizer {
         return closestEntry.getVector();
     }
 
-    public int[][] quantize(final int[][] dataVectors) {
+    public int[][] quantize(final int[][] dataVectors, final int workerCount) {
         assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
         int[][] result = new int[dataVectors.length][vectorSize];
 
-        // Speedup
-        for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-            final CodebookEntry closestEntry = findClosestCodebookEntry(dataVectors[vectorIndex],
-                                                                        VectorDistanceMetric.Euclidean);
-            result[vectorIndex] = closestEntry.getVector();
+        if (workerCount == 1) {
+            for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
+                final CodebookEntry closestEntry = findClosestCodebookEntry(dataVectors[vectorIndex],
+                                                                            VectorDistanceMetric.Euclidean);
+                result[vectorIndex] = closestEntry.getVector();
+            }
+        } else {
+            final int[] indices = quantizeIntoIndices(dataVectors, workerCount);
+            for (int i = 0; i < dataVectors.length; i++) {
+                result[i] = codebook[indices[i]].getVector();
+            }
         }
 
         return result;

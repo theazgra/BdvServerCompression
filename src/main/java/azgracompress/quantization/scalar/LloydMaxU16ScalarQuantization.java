@@ -46,7 +46,7 @@ public class LloydMaxU16ScalarQuantization {
 
     private void initializeProbabilityDensityFunction() {
         pdf = new double[U16.Max + 1];
-        // Speedup
+        // Speedup - for now it is fast enough
         Stopwatch s = new Stopwatch();
         s.start();
         for (int i = 0; i < trainingData.length; i++) {
