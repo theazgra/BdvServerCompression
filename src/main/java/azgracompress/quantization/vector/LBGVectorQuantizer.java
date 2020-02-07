@@ -241,8 +241,11 @@ public class LBGVectorQuantizer {
                     assert (entryToSplit.getVectorCount() > 0) :
                             "There are no vectors from which to create perturbation vector";
 
+                    // TODO(Moravec): prtV can't be zero vector!
                     prtV = entryToSplit.getPerturbationVector();
                 }
+
+
 
                 // We always want to carry zero vector to next iteration.
                 if (entryToSplit.isZeroVector()) {
@@ -273,6 +276,17 @@ public class LBGVectorQuantizer {
                 }
                 final LearningCodebookEntry rightEntry = new LearningCodebookEntry(right);
                 final LearningCodebookEntry leftEntry = new LearningCodebookEntry(left);
+
+                // TODO(Moravec): There is a bug!
+                //  Loading plane 722.
+                //  Training vector quantizer from plane 722.
+                //  Exception in thread "main" java.lang.AssertionError: Entry was split to two identical entries!
+                //        at azgracompress.quantization.vector.LBGVectorQuantizer.initializeCodebook(LBGVectorQuantizer.java:276)
+                //        at azgracompress.quantization.vector.LBGVectorQuantizer.findOptimalCodebook(LBGVectorQuantizer.java:56)
+                //        at azgracompress.compression.VQImageCompressor.trainVectorQuantizerFromPlaneVectors(VQImageCompressor.java:33)
+                //        at azgracompress.compression.VQImageCompressor.compress(VQImageCompressor.java:137)
+                //        at azgracompress.compression.ImageCompressor.compress(ImageCompressor.java:76)
+                //        at azgracompress.DataCompressor.main(DataCompressor.java:48)
                 assert (!rightEntry.equals(leftEntry)) : "Entry was split to two identical entries!";
                 newCodebook[cbIndex++] = rightEntry;
                 newCodebook[cbIndex++] = leftEntry;
