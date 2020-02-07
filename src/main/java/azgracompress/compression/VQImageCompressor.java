@@ -131,7 +131,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             }
 
             final int[][] planeVectors = plane.toQuantizationVectors(options.getVectorDimension());
-            Log("PlaneVectorCount: %d", planeVectors.length);
 
             if (!hasGeneralQuantizer) {
                 Log(String.format("Training vector quantizer from plane %d.", planeIndex));

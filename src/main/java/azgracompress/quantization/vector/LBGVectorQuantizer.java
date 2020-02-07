@@ -693,14 +693,27 @@ public class LBGVectorQuantizer {
      * @return Array of training vectors.
      */
     private TrainingVector[] getEntryTrainingVectors(final int entryIndex, final int vectorCount) {
-        TrainingVector[] vectors = new TrainingVector[vectorCount];
+
         int index = 0;
+
+        //        TrainingVector[] vectors = new TrainingVector[vectorCount];
+        int count = 0;
+        for (final TrainingVector trainingVector : trainingVectors) {
+            if (trainingVector.getEntryIndex() == entryIndex) {
+                ++count;
+            }
+        }
+        TrainingVector[] vectors = new TrainingVector[count];
+//        if (count > vectorCount) {
+//            System.err.println(String.format(
+//                    "WARNING: got more training vectors than vectorCount! DIFF: %d",
+//                    count - vectorCount));
+//        }
         for (final TrainingVector trainingVector : trainingVectors) {
             if (trainingVector.getEntryIndex() == entryIndex) {
                 vectors[index++] = trainingVector;
             }
         }
-        assert (index == vectorCount);
         return vectors;
     }
 
