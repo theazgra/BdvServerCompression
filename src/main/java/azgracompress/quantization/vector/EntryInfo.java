@@ -56,18 +56,8 @@ public class EntryInfo {
     public double[] calculatePRTVector() {
         double[] prtV = new double[vectorSize];
         for (int dim = 0; dim < vectorSize; dim++) {
-            // TODO(Moravec): Zero prtV is created when max array is equal to min array.
             prtV[dim] = ((double) max[dim] - (double) min[dim]) / LBGVectorQuantizer.PRT_VECTOR_DIVIDER;
         }
-
-        boolean iszerovector = true;
-        for (double val : prtV) {
-            if (val != 0.0) {
-                iszerovector = false;
-                break;
-            }
-        }
-        assert (!iszerovector) : "Created zero perturbation vector.";
         return prtV;
     }
 }

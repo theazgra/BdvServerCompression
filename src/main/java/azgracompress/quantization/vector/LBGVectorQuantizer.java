@@ -241,56 +241,49 @@ public class LBGVectorQuantizer {
                     assert (entryToSplit.getVectorCount() > 0) :
                             "There are no vectors from which to create perturbation vector";
 
-                    // TODO(Moravec): prtV can't be zero vector!
                     prtV = entryToSplit.getPerturbationVector();
                 }
 
-
-
                 // We always want to carry zero vector to next iteration.
-                if (entryToSplit.isZeroVector()) {
-                    if (verbose) {
-                        System.out.println("--------------------------IS zero vector");
-                    }
+                if (isZeroVector(entryToSplit.getVector())) {
+                    // Use zero vector in next iteration.
                     newCodebook[cbIndex++] = entryToSplit;
 
-                    int[] rndEntryValues = new int[prtV.length];
+                    // Create another codebook entry from perturbation vector.
+                    int[] entryFromPrtVecValues = new int[prtV.length];
                     for (int i = 0; i < prtV.length; i++) {
                         final int value = (int) Math.floor(prtV[i]);
-                        assert (value >= 0) : "value is too low!";
-                        assert (value <= U16.Max) : "value is too big!";
-                        rndEntryValues[i] = value;
+                        //                        assert (value >= 0) : "value is too low!";
+                        //                        assert (value <= U16.Max) : "value is too big!";
+                        entryFromPrtVecValues[i] = value;
                     }
-                    newCodebook[cbIndex++] = new LearningCodebookEntry(rndEntryValues);
+                    newCodebook[cbIndex++] = new LearningCodebookEntry(entryFromPrtVecValues);
                     continue;
                 }
 
-                int[] left = new int[prtV.length];
-                int[] right = new int[prtV.length];
-                for (int i = 0; i < prtV.length; i++) {
-                    final int lVal = (int) ((double) entryToSplit.getVector()[i] - prtV[i]);
-                    final int rVal = (int) ((double) entryToSplit.getVector()[i] + prtV[i]);
-
-                    left[i] = lVal;
-                    right[i] = rVal;
+                if (isZeroVector(prtV)) {
+                    // Zero perturbation vector can't create two different entries.
+                    // The original entry is going to be moved to the next codebook with the new
+                    // random entry, which will get improved in the LBG algorithm.
+                    final int[] randomEntryValues = generateRandomVector();
+                    newCodebook[cbIndex++] = entryToSplit;
+                    newCodebook[cbIndex++] = new LearningCodebookEntry(randomEntryValues);
+                } else {
+                    int[] left = new int[prtV.length];
+                    int[] right = new int[prtV.length];
+                    for (int i = 0; i < prtV.length; i++) {
+                        final int lVal = (int) ((double) entryToSplit.getVector()[i] - prtV[i]);
+                        final int rVal = (int) ((double) entryToSplit.getVector()[i] + prtV[i]);
+                        left[i] = lVal;
+                        right[i] = rVal;
+                    }
+                    final LearningCodebookEntry rightEntry = new LearningCodebookEntry(right);
+                    final LearningCodebookEntry leftEntry = new LearningCodebookEntry(left);
+                    newCodebook[cbIndex++] = rightEntry;
+                    newCodebook[cbIndex++] = leftEntry;
                 }
-                final LearningCodebookEntry rightEntry = new LearningCodebookEntry(right);
-                final LearningCodebookEntry leftEntry = new LearningCodebookEntry(left);
-
-                // TODO(Moravec): There is a bug!
-                //  Loading plane 722.
-                //  Training vector quantizer from plane 722.
-                //  Exception in thread "main" java.lang.AssertionError: Entry was split to two identical entries!
-                //        at azgracompress.quantization.vector.LBGVectorQuantizer.initializeCodebook(LBGVectorQuantizer.java:276)
-                //        at azgracompress.quantization.vector.LBGVectorQuantizer.findOptimalCodebook(LBGVectorQuantizer.java:56)
-                //        at azgracompress.compression.VQImageCompressor.trainVectorQuantizerFromPlaneVectors(VQImageCompressor.java:33)
-                //        at azgracompress.compression.VQImageCompressor.compress(VQImageCompressor.java:137)
-                //        at azgracompress.compression.ImageCompressor.compress(ImageCompressor.java:76)
-                //        at azgracompress.DataCompressor.main(DataCompressor.java:48)
-                assert (!rightEntry.equals(leftEntry)) : "Entry was split to two identical entries!";
-                newCodebook[cbIndex++] = rightEntry;
-                newCodebook[cbIndex++] = leftEntry;
-
+                assert (!(newCodebook[cbIndex - 2].equals(newCodebook[cbIndex - 1]))) :
+                        "Entry was split to two identical entries!";
             }
             codebook = newCodebook;
             assert (codebook.length == (currentCodebookSize * 2));
@@ -312,6 +305,50 @@ public class LBGVectorQuantizer {
             }
         }
         return codebook;
+    }
+
+    /**
+     * Generate random vector of size = this.vectorSize
+     *
+     * @return Generated random vector.
+     */
+    private int[] generateRandomVector() {
+        int[] randomVector = new int[vectorSize];
+        Random rnd = new Random();
+        for (int i = 0; i < vectorSize; i++) {
+            randomVector[i] = rnd.nextInt(U16.Max + 1);
+        }
+        return randomVector;
+    }
+
+    /**
+     * Check whether all vector elements are equal to 0.0
+     *
+     * @param vector Vector array.
+     * @return True if all elements are zeros.
+     */
+    private boolean isZeroVector(final double[] vector) {
+        for (final double value : vector) {
+            if (value != 0.0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check whether all vector elements are equal to 0
+     *
+     * @param vector Vector array.
+     * @return True if all elements are zeros.
+     */
+    private boolean isZeroVector(final int[] vector) {
+        for (final double value : vector) {
+            if (value != 0.0) {
+                return false;
+            }
+        }
+        return true;
     }
 
 
@@ -620,7 +657,7 @@ public class LBGVectorQuantizer {
         int largestEntrySize = codebook[emptyEntryIndex].getVectorCount();
         // NOTE(Moravec): We can't select random training vector, because zero vector would create another zero vector.
         for (int i = 0; i < codebook.length; i++) {
-            if ((codebook[i].getVectorCount() > largestEntrySize) && !codebook[i].isZeroVector()) {
+            if ((codebook[i].getVectorCount() > largestEntrySize) && !isZeroVector(codebook[i].getVector())) {
                 largestEntryIndex = i;
                 largestEntrySize = codebook[i].getVectorCount();
             }
@@ -718,11 +755,11 @@ public class LBGVectorQuantizer {
             }
         }
         TrainingVector[] vectors = new TrainingVector[count];
-//        if (count > vectorCount) {
-//            System.err.println(String.format(
-//                    "WARNING: got more training vectors than vectorCount! DIFF: %d",
-//                    count - vectorCount));
-//        }
+        //        if (count > vectorCount) {
+        //            System.err.println(String.format(
+        //                    "WARNING: got more training vectors than vectorCount! DIFF: %d",
+        //                    count - vectorCount));
+        //        }
         for (final TrainingVector trainingVector : trainingVectors) {
             if (trainingVector.getEntryIndex() == entryIndex) {
                 vectors[index++] = trainingVector;

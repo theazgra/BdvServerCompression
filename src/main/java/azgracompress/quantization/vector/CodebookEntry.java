@@ -13,14 +13,6 @@ public class CodebookEntry {
         this.height = 1;
     }
 
-    public boolean isZeroVector() {
-        for (int val : vector) {
-            if (val != 0)
-                return false;
-        }
-        return true;
-    }
-
     @Override
     public boolean equals(final Object obj) {
         if (obj instanceof CodebookEntry) {
