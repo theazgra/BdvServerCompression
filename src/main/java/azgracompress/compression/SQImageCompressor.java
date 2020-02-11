@@ -134,7 +134,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             assert (quantizer != null);
 
             Log("Compressing plane...");
-            final int[] indices = quantizer.quantizeIntoIndices(plane.getData(), options.getWorkerCount());
+            final int[] indices = quantizer.quantizeIntoIndices(plane.getData(), 1);
 
             try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
                 outBitStream.write(indices);
