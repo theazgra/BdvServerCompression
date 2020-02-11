@@ -148,6 +148,7 @@ public class LloydMaxU16ScalarQuantization {
 
     public QTrainIteration[] train(final boolean shouldBeVerbose) {
         this.verbose = shouldBeVerbose;
+        final int RECALCULATE_N_TIMES = 10;
         if (verbose) {
             System.out.println("Training data count: " + trainingData.length);
         }
@@ -171,27 +172,26 @@ public class LloydMaxU16ScalarQuantization {
             System.out.println(String.format("Initial MSE: %f", currentMse));
         }
 
-        int iter = 0;
-        solutionHistory.add(new QTrainIteration(iter++, currentMse, currentMse, psnr, psnr));
+        solutionHistory.add(new QTrainIteration(0, currentMse, currentMse, psnr, psnr));
 
         double dist = 1;
+        int iteration = 0;
         do {
-            recalculateBoundaryPoints();
-            recalculateCentroids();
-
+            for (int i = 0; i < RECALCULATE_N_TIMES; i++) {
+                recalculateBoundaryPoints();
+                recalculateCentroids();
+            }
             prevMse = currentMse;
             currentMse = getCurrentMse();
             psnr = Utils.calculatePsnr(currentMse, U16.Max);
-
-            solutionHistory.add(new QTrainIteration(iter++, currentMse, currentMse, psnr, psnr));
+            solutionHistory.add(new QTrainIteration(++iteration, currentMse, currentMse, psnr, psnr));
             dist = (prevMse - currentMse) / currentMse;
 
             if (verbose) {
                 System.out.println(String.format("Current MSE: %.4f PSNR: %.4f dB", currentMse, psnr));
             }
 
-
-        } while (dist > 0.0005);
+        } while (dist > 0.001); //0.0005
         if (verbose) {
             System.out.println("\nFinished training.");
         }
