@@ -1,7 +1,10 @@
 package azgracompress;
 
+import io.scif.FormatException;
+import io.scif.Reader;
 import io.scif.SCIFIO;
-import io.scif.formats.TIFFFormat;
+
+import java.io.IOException;
 
 public class ScifioWrapper {
 
@@ -24,6 +27,19 @@ public class ScifioWrapper {
         return instance.scifioInstance;
     }
 
+    /**
+     * Get image file reader.
+     *
+     * @param path Path of image file.
+     * @return Scifio reader.
+     * @throws IOException
+     * @throws FormatException
+     */
+    public static Reader getReader(final String path) throws IOException, FormatException {
+        SCIFIO scifio = getScifio();
+        return scifio.initializer().initializeReader(path);
+    }
+
     public synchronized static void dispose() {
         if (instance != null) {
             if (instance.scifioInstance != null) {
@@ -31,4 +47,6 @@ public class ScifioWrapper {
             }
         }
     }
+
+
 }

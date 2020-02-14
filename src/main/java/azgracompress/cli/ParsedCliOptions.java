@@ -1,15 +1,19 @@
 package azgracompress.cli;
 
+import azgracompress.ScifioWrapper;
 import azgracompress.compression.CompressorDecompressorBase;
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.FileExtensions;
-import azgracompress.fileformat.FileType;
 import azgracompress.fileformat.QuantizationType;
+import io.scif.FormatException;
+import io.scif.Plane;
+import io.scif.Reader;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 
 public class ParsedCliOptions {
@@ -118,30 +122,6 @@ public class ParsedCliOptions {
         error = errorBuilder.toString();
     }
 
-    /**
-     * Get file type from file extension.
-     *
-     * @param path File path.
-     * @return File type.
-     */
-    private FileType getFileType(final String path) {
-        final String extension = FilenameUtils.getExtension(path).toLowerCase();
-        switch (extension) {
-            case FileExtensions.RAW: {
-                return FileType.RAW;
-            }
-            case FileExtensions.TIFF: {
-                return FileType.TIFF;
-            }
-            case FileExtensions.QCMP: {
-                return FileType.QCMP;
-            }
-            default: {
-                return FileType.Unsupported;
-            }
-        }
-    }
-
     private void parseInputFilePart(StringBuilder errorBuilder, final String[] inputFileArguments) {
 
         if (inputFileArguments.length < 1) {
@@ -150,7 +130,8 @@ public class ParsedCliOptions {
             return;
         }
 
-        inputFileInfo = new InputFileInfo(getFileType(inputFileArguments[0]), inputFileArguments[0]);
+
+        inputFileInfo = new InputFileInfo(inputFileArguments[0]);
 
         // Decompress and Inspect methods doesn't require additional file information.
         if ((method == ProgramMethod.Decompress) || (method == ProgramMethod.InspectFile)) {
@@ -164,28 +145,72 @@ public class ParsedCliOptions {
             return;
         }
 
-        switch (inputFileInfo.getFileType()) {
-            case RAW:
-                parseRawFileArguments(errorBuilder, inputFileArguments);
-                break;
-            case TIFF:
-                parseTiffFileArguments(errorBuilder, inputFileArguments);
-                break;
-            default: {
-                errorOccurred = true;
-                errorBuilder.append("Unsupported input file type. Currently supporting RAW and TIFF files.\n");
-            }
+        final String extension = FilenameUtils.getExtension(inputFileArguments[0]).toLowerCase();
+        if (FileExtensions.RAW.equals(extension)) {
+            parseRawFileArguments(errorBuilder, inputFileArguments);
+        } else {
+            // Default loading through SCIFIO.
+            parseSCIFIOFileArguments(errorBuilder, inputFileArguments);
         }
     }
 
-    private void parseTiffFileArguments(StringBuilder errorBuilder, String[] inputFileArguments) {
+    private void parseSCIFIOFileArguments(StringBuilder errorBuilder,
+                                          final String[] inputFileArguments) {
         // inputFileInfo is already created with TIFF type.
-        assert (inputFileInfo.getFileType() == FileType.TIFF) : "Not TIFF type in parse Tiff arguments.";
+        //        assert (inputFileInfo.getFileType() == FileType.TIFF) : "Not TIFF type in parse Tiff arguments.";
 
+        Reader reader = null;
+        try {
+            reader = ScifioWrapper.getReader(inputFileInfo.getFilePath());
+        } catch (IOException | FormatException e) {
+            errorOccurred = true;
+            errorBuilder.append("Failed to get SCIFIO reader for file.\n");
+            errorBuilder.append(e.getMessage());
+            return;
+        }
 
+        final int imageCount = reader.getImageCount();
+        if (imageCount != 1) {
+            errorOccurred = true;
+            errorBuilder.append("We are currently not supporting files with multiple images.\n");
+            return;
+        }
 
-        errorOccurred = true;
-        errorBuilder.append("Got TIFF file.\n");
+        final long planeCount = reader.getPlaneCount(0);
+        if (planeCount > (long) Integer.MAX_VALUE) {
+            errorOccurred = true;
+            errorBuilder.append("Too many planes.\n");
+        }
+
+        long planeWidth, planeHeight;
+        try {
+            Plane plane = reader.openPlane(0, 0);
+            planeWidth = plane.getLengths()[0];
+            planeHeight = plane.getLengths()[1];
+
+            if ((planeWidth > (long) Integer.MAX_VALUE) ||
+                    (planeHeight > (long) Integer.MAX_VALUE)) {
+                errorOccurred = true;
+                errorBuilder.append("We are currently supporting planes with " +
+                                            "maximum size of Integer.MAX_VALUE x Integer.MAX_VALUE");
+            }
+
+        } catch (FormatException | IOException e) {
+            errorOccurred = true;
+            errorBuilder.append("Unable to open first plane of the first image.\n")
+                    .append(e.getMessage());
+            return;
+        }
+
+        inputFileInfo.setDimension(new V3i(
+                (int) planeWidth,
+                (int) planeHeight,
+                (int) planeCount
+        ));
+
+        if (inputFileArguments.length > 1) {
+            parseInputFilePlaneOptions(errorBuilder, inputFileArguments, 1);
+        }
     }
 
     private void parseRawFileArguments(StringBuilder errorBuilder, String[] inputFileArguments) {

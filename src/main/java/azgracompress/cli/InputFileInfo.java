@@ -2,16 +2,11 @@ package azgracompress.cli;
 
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
-import azgracompress.fileformat.FileType;
 
 /**
  * Information about the input file.
  */
 public class InputFileInfo {
-    /**
-     * Input file type.
-     */
-    private final FileType fileType;
     /**
      * Input file path.
      */
@@ -25,8 +20,7 @@ public class InputFileInfo {
     private boolean planeRangeSet = false;
     private V2i planeRange;
 
-    public InputFileInfo(final FileType fileType, final String filePath) {
-        this.fileType = fileType;
+    public InputFileInfo(final String filePath) {
         this.filePath = filePath;
     }
 
@@ -57,10 +51,6 @@ public class InputFileInfo {
     public void setPlaneRange(final V2i planeRange) {
         this.planeRangeSet = true;
         this.planeRange = planeRange;
-    }
-
-    public FileType getFileType() {
-        return fileType;
     }
 
     public String getFilePath() {
