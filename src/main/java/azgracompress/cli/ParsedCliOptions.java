@@ -3,8 +3,10 @@ package azgracompress.cli;
 import azgracompress.compression.CompressorDecompressorBase;
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
+import azgracompress.fileformat.FileExtensions;
 import azgracompress.fileformat.QuantizationType;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -120,77 +122,135 @@ public class ParsedCliOptions {
         error = errorBuilder.toString();
     }
 
-    private void parseInputFilePart(StringBuilder errorBuilder, final String[] fileInfo) {
+    private void parseInputFilePart(StringBuilder errorBuilder, final String[] inputFileArguments) {
+
+        if (inputFileArguments.length < 1) {
+            errorOccurred = true;
+            errorBuilder.append("Missing input file option");
+            return;
+        }
+
+        inputFile = inputFileArguments[0];
+
+        // Decompress and Inspect methods doesn't require additional file information.
         if ((method == ProgramMethod.Decompress) || (method == ProgramMethod.InspectFile)) {
-            if (fileInfo.length > 0) {
-                inputFile = fileInfo[0];
-            } else {
-                errorOccurred = true;
-                errorBuilder.append("Missing input file for decompression");
+            return;
+        }
+
+        File inputFileInfo = new File(inputFile);
+
+        // Check if input file exists.
+        if (!inputFileInfo.exists()) {
+            errorOccurred = true;
+            errorBuilder.append("Input file doesn't exist.\n");
+            return;
+        }
+
+        final String extension = FilenameUtils.getExtension(inputFile).toLowerCase();
+        switch (extension) {
+            case FileExtensions.RAW: {
+                parseRawFileArguments(errorBuilder, inputFileArguments);
             }
-        } else {
-            // Compression part.
-
-            // We require the file path and dimensions, like input.raw 1920x1080x5
-            if (fileInfo.length < 2) {
-                if (method == ProgramMethod.CustomFunction) {
-                    return;
-                }
+            break;
+            case FileExtensions.TIFF: {
+                parseTiffFileArguments(errorBuilder, inputFileArguments);
+            }
+            break;
+            default: {
                 errorOccurred = true;
-                errorBuilder.append("Both filepath and file dimensions are required arguments\n");
-            } else {
-                // The first string must be file path.
-                inputFile = fileInfo[0];
-
-                parseImageDims(fileInfo[1], errorBuilder);
-
-                if (fileInfo.length > 2) {
-
-                    int rangeSepIndex = fileInfo[2].indexOf("-");
-                    if (rangeSepIndex != -1) {
-                        final String fromIndexString = fileInfo[2].substring(0, rangeSepIndex);
-                        final String toIndexString = fileInfo[2].substring(rangeSepIndex + 1);
-                        final ParseResult<Integer> indexFromResult = tryParseInt(fromIndexString);
-                        final ParseResult<Integer> indexToResult = tryParseInt(toIndexString);
-
-                        if (indexFromResult.isSuccess() && indexToResult.isSuccess()) {
-                            fromPlaneIndex = indexFromResult.getValue();
-                            toPlaneIndex = indexToResult.getValue();
-                            planeRangeSet = true;
-                        } else {
-                            errorOccurred = true;
-                            errorBuilder.append("Plane range index is wrong. Expected format D-D, got: ").append(
-                                    fileInfo[2]).append('\n');
-                        }
-                    } else {
-                        final ParseResult<Integer> parseResult = tryParseInt(fileInfo[2]);
-                        if (parseResult.isSuccess()) {
-                            planeIndexSet = true;
-                            planeIndex = parseResult.getValue();
-                        } else {
-                            errorOccurred = true;
-                            errorBuilder.append("The second argument after file name must be plane index\n");
-                        }
-                    }
-                }
+                errorBuilder.append("Unsupported input file type. Currently supporting RAW and TIFF files.\n");
             }
         }
     }
 
+    private void parseTiffFileArguments(StringBuilder errorBuilder, String[] inputFileArguments) {
+        errorOccurred = true;
+        errorBuilder.append("Got TIFF file.\n");
+    }
+
+    private void parseRawFileArguments(StringBuilder errorBuilder, String[] inputFileArguments) {
+        // We require the file path and dimensions, like input.raw 1920x1080x5
+        // First argument is input file name.
+        if (inputFileArguments.length < 2) {
+            errorOccurred = true;
+            errorBuilder.append("Raw file requires its dimension as additional information.")
+                    .append("e.g.: 1920x1080x1\n");
+            return;
+        }
+
+        parseImageDims(inputFileArguments[1], errorBuilder);
+
+        // User specified plane index or plane range.
+        if (inputFileArguments.length > 2) {
+            parseInputFilePlaneOptions(errorBuilder, inputFileArguments, 2);
+        }
+    }
+
+    /**
+     * Parse optional user specified plane index or plane range. (e.g. 5 or 5-50)
+     *
+     * @param errorBuilder             String builder for the error message.
+     * @param inputFileArguments       Input file arguments.
+     * @param inputFileArgumentsOffset Offset of the plane argument.
+     */
+    private void parseInputFilePlaneOptions(StringBuilder errorBuilder,
+                                            final String[] inputFileArguments,
+                                            final int inputFileArgumentsOffset) {
+        int rangeSeparatorIndex = inputFileArguments[inputFileArgumentsOffset].indexOf("-");
+        if (rangeSeparatorIndex != -1) {
+            // Here we parse the plane range option.
+            final String fromIndexString =
+                    inputFileArguments[inputFileArgumentsOffset].substring(0, rangeSeparatorIndex);
+            final String toIndexString =
+                    inputFileArguments[inputFileArgumentsOffset].substring(rangeSeparatorIndex + 1);
+
+            final ParseResult<Integer> indexFromResult = tryParseInt(fromIndexString);
+            final ParseResult<Integer> indexToResult = tryParseInt(toIndexString);
+
+            if (indexFromResult.isSuccess() && indexToResult.isSuccess()) {
+                fromPlaneIndex = indexFromResult.getValue();
+                toPlaneIndex = indexToResult.getValue();
+                planeRangeSet = true;
+            } else {
+                errorOccurred = true;
+                errorBuilder.append("Plane range index is wrong. Expected format D-D, got: ").append(
+                        inputFileArguments[inputFileArgumentsOffset]).append('\n');
+            }
+        } else {
+            // Here we parse single plane index option.
+            final ParseResult<Integer> parseResult = tryParseInt(inputFileArguments[inputFileArgumentsOffset]);
+            if (parseResult.isSuccess()) {
+                planeIndexSet = true;
+                planeIndex = parseResult.getValue();
+            } else {
+                errorOccurred = true;
+                errorBuilder.append("Failed to parse plane index option, expected integer, got: ")
+                        .append(inputFileArguments[inputFileArgumentsOffset])
+                        .append('\n');
+            }
+        }
+    }
+
+    /**
+     * Parse RAW image file dimensions (e.g. 1920x1080x10).
+     *
+     * @param dimsString   String containing image dimensions.
+     * @param errorBuilder Builder for the error message.
+     */
     private void parseImageDims(final String dimsString, StringBuilder errorBuilder) {
         // We thing of 3x3x1 and 3x3 as the same thing
 
-        final int firstDelimIndex = dimsString.indexOf('x');
-        if (firstDelimIndex == -1) {
+        final int firstDelimiterIndex = dimsString.indexOf('x');
+        if (firstDelimiterIndex == -1) {
             errorOccurred = true;
             errorBuilder.append("Error parsing image dimensions. We require DxDxD or DxD [=DxDx1]\n");
             return;
         }
-        final String num1String = dimsString.substring(0, firstDelimIndex);
-        final String secondPart = dimsString.substring(firstDelimIndex + 1);
+        final String num1String = dimsString.substring(0, firstDelimiterIndex);
+        final String secondPart = dimsString.substring(firstDelimiterIndex + 1);
 
-        final int secondDelimIndex = secondPart.indexOf('x');
-        if (secondDelimIndex == -1) {
+        final int secondDelimiterIndex = secondPart.indexOf('x');
+        if (secondDelimiterIndex == -1) {
             final ParseResult<Integer> n1Result = tryParseInt(num1String);
             final ParseResult<Integer> n2Result = tryParseInt(secondPart);
             if (n1Result.isSuccess() && n2Result.isSuccess()) {
@@ -201,8 +261,8 @@ public class ParsedCliOptions {
                 errorBuilder.append(String.format("%sx%s\n", num1String, secondPart));
             }
         } else {
-            final String num2String = secondPart.substring(0, secondDelimIndex);
-            final String num3String = secondPart.substring(secondDelimIndex + 1);
+            final String num2String = secondPart.substring(0, secondDelimiterIndex);
+            final String num3String = secondPart.substring(secondDelimiterIndex + 1);
 
             final ParseResult<Integer> n1Result = tryParseInt(num1String);
             final ParseResult<Integer> n2Result = tryParseInt(num2String);
@@ -216,7 +276,6 @@ public class ParsedCliOptions {
                 errorBuilder.append(String.format("%sx%sx%s\n", num1String, num2String, num3String));
             }
         }
-
     }
 
     private void parseReferencePlaneIndex(CommandLine cmd, StringBuilder errorBuilder) {
