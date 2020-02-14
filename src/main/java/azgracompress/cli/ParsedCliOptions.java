@@ -179,6 +179,11 @@ public class ParsedCliOptions {
     }
 
     private void parseTiffFileArguments(StringBuilder errorBuilder, String[] inputFileArguments) {
+        // inputFileInfo is already created with TIFF type.
+        assert (inputFileInfo.getFileType() == FileType.TIFF) : "Not TIFF type in parse Tiff arguments.";
+
+        
+
         errorOccurred = true;
         errorBuilder.append("Got TIFF file.\n");
     }
