@@ -130,7 +130,6 @@ public class ParsedCliOptions {
             return;
         }
 
-
         inputFileInfo = new InputFileInfo(inputFileArguments[0]);
 
         // Decompress and Inspect methods doesn't require additional file information.
@@ -159,7 +158,8 @@ public class ParsedCliOptions {
         // inputFileInfo is already created with TIFF type.
         //        assert (inputFileInfo.getFileType() == FileType.TIFF) : "Not TIFF type in parse Tiff arguments.";
 
-        Reader reader = null;
+        inputFileInfo.setIsRaw(false);
+        Reader reader;
         try {
             reader = ScifioWrapper.getReader(inputFileInfo.getFilePath());
         } catch (IOException | FormatException e) {
@@ -223,6 +223,7 @@ public class ParsedCliOptions {
             return;
         }
 
+        inputFileInfo.setIsRaw(true);
         parseImageDims(inputFileArguments[1], errorBuilder);
 
         // User specified plane index or plane range.

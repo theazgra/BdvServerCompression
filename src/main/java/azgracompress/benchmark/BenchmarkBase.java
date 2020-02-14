@@ -33,27 +33,11 @@ abstract class BenchmarkBase {
 
     protected final int workerCount;
 
-    protected BenchmarkBase(final String inputFile,
-                            final String outputDirectory,
-                            final int[] planes,
-                            final V3i rawImageDims) {
-        this.inputFile = inputFile;
-        this.outputDirectory = outputDirectory;
-        this.planes = planes;
-        this.rawImageDims = rawImageDims;
-
-        hasReferencePlane = false;
-        referencePlaneIndex = -1;
-        codebookSize = 256;
-
-        hasCacheFolder = false;
-        cacheFolder = null;
-        hasGeneralQuantizer = false;
-
-        workerCount = 1;
-    }
+    protected final ParsedCliOptions options;
 
     protected BenchmarkBase(final ParsedCliOptions options) {
+        this.options = options;
+
         final InputFileInfo ifi = options.getInputFileInfo();
         this.inputFile = ifi.getFilePath();
         this.outputDirectory = options.getOutputFile();
@@ -98,32 +82,32 @@ abstract class BenchmarkBase {
         return file.getAbsolutePath();
     }
 
-    /**
-     * Load u16 plane from RAW file.
-     *
-     * @param planeIndex Zero based plane index.
-     * @return u16 plane.
-     */
-    protected ImageU16 loadPlane(final int planeIndex) {
-        try {
-            return RawDataIO.loadImageU16(inputFile, rawImageDims, planeIndex);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return null;
-    }
+    //    /**
+    //     * Load u16 plane from RAW file.
+    //     *
+    //     * @param planeIndex Zero based plane index.
+    //     * @return u16 plane.
+    //     */
+    //    protected ImageU16 loadPlane(final int planeIndex) {
+    //        try {
+    //            return RawDataIO.loadImageU16(inputFile, rawImageDims, planeIndex);
+    //        } catch (Exception ex) {
+    //            ex.printStackTrace();
+    //        }
+    //        return null;
+    //    }
 
-    /**
-     * Load U16 plane data from RAW file.
-     *
-     * @param planeIndex Zero based plane index.
-     * @return U16 array of image plane data.
-     */
-    protected int[] loadPlaneData(final int planeIndex) {
-        ImageU16 plane = loadPlane(planeIndex);
-
-        return (plane != null) ? plane.getData() : new int[0];
-    }
+    //    /**
+    //     * Load U16 plane data from RAW file.
+    //     *
+    //     * @param planeIndex Zero based plane index.
+    //     * @return U16 array of image plane data.
+    //     */
+    //    protected int[] loadPlaneData(final int planeIndex) {
+    //        ImageU16 plane = loadPlane(planeIndex);
+    //
+    //        return (plane != null) ? plane.getData() : new int[0];
+    //    }
 
 
     /**

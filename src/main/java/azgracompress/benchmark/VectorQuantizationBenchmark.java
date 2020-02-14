@@ -2,6 +2,7 @@ package azgracompress.benchmark;
 
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.*;
+import azgracompress.io.ConcretePlaneLoader;
 import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.vector.CodebookEntry;
 import azgracompress.quantization.vector.LBGResult;
@@ -16,10 +17,6 @@ import java.io.OutputStreamWriter;
 public class VectorQuantizationBenchmark extends BenchmarkBase {
 
     final static V2i DEFAULT_QVECTOR = new V2i(3, 3);
-
-    public VectorQuantizationBenchmark(String inputFile, String outputDirectory, int[] planes, V3i rawImageDims) {
-        super(inputFile, outputDirectory, planes, rawImageDims);
-    }
 
     public VectorQuantizationBenchmark(final ParsedCliOptions options) {
         super(options);
@@ -51,6 +48,14 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
         if (planes.length < 1) {
             return;
         }
+        ConcretePlaneLoader planeLoader = null;
+        try {
+            planeLoader = new ConcretePlaneLoader(options.getInputFileInfo());
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Unable to create SCIFIO reader.");
+            return;
+        }
         if (qVector.getY() > 1) {
             System.out.println("2D qVector");
         } else {
@@ -77,9 +82,11 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
             }
             System.out.println("Created quantizer from cache");
         } else if (hasReferencePlane) {
-            final ImageU16 plane = loadPlane(referencePlaneIndex);
-
-            if (plane == null) {
+            final ImageU16 plane;
+            try {
+                plane = planeLoader.loadPlaneU16(referencePlaneIndex);
+            } catch (IOException e) {
+                e.printStackTrace();
                 System.err.println("Failed to load reference plane data.");
                 return;
             }
@@ -93,11 +100,12 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
 
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
-            // NOTE(Moravec): Actual planeIndex is zero based.
 
-            final ImageU16 plane = loadPlane(planeIndex - 1);
-
-            if (plane == null) {
+            final ImageU16 plane;
+            try {
+                plane = planeLoader.loadPlaneU16(planeIndex);
+            } catch (IOException e) {
+                e.printStackTrace();
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
                 return;
             }

@@ -12,6 +12,8 @@ public class InputFileInfo {
      */
     private final String filePath;
 
+    private boolean isRAW = true;
+
     private V3i dimension;
 
     private boolean planeIndexSet = false;
@@ -75,5 +77,13 @@ public class InputFileInfo {
 
     public V2i getPlaneRange() {
         return planeRange;
+    }
+
+    public boolean isRAW() {
+        return isRAW;
+    }
+
+    public void setIsRaw(boolean RAW) {
+        isRAW = RAW;
     }
 }

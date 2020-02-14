@@ -2,9 +2,9 @@ package azgracompress.benchmark;
 
 import azgracompress.U16;
 import azgracompress.cli.ParsedCliOptions;
-import azgracompress.data.V3i;
 import azgracompress.de.DeException;
 import azgracompress.de.shade.ILShadeSolver;
+import azgracompress.io.ConcretePlaneLoader;
 import azgracompress.quantization.QTrainIteration;
 import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
@@ -18,13 +18,6 @@ import java.io.OutputStreamWriter;
 public class ScalarQuantizationBenchmark extends BenchmarkBase {
     private boolean useDiffEvolution = false;
 
-    public ScalarQuantizationBenchmark(final String inputFile,
-                                       final String outputDirectory,
-                                       final int[] planes,
-                                       final V3i rawImageDims) {
-        super(inputFile, outputDirectory, planes, rawImageDims);
-    }
-
     public ScalarQuantizationBenchmark(final ParsedCliOptions options) {
         super(options);
     }
@@ -32,12 +25,22 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
 
     @Override
     public void startBenchmark() {
+        ConcretePlaneLoader planeLoader = null;
+        try {
+            planeLoader = new ConcretePlaneLoader(options.getInputFileInfo());
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Unable to create SCIFIO reader.");
+            return;
+        }
+
         if (planes.length < 1) {
             return;
         }
         boolean dirCreated = new File(this.outputDirectory).mkdirs();
         System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
         ScalarQuantizer quantizer = null;
+
         if (hasCacheFolder) {
             System.out.println("Loading codebook from cache");
             QuantizationValueCache cache = new QuantizationValueCache(cacheFolder);
@@ -51,11 +54,16 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
             }
             System.out.println("Created quantizer from cache");
         } else if (hasReferencePlane) {
-            final int[] refPlaneData = loadPlaneData(referencePlaneIndex);
-            if (refPlaneData.length == 0) {
+            final int[] refPlaneData;
+
+            try {
+                refPlaneData = planeLoader.loadPlaneU16(referencePlaneIndex).getData();
+            } catch (IOException e) {
+                e.printStackTrace();
                 System.err.println("Failed to load reference plane data.");
                 return;
             }
+
             if (useDiffEvolution) {
                 quantizer = trainDifferentialEvolution(refPlaneData, codebookSize);
             } else {
@@ -67,7 +75,14 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
             // NOTE(Moravec): Actual planeIndex is zero based.
-            final int[] planeData = loadPlaneData(planeIndex);
+            final int[] planeData;
+            try {
+                planeData = planeLoader.loadPlaneU16(planeIndex).getData();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.err.println("Failed to load plane data.");
+                return;
+            }
             if (planeData.length == 0) {
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
                 return;
