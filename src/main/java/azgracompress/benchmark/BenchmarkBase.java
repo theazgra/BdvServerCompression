@@ -1,5 +1,6 @@
 package azgracompress.benchmark;
 
+import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
@@ -53,18 +54,19 @@ abstract class BenchmarkBase {
     }
 
     protected BenchmarkBase(final ParsedCliOptions options) {
-        this.inputFile = options.getInputFile();
+        final InputFileInfo ifi = options.getInputFileInfo();
+        this.inputFile = ifi.getFilePath();
         this.outputDirectory = options.getOutputFile();
-        this.rawImageDims = options.getImageDimension();
+        this.rawImageDims = ifi.getDimensions();
         this.hasReferencePlane = options.hasReferencePlaneIndex();
         this.referencePlaneIndex = options.getReferencePlaneIndex();
         this.codebookSize = (int) Math.pow(2, options.getBitsPerPixel());
 
-        if (options.hasPlaneIndexSet()) {
-            this.planes = new int[]{options.getPlaneIndex()};
-        } else if (options.hasPlaneRangeSet()) {
-            final int from = options.getFromPlaneIndex();
-            final int to = options.getToPlaneIndex();
+        if (ifi.isPlaneIndexSet()) {
+            this.planes = new int[]{ifi.getPlaneIndex()};
+        } else if (ifi.isPlaneRangeSet()) {
+            final int from = ifi.getPlaneRange().getX();
+            final int to = ifi.getPlaneRange().getY();
             final int count = to - from;
 
             this.planes = new int[count + 1];
@@ -72,7 +74,7 @@ abstract class BenchmarkBase {
                 this.planes[i] = from + i;
             }
         } else {
-            final int planeCount = options.getImageDimension().getZ();
+            final int planeCount = ifi.getDimensions().getZ();
             this.planes = new int[planeCount];
             for (int i = 0; i < planeCount; i++) {
                 this.planes[i] = i;

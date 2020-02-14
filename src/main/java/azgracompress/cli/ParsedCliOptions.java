@@ -4,6 +4,7 @@ import azgracompress.compression.CompressorDecompressorBase;
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.FileExtensions;
+import azgracompress.fileformat.FileType;
 import azgracompress.fileformat.QuantizationType;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.FilenameUtils;
@@ -18,16 +19,14 @@ public class ParsedCliOptions {
     private ProgramMethod method;
     private QuantizationType quantizationType;
 
-    private String inputFile;
+    private InputFileInfo inputFileInfo;
+
     private String outputFile;
     private String codebookCacheFolder = null;
 
     private int bitsPerPixel;
     private V2i vectorDimension = new V2i(0);
-    private V3i imageDimension = new V3i(0);
 
-    private boolean planeIndexSet = false;
-    private int planeIndex;
 
     private boolean refPlaneIndexSet = false;
     private int referencePlaneIndex = -1;
@@ -36,10 +35,6 @@ public class ParsedCliOptions {
 
     private boolean errorOccurred;
     private String error;
-
-    private boolean planeRangeSet = false;
-    private int fromPlaneIndex;
-    private int toPlaneIndex;
 
     private int workerCount = 1;
 
@@ -116,10 +111,35 @@ public class ParsedCliOptions {
         codebookCacheFolder = cmd.getOptionValue(CliConstants.CODEBOOK_CACHE_FOLDER_LONG, null);
 
         if (!errorOccurred) {
-            outputFile = cmd.getOptionValue(CliConstants.OUTPUT_LONG, getDefaultOutputFilePath(inputFile));
+            outputFile = cmd.getOptionValue(CliConstants.OUTPUT_LONG,
+                                            getDefaultOutputFilePath(inputFileInfo.getFilePath()));
         }
 
         error = errorBuilder.toString();
+    }
+
+    /**
+     * Get file type from file extension.
+     *
+     * @param path File path.
+     * @return File type.
+     */
+    private FileType getFileType(final String path) {
+        final String extension = FilenameUtils.getExtension(path).toLowerCase();
+        switch (extension) {
+            case FileExtensions.RAW: {
+                return FileType.RAW;
+            }
+            case FileExtensions.TIFF: {
+                return FileType.TIFF;
+            }
+            case FileExtensions.QCMP: {
+                return FileType.QCMP;
+            }
+            default: {
+                return FileType.Unsupported;
+            }
+        }
     }
 
     private void parseInputFilePart(StringBuilder errorBuilder, final String[] inputFileArguments) {
@@ -130,32 +150,27 @@ public class ParsedCliOptions {
             return;
         }
 
-        inputFile = inputFileArguments[0];
+        inputFileInfo = new InputFileInfo(getFileType(inputFileArguments[0]), inputFileArguments[0]);
 
         // Decompress and Inspect methods doesn't require additional file information.
         if ((method == ProgramMethod.Decompress) || (method == ProgramMethod.InspectFile)) {
             return;
         }
 
-        File inputFileInfo = new File(inputFile);
-
         // Check if input file exists.
-        if (!inputFileInfo.exists()) {
+        if (!new File(inputFileInfo.getFilePath()).exists()) {
             errorOccurred = true;
             errorBuilder.append("Input file doesn't exist.\n");
             return;
         }
 
-        final String extension = FilenameUtils.getExtension(inputFile).toLowerCase();
-        switch (extension) {
-            case FileExtensions.RAW: {
+        switch (inputFileInfo.getFileType()) {
+            case RAW:
                 parseRawFileArguments(errorBuilder, inputFileArguments);
-            }
-            break;
-            case FileExtensions.TIFF: {
+                break;
+            case TIFF:
                 parseTiffFileArguments(errorBuilder, inputFileArguments);
-            }
-            break;
+                break;
             default: {
                 errorOccurred = true;
                 errorBuilder.append("Unsupported input file type. Currently supporting RAW and TIFF files.\n");
@@ -208,9 +223,7 @@ public class ParsedCliOptions {
             final ParseResult<Integer> indexToResult = tryParseInt(toIndexString);
 
             if (indexFromResult.isSuccess() && indexToResult.isSuccess()) {
-                fromPlaneIndex = indexFromResult.getValue();
-                toPlaneIndex = indexToResult.getValue();
-                planeRangeSet = true;
+                inputFileInfo.setPlaneRange(new V2i(indexFromResult.getValue(), indexToResult.getValue()));
             } else {
                 errorOccurred = true;
                 errorBuilder.append("Plane range index is wrong. Expected format D-D, got: ").append(
@@ -220,8 +233,7 @@ public class ParsedCliOptions {
             // Here we parse single plane index option.
             final ParseResult<Integer> parseResult = tryParseInt(inputFileArguments[inputFileArgumentsOffset]);
             if (parseResult.isSuccess()) {
-                planeIndexSet = true;
-                planeIndex = parseResult.getValue();
+                inputFileInfo.setPlaneIndex(parseResult.getValue());
             } else {
                 errorOccurred = true;
                 errorBuilder.append("Failed to parse plane index option, expected integer, got: ")
@@ -254,7 +266,7 @@ public class ParsedCliOptions {
             final ParseResult<Integer> n1Result = tryParseInt(num1String);
             final ParseResult<Integer> n2Result = tryParseInt(secondPart);
             if (n1Result.isSuccess() && n2Result.isSuccess()) {
-                imageDimension = new V3i(n1Result.getValue(), n2Result.getValue(), 1);
+                inputFileInfo.setDimension(new V3i(n1Result.getValue(), n2Result.getValue(), 1));
             } else {
                 errorOccurred = true;
                 errorBuilder.append("Failed to parse image dimensions of format DxD, got: ");
@@ -269,7 +281,7 @@ public class ParsedCliOptions {
             final ParseResult<Integer> n3Result = tryParseInt(num3String);
 
             if (n1Result.isSuccess() && n2Result.isSuccess() && n3Result.isSuccess()) {
-                imageDimension = new V3i(n1Result.getValue(), n2Result.getValue(), n3Result.getValue());
+                inputFileInfo.setDimension(new V3i(n1Result.getValue(), n2Result.getValue(), n3Result.getValue()));
             } else {
                 errorOccurred = true;
                 errorBuilder.append("Failed to parse image dimensions of format DxDxD, got: ");
@@ -410,8 +422,8 @@ public class ParsedCliOptions {
         return quantizationType;
     }
 
-    public String getInputFile() {
-        return inputFile;
+    public InputFileInfo getInputFileInfo() {
+        return inputFileInfo;
     }
 
     public String getOutputFile() {
@@ -426,14 +438,6 @@ public class ParsedCliOptions {
         return vectorDimension;
     }
 
-    public V3i getImageDimension() {
-        return imageDimension;
-    }
-
-    public int getPlaneIndex() {
-        return planeIndex;
-    }
-
     public int getReferencePlaneIndex() {
         return referencePlaneIndex;
     }
@@ -446,28 +450,12 @@ public class ParsedCliOptions {
         return refPlaneIndexSet;
     }
 
-    public boolean hasPlaneIndexSet() {
-        return planeIndexSet;
-    }
-
-    public boolean hasErrorOccured() {
+    public boolean didErrorOccure() {
         return errorOccurred;
     }
 
     public String getError() {
         return error;
-    }
-
-    public boolean hasPlaneRangeSet() {
-        return planeRangeSet;
-    }
-
-    public int getFromPlaneIndex() {
-        return fromPlaneIndex;
-    }
-
-    public int getToPlaneIndex() {
-        return toPlaneIndex;
     }
 
     public int getWorkerCount() {
@@ -520,24 +508,24 @@ public class ParsedCliOptions {
 
         sb.append("BitsPerPixel: ").append(bitsPerPixel).append('\n');
         sb.append("Output: ").append(outputFile).append('\n');
-        sb.append("InputFile: ").append(inputFile).append('\n');
+        sb.append("InputFile: ").append(inputFileInfo.getFilePath()).append('\n');
         if (hasCodebookCacheFolder()) {
             sb.append("CodebookCacheFolder: ").append(codebookCacheFolder).append('\n');
         }
 
         if (hasQuantizationType(method)) {
-            sb.append("Input image dims: ").append(imageDimension.toString()).append('\n');
+            sb.append("Input image dims: ").append(inputFileInfo.getDimensions().toString()).append('\n');
         }
 
-        if (planeIndexSet) {
-            sb.append("PlaneIndex: ").append(planeIndex).append('\n');
+        if (inputFileInfo.isPlaneIndexSet()) {
+            sb.append("PlaneIndex: ").append(inputFileInfo.getPlaneIndex()).append('\n');
         }
         if (refPlaneIndexSet) {
             sb.append("ReferencePlaneIndex: ").append(referencePlaneIndex).append('\n');
         }
-        if (planeRangeSet) {
-            sb.append("FromPlaneIndex: ").append(fromPlaneIndex).append('\n');
-            sb.append("ToPlaneIndex: ").append(toPlaneIndex).append('\n');
+        if (inputFileInfo.isPlaneRangeSet()) {
+            sb.append("FromPlaneIndex: ").append(inputFileInfo.getPlaneRange().getX()).append('\n');
+            sb.append("ToPlaneIndex: ").append(inputFileInfo.getPlaneRange().getY()).append('\n');
         }
 
         sb.append("Verbose: ").append(verbose).append('\n');
@@ -546,18 +534,5 @@ public class ParsedCliOptions {
         return sb.toString();
     }
 
-    /**
-     * Get number of planes to be compressed.
-     *
-     * @return Number of planes for compression.
-     */
-    public int getNumberOfPlanes() {
-        if (hasPlaneIndexSet()) {
-            return 1;
-        } else if (hasPlaneRangeSet()) {
-            return ((toPlaneIndex + 1) - fromPlaneIndex);
-        } else {
-            return imageDimension.getZ();
-        }
-    }
+
 }

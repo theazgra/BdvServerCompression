@@ -60,7 +60,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         boolean validFile = true;
 
         QCMPFileHeader header = null;
-        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFile());
+        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFileInfo().getFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
             header = readQCMPFileHeader(dataInputStream);
         } catch (IOException ioEx) {
@@ -108,7 +108,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             logBuilder.append("Vector size Y:\t\t").append(header.getVectorSizeY()).append('\n');
             logBuilder.append("Vector size Z:\t\t").append(header.getVectorSizeZ()).append('\n');
 
-            final long fileSize = new File(options.getInputFile()).length();
+            final long fileSize = new File(options.getInputFileInfo().getFilePath()).length();
             final long dataSize = fileSize - QCMPFileHeader.QCMP_HEADER_SIZE;
             final IImageDecompressor decompressor = getImageDecompressor(header);
             if (decompressor != null) {
@@ -128,7 +128,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
 
     public boolean decompress() {
 
-        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFile());
+        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFileInfo().getFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
 
             final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
@@ -148,7 +148,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 return false;
             }
 
-            final long fileSize = new File(options.getInputFile()).length();
+            final long fileSize = new File(options.getInputFileInfo().getFilePath()).length();
             final long dataSize = fileSize - QCMPFileHeader.QCMP_HEADER_SIZE;
             final long expectedDataSize = imageDecompressor.getExpectedDataSize(header);
             if (dataSize != expectedDataSize) {

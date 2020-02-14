@@ -1,5 +1,6 @@
 package azgracompress.compression;
 
+import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
 
 public abstract class CompressorDecompressorBase {
@@ -14,11 +15,12 @@ public abstract class CompressorDecompressorBase {
     }
 
     protected int[] getPlaneIndicesForCompression() {
-        if (options.hasPlaneIndexSet()) {
-            return new int[]{options.getPlaneIndex()};
-        } else if (options.hasPlaneRangeSet()) {
-            final int from = options.getFromPlaneIndex();
-            final int to = options.getToPlaneIndex();
+        final InputFileInfo ifi = options.getInputFileInfo();
+        if (ifi.isPlaneIndexSet()) {
+            return new int[]{ifi.getPlaneIndex()};
+        } else if (ifi.isPlaneRangeSet()) {
+            final int from = ifi.getPlaneRange().getX();
+            final int to = ifi.getPlaneRange().getY();
             final int count = to - from;
 
             int[] indices = new int[count + 1];
@@ -27,7 +29,7 @@ public abstract class CompressorDecompressorBase {
             }
             return indices;
         } else {
-            return generateAllPlaneIndices(options.getImageDimension().getZ());
+            return generateAllPlaneIndices(ifi.getDimensions().getZ());
         }
     }
 

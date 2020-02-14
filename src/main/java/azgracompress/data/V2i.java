@@ -13,9 +13,7 @@ public class V2i {
         this(universalValue, universalValue);
     }
 
-    public int getX() {
-        return x;
-    }
+    public int getX() { return x; }
 
     public int getY() {
         return y;

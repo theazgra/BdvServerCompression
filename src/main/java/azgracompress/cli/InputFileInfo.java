@@ -30,23 +30,32 @@ public class InputFileInfo {
         this.filePath = filePath;
     }
 
-    public void setDimension(V3i dimension) {
+    /**
+     * Get number of selected planes to be compressed.
+     *
+     * @return Number of planes for compression.
+     */
+    public int getNumberOfPlanes() {
+        if (planeIndexSet) {
+            return 1;
+        } else if (planeRangeSet) {
+            return ((planeRange.getY() + 1) - planeRange.getX());
+        } else {
+            return dimension.getZ();
+        }
+    }
+
+    public void setDimension(final V3i dimension) {
         this.dimension = dimension;
     }
 
-    public void setPlaneIndexSet(boolean planeIndexSet) {
-        this.planeIndexSet = planeIndexSet;
-    }
-
-    public void setPlaneIndex(int planeIndex) {
+    public void setPlaneIndex(final int planeIndex) {
+        this.planeIndexSet = true;
         this.planeIndex = planeIndex;
     }
 
-    public void setPlaneRangeSet(boolean planeRangeSet) {
-        this.planeRangeSet = planeRangeSet;
-    }
-
-    public void setPlaneRange(V2i planeRange) {
+    public void setPlaneRange(final V2i planeRange) {
+        this.planeRangeSet = true;
         this.planeRange = planeRange;
     }
 
@@ -58,7 +67,7 @@ public class InputFileInfo {
         return filePath;
     }
 
-    public V3i getDimension() {
+    public V3i getDimensions() {
         return dimension;
     }
 

@@ -1,5 +1,6 @@
 package azgracompress.compression;
 
+import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Chunk2D;
@@ -68,7 +69,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     private VectorQuantizer loadQuantizerFromCache() throws ImageCompressionException {
         QuantizationValueCache cache = new QuantizationValueCache(options.getCodebookCacheFolder());
         try {
-            final CodebookEntry[] codebook = cache.readCachedValues(options.getInputFile(),
+            final CodebookEntry[] codebook = cache.readCachedValues(options.getInputFileInfo().getFilePath(),
                                                                     codebookSize,
                                                                     options.getVectorDimension().getX(),
                                                                     options.getVectorDimension().getY());
@@ -86,6 +87,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException When compress process fails.
      */
     public void compress(DataOutputStream compressStream) throws ImageCompressionException {
+        final InputFileInfo inputFileInfo = options.getInputFileInfo();
         Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.hasReferencePlaneIndex();
         VectorQuantizer quantizer = null;
@@ -100,8 +102,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             ImageU16 referencePlane = null;
             try {
-                referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
-                                                        options.getImageDimension(),
+                referencePlane = RawDataIO.loadImageU16(inputFileInfo.getFilePath(),
+                                                        inputFileInfo.getDimensions(),
                                                         options.getReferencePlaneIndex());
             } catch (Exception ex) {
                 throw new ImageCompressionException("Unable to load reference plane data.", ex);
@@ -123,8 +125,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             ImageU16 plane = null;
             try {
-                plane = RawDataIO.loadImageU16(options.getInputFile(),
-                                               options.getImageDimension(),
+                plane = RawDataIO.loadImageU16(inputFileInfo.getFilePath(),
+                                               inputFileInfo.getDimensions(),
                                                planeIndex);
             } catch (Exception ex) {
                 throw new ImageCompressionException("Unable to load plane data.", ex);
@@ -164,8 +166,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws IOException When reading fails.
      */
     private int[][] loadPlaneQuantizationVectors(final int planeIndex) throws IOException {
-        ImageU16 refPlane = RawDataIO.loadImageU16(options.getInputFile(),
-                                                   options.getImageDimension(),
+        ImageU16 refPlane = RawDataIO.loadImageU16(options.getInputFileInfo().getFilePath(),
+                                                   options.getInputFileInfo().getDimensions(),
                                                    planeIndex);
 
         return refPlane.toQuantizationVectors(options.getVectorDimension());
@@ -173,22 +175,23 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
     private int[][] loadConfiguredPlanesData() throws ImageCompressionException {
         final int vectorSize = options.getVectorDimension().getX() * options.getVectorDimension().getY();
+        final InputFileInfo ifi = options.getInputFileInfo();
         int[][] trainData = null;
         Stopwatch s = new Stopwatch();
         s.start();
-        if (options.hasPlaneIndexSet()) {
+        if (ifi.isPlaneIndexSet()) {
             Log("VQ: Loading single plane data.");
             try {
-                trainData = loadPlaneQuantizationVectors(options.getPlaneIndex());
+                trainData = loadPlaneQuantizationVectors(ifi.getPlaneIndex());
             } catch (IOException e) {
                 throw new ImageCompressionException("Failed to load reference image data.", e);
             }
         } else {
-            Log(options.hasPlaneRangeSet() ? "VQ: Loading plane range data." : "VQ: Loading all planes data.");
+            Log(ifi.isPlaneRangeSet() ? "VQ: Loading plane range data." : "VQ: Loading all planes data.");
             final int[] planeIndices = getPlaneIndicesForCompression();
 
             final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCountPerPlane(
-                    options.getImageDimension().toV2i(),
+                    ifi.getDimensions().toV2i(),
                     options.getVectorDimension());
             final int totalChunkCount = chunkCountPerPlane * planeIndices.length;
 
@@ -227,7 +230,9 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         Log("Saving cache file to %s", options.getOutputFile());
         QuantizationValueCache cache = new QuantizationValueCache(options.getOutputFile());
         try {
-            cache.saveQuantizationValues(options.getInputFile(), lbgResult.getCodebook(), options.getVectorDimension());
+            cache.saveQuantizationValues(options.getInputFileInfo().getFilePath(),
+                                         lbgResult.getCodebook(),
+                                         options.getVectorDimension());
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write cache.", e);
         }

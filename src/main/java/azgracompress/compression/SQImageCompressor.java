@@ -1,6 +1,7 @@
 package azgracompress.compression;
 
 import azgracompress.U16;
+import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.ImageU16;
@@ -65,7 +66,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     private ScalarQuantizer loadQuantizerFromCache() throws ImageCompressionException {
         QuantizationValueCache cache = new QuantizationValueCache(options.getCodebookCacheFolder());
         try {
-            final int[] quantizationValues = cache.readCachedValues(options.getInputFile(), codebookSize);
+            final int[] quantizationValues = cache.readCachedValues(options.getInputFileInfo().getFilePath(),
+                                                                    codebookSize);
             return new ScalarQuantizer(U16.Min, U16.Max, quantizationValues);
         } catch (IOException e) {
             throw new ImageCompressionException("Failed to read quantization values from cache file.", e);
@@ -79,6 +81,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException When compress process fails.
      */
     public void compress(DataOutputStream compressStream) throws ImageCompressionException {
+        final InputFileInfo inputFileInfo = options.getInputFileInfo();
         Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.hasReferencePlaneIndex();
 
@@ -93,8 +96,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             stopwatch.restart();
             ImageU16 referencePlane = null;
             try {
-                referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
-                                                        options.getImageDimension(),
+                referencePlane = RawDataIO.loadImageU16(inputFileInfo.getFilePath(),
+                                                        inputFileInfo.getDimensions(),
                                                         options.getReferencePlaneIndex());
             } catch (Exception ex) {
                 throw new ImageCompressionException("Unable to load reference plane data.", ex);
@@ -118,8 +121,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             ImageU16 plane = null;
 
             try {
-                plane = RawDataIO.loadImageU16(options.getInputFile(),
-                                               options.getImageDimension(),
+                plane = RawDataIO.loadImageU16(inputFileInfo.getFilePath(),
+                                               inputFileInfo.getDimensions(),
                                                planeIndex);
             } catch (Exception ex) {
                 throw new ImageCompressionException("Unable to load plane data.", ex);
@@ -148,21 +151,22 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     private int[] loadConfiguredPlanesData() throws ImageCompressionException {
+        final InputFileInfo inputFileInfo = options.getInputFileInfo();
         int[] trainData = null;
-        if (options.hasPlaneIndexSet()) {
+        if (inputFileInfo.isPlaneIndexSet()) {
             try {
                 Log("Loading single plane data.");
-                trainData = RawDataIO.loadImageU16(options.getInputFile(),
-                                                   options.getImageDimension(),
-                                                   options.getPlaneIndex()).getData();
+                trainData = RawDataIO.loadImageU16(inputFileInfo.getFilePath(),
+                                                   inputFileInfo.getDimensions(),
+                                                   inputFileInfo.getPlaneIndex()).getData();
             } catch (IOException e) {
                 throw new ImageCompressionException("Failed to load reference image data.", e);
             }
-        } else if (options.hasPlaneRangeSet()) {
+        } else if (inputFileInfo.isPlaneRangeSet()) {
             Log("Loading plane range data.");
             final int[] planes = getPlaneIndicesForCompression();
             try {
-                trainData = RawDataIO.loadPlanesData(options.getInputFile(), options.getImageDimension(), planes);
+                trainData = RawDataIO.loadPlanesData(inputFileInfo.getFilePath(), inputFileInfo.getDimensions(), planes);
             } catch (IOException e) {
                 e.printStackTrace();
                 throw new ImageCompressionException("Failed to load plane range data.", e);
@@ -170,7 +174,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         } else {
             Log("Loading all planes data.");
             try {
-                trainData = RawDataIO.loadAllPlanesData(options.getInputFile(), options.getImageDimension());
+                trainData = RawDataIO.loadAllPlanesData(inputFileInfo.getFilePath(), inputFileInfo.getDimensions());
             } catch (IOException e) {
                 throw new ImageCompressionException("Failed to load all planes data.", e);
             }
@@ -196,7 +200,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         Log(String.format("Saving cache file to %s", options.getOutputFile()));
         QuantizationValueCache cache = new QuantizationValueCache(options.getOutputFile());
         try {
-            cache.saveQuantizationValues(options.getInputFile(), qValues);
+            cache.saveQuantizationValues(options.getInputFileInfo().getFilePath(), qValues);
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write cache.", e);
         }
