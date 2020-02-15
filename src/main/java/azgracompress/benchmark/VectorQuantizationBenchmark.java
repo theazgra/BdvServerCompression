@@ -2,7 +2,8 @@ package azgracompress.benchmark;
 
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.*;
-import azgracompress.io.ConcretePlaneLoader;
+import azgracompress.io.IPlaneLoader;
+import azgracompress.io.PlaneLoaderFactory;
 import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.vector.CodebookEntry;
 import azgracompress.quantization.vector.LBGResult;
@@ -48,9 +49,9 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
         if (planes.length < 1) {
             return;
         }
-        ConcretePlaneLoader planeLoader = null;
+        IPlaneLoader planeLoader;
         try {
-            planeLoader = new ConcretePlaneLoader(options.getInputFileInfo());
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputFileInfo());
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Unable to create SCIFIO reader.");

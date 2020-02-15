@@ -5,7 +5,8 @@ import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.ImageU16;
-import azgracompress.io.ConcretePlaneLoader;
+import azgracompress.io.IPlaneLoader;
+import azgracompress.io.PlaneLoaderFactory;
 import azgracompress.io.OutBitStream;
 import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
@@ -85,9 +86,9 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.hasReferencePlaneIndex();
 
-        final ConcretePlaneLoader planeLoader;
+        final IPlaneLoader planeLoader;
         try {
-            planeLoader = new ConcretePlaneLoader(inputFileInfo);
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputFileInfo);
         } catch (Exception e) {
             throw new ImageCompressionException("Unable to create SCIFIO reader. " + e.getMessage());
         }
@@ -155,9 +156,9 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
 
     private int[] loadConfiguredPlanesData() throws ImageCompressionException {
         final InputFileInfo inputFileInfo = options.getInputFileInfo();
-        final ConcretePlaneLoader planeLoader;
+        final IPlaneLoader planeLoader;
         try {
-            planeLoader = new ConcretePlaneLoader(inputFileInfo);
+            planeLoader =  PlaneLoaderFactory.getPlaneLoaderForInputFile(inputFileInfo);
         } catch (Exception e) {
             throw new ImageCompressionException("Unable to create SCIFIO reader. " + e.getMessage());
         }

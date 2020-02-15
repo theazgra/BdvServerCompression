@@ -4,7 +4,8 @@ import azgracompress.U16;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.de.DeException;
 import azgracompress.de.shade.ILShadeSolver;
-import azgracompress.io.ConcretePlaneLoader;
+import azgracompress.io.IPlaneLoader;
+import azgracompress.io.PlaneLoaderFactory;
 import azgracompress.quantization.QTrainIteration;
 import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
@@ -25,9 +26,9 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
 
     @Override
     public void startBenchmark() {
-        ConcretePlaneLoader planeLoader = null;
+        IPlaneLoader planeLoader;
         try {
-            planeLoader = new ConcretePlaneLoader(options.getInputFileInfo());
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputFileInfo());
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Unable to create SCIFIO reader.");
