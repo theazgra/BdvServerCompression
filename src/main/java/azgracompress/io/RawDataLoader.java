@@ -50,19 +50,22 @@ public class RawDataLoader implements IPlaneLoader {
 
     @Override
     public int[] loadPlanesU16Data(int[] planes) throws IOException {
-        if (planes.length < 1)
+        if (planes.length < 1) {
             return new int[0];
+        } else if (planes.length == 1) {
+            return loadPlaneU16(planes[0]).getData();
+        }
 
         final int planeValueCount = inputFileInfo.getDimensions().getX() * inputFileInfo.getDimensions().getY();
         final long planeDataSize = 2 * (long) planeValueCount;
 
         final long totalValueCount = (long) planeValueCount * planes.length;
-        int[] values = new int[(int) totalValueCount];
-
 
         if (totalValueCount > (long) Integer.MAX_VALUE) {
             throw new IOException("Integer count is too big.");
         }
+
+        int[] values = new int[(int) totalValueCount];
 
         Arrays.sort(planes);
 
@@ -96,11 +99,12 @@ public class RawDataLoader implements IPlaneLoader {
     public int[] loadAllPlanesU16Data() throws IOException {
         final V3i imageDims = inputFileInfo.getDimensions();
         final long dataSize = (long) imageDims.getX() * (long) imageDims.getY() * (long) imageDims.getZ();
-        int[] values = new int[(int) dataSize];
 
         if (dataSize > (long) Integer.MAX_VALUE) {
             throw new IOException("RawFile size is too big.");
         }
+
+        int[] values = new int[(int) dataSize];
 
         try (FileInputStream fileStream = new FileInputStream(inputFileInfo.getFilePath());
              DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
