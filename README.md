@@ -1,6 +1,7 @@
 # DataCompressor usage
 
-**Right now only RAW 16-bit files are supported. Other types can be converted to 16-bit RAW file using [FIJI](https://imagej.net/Fiji).**
+**This branch support loading of 16-bit input files via SCIFIO readers. RAW files will be loaded as before,
+anything else will be loaded by SCIFIO.**
 
 Help output:
 ```
