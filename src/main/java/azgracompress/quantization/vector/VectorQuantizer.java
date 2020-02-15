@@ -2,6 +2,7 @@ package azgracompress.quantization.vector;
 
 public class VectorQuantizer {
 
+    private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
     private final CodebookEntry[] codebook;
     private final int vectorSize;
 
@@ -12,7 +13,7 @@ public class VectorQuantizer {
 
     public int[] quantize(final int[] dataVector) {
         assert (dataVector.length > 0 && dataVector.length % vectorSize == 0) : "Wrong vector size";
-        final CodebookEntry closestEntry = findClosestCodebookEntry(dataVector, VectorDistanceMetric.Euclidean);
+        final CodebookEntry closestEntry = findClosestCodebookEntry(dataVector, metric);
         return closestEntry.getVector();
     }
 
@@ -22,8 +23,7 @@ public class VectorQuantizer {
 
         if (workerCount == 1) {
             for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-                final CodebookEntry closestEntry = findClosestCodebookEntry(dataVectors[vectorIndex],
-                                                                            VectorDistanceMetric.Euclidean);
+                final CodebookEntry closestEntry = findClosestCodebookEntry(dataVectors[vectorIndex], metric);
                 result[vectorIndex] = closestEntry.getVector();
             }
         } else {
@@ -48,8 +48,7 @@ public class VectorQuantizer {
 
         if (maxWorkerCount == 1) {
             for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-                indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex],
-                                                                     VectorDistanceMetric.Euclidean);
+                indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
             }
         } else {
             // Cap the worker count on 8
@@ -63,8 +62,7 @@ public class VectorQuantizer {
 
                 workers[wId] = new Thread(() -> {
                     for (int vectorIndex = fromIndex; vectorIndex < toIndex; vectorIndex++) {
-                        indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex],
-                                                                             VectorDistanceMetric.Euclidean);
+                        indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
                     }
                 });
 
@@ -117,7 +115,7 @@ public class VectorQuantizer {
     }
 
     private CodebookEntry findClosestCodebookEntry(final int[] dataVector) {
-        return findClosestCodebookEntry(dataVector, VectorDistanceMetric.Euclidean);
+        return findClosestCodebookEntry(dataVector, metric);
     }
 
     private CodebookEntry findClosestCodebookEntry(final int[] dataVector, final VectorDistanceMetric metric) {
@@ -125,21 +123,58 @@ public class VectorQuantizer {
     }
 
     private int findClosestCodebookEntryIndex(final int[] dataVector, final VectorDistanceMetric metric) {
+        boolean closesIsZero = false;
         double minDist = Double.MAX_VALUE;
         int closestEntryIndex = 0;
-        final int codebookSize = codebook.length;
-        for (int i = 0; i < codebookSize; i++) {
-            final double dist = distanceBetweenVectors(dataVector, codebook[i].getVector(), metric);
+        for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
+
+
+            final double dist = distanceBetweenVectors(dataVector, codebook[entryIndex].getVector(), metric);
             if (dist < minDist) {
                 minDist = dist;
-                closestEntryIndex = i;
+                closestEntryIndex = entryIndex;
+                closesIsZero = isZeroVector(codebook[entryIndex].getVector());
             }
+        }
+
+        if (closesIsZero) {
+//            System.out.println("One of zero vectors.");
         }
         return closestEntryIndex;
     }
 
     public CodebookEntry[] getCodebook() {
         return codebook;
+    }
+
+    /**
+     * Check whether all vector elements are equal to 0.0
+     *
+     * @param vector Vector array.
+     * @return True if all elements are zeros.
+     */
+    public static boolean isZeroVector(final double[] vector) {
+        for (final double value : vector) {
+            if (value != 0.0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check whether all vector elements are equal to 0
+     *
+     * @param vector Vector array.
+     * @return True if all elements are zeros.
+     */
+    public static boolean isZeroVector(final int[] vector) {
+        for (final double value : vector) {
+            if (value != 0.0) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 

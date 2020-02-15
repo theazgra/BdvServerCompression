@@ -1,5 +1,7 @@
 # DataCompressor usage
 
+**Right now only RAW 16-bit files are supported. Other types can be converted to 16-bit RAW file using [FIJI](https://imagej.net/Fiji).**
+
 Help output:
 ```
 usage: azgracompress.DataCompressor [options] input
