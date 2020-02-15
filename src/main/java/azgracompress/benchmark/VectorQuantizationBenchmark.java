@@ -93,9 +93,7 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
 
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
-            // NOTE(Moravec): Actual planeIndex is zero based.
-
-            final ImageU16 plane = loadPlane(planeIndex - 1);
+            final ImageU16 plane = loadPlane(planeIndex);
 
             if (plane == null) {
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
