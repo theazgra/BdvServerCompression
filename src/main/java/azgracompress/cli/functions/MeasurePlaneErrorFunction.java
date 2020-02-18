@@ -1,7 +1,17 @@
 package azgracompress.cli.functions;
 
 import azgracompress.cli.CustomFunctionBase;
+import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.data.ImageU16;
+import azgracompress.data.V3i;
+import azgracompress.io.RawDataLoader;
+import azgracompress.utilities.Utils;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.Arrays;
 
 public class MeasurePlaneErrorFunction extends CustomFunctionBase {
     public MeasurePlaneErrorFunction(ParsedCliOptions options) {
@@ -81,7 +91,6 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
     }
 
     private boolean reportPlaneDifference(final String compressedFile, final String reportFile, final String compFile) {
-        final String referenceFile = compFile;
         final int workerCount = 8;
         final V3i dims = new V3i(1041, 996, 946);
         final int planePixelCount = dims.getX() * dims.getY();
@@ -92,6 +101,14 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
         //        ImageU16 differencePlane = null;
 
         PlaneError[] planeErrors = new PlaneError[dims.getZ()];
+
+        InputFileInfo refFileInfo = new InputFileInfo(compFile);
+        refFileInfo.setDimension(dims);
+        InputFileInfo compFileInfo = new InputFileInfo(compressedFile);
+        compFileInfo.setDimension(dims);
+
+        final RawDataLoader refPlaneloader = new RawDataLoader(refFileInfo);
+        final RawDataLoader compPlaneloader = new RawDataLoader(compFileInfo);
 
         Thread[] workers = new Thread[workerCount];
         final int workSize = dims.getZ() / workerCount;
@@ -105,8 +122,8 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
                 ImageU16 originalPlane, compressedPlane, differencePlane;
                 for (int planeIndex = fromIndex; planeIndex < toIndex; planeIndex++) {
                     try {
-                        originalPlane = RawDataIO.loadImageU16(referenceFile, dims, planeIndex);
-                        compressedPlane = RawDataIO.loadImageU16(compressedFile, dims, planeIndex);
+                        originalPlane = refPlaneloader.loadPlaneU16(planeIndex);
+                        compressedPlane = compPlaneloader.loadPlaneU16(planeIndex);
                     } catch (IOException e) {
                         e.printStackTrace();
                         break;
@@ -132,28 +149,6 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-
-        //        for (int planeIndex = 0; planeIndex < dims.getZ(); planeIndex++) {
-        //            try {
-        //                originalPlane = RawDataIO.loadImageU16(referenceFile, dims, planeIndex);
-        //                compressedPlane = RawDataIO.loadImageU16(compressedFile, dims, planeIndex);
-        //            } catch (IOException e) {
-        //                e.printStackTrace();
-        //                return true;
-        //            }
-        //
-        //
-        //            final int[] diffData = Utils.getDifference(originalPlane.getData(), compressedPlane.getData());
-        //            Utils.applyAbsFunction(diffData);
-        //
-        //
-        //            final double absDiffSum = Arrays.stream(diffData).mapToDouble(v -> v).sum();
-        //            final double meanPixelError = absDiffSum / (double) planePixelCount;
-        //
-        //            planeErrors[planeIndex] = new PlaneError(planeIndex, absDiffSum, meanPixelError);
-        //            //            System.out.println("Finished plane: " + planeIndex);
-        //        }
 
         try (FileOutputStream fos = new FileOutputStream(reportFile, false);
              OutputStreamWriter writer = new OutputStreamWriter(fos)) {
