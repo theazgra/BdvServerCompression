@@ -205,7 +205,6 @@ public class LloydMaxU16ScalarQuantization {
         ArrayList<QTrainIteration> solutionHistory = new ArrayList<>();
 
         recalculateBoundaryPoints();
-        //        recalculateCentroids();
         initializeCentroids();
 
         currentMse = getCurrentMse();
@@ -225,9 +224,6 @@ public class LloydMaxU16ScalarQuantization {
                 recalculateCentroids();
             }
 
-            // TODO(Moravec):   Check if we are improving MSE.
-            //                  Save the best centroids, the lowest MSE.
-
             currMAE = calculateMAE();
 
             prevMse = currentMse;
@@ -235,12 +231,6 @@ public class LloydMaxU16ScalarQuantization {
             mseImprovement = prevMse - currentMse;
 
             //            System.out.println(String.format("Improvement: %.4f", mseImprovement));
-
-            //            if ((prevMAE < currMAE) && (iteration != 0)) {
-            //                System.err.println(String.format(
-            //                        "MAE = +%.5f",
-            //                        currMAE - prevMAE));
-            //            }
 
             psnr = Utils.calculatePsnr(currentMse, U16.Max);
             solutionHistory.add(new QTrainIteration(++iteration, currentMse, currentMse, psnr, psnr));
@@ -253,23 +243,17 @@ public class LloydMaxU16ScalarQuantization {
                                                  psnr));
             }
 
-            //            if (mseImprovement < 1.0 && mseImprovement > 0.0005) {
-            //                System.out.println("----- low improvement " + mseImprovement);
-            //            }
-
             if (mseImprovement < 1.0) {
                 if ((++noImprovementCounter) >= PATIENCE) {
                     break;
                 }
-
             }
 
 
-        } while (true); //0.001 //0.0005// || currMAE > 1500//mseImprovement > 0.0005
+        } while (true);
         if (verbose) {
             System.out.println("\nFinished training.");
         }
-        System.out.println(String.format("Final MAE: %.4f after %d iterations", currMAE, iteration));
         return solutionHistory.toArray(new QTrainIteration[0]);
     }
 
