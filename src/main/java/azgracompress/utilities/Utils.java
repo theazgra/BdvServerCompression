@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
+
 public class Utils {
 
     public static double calculatePsnr(final double mse, final int signalMax) {
@@ -80,6 +81,22 @@ public class Utils {
         for (int i = 0; i < values.length; i++) {
             values[i] = Math.abs(values[i]);
         }
+    }
+
+
+    public static MinMaxResult<Integer> getMinAndMax(final int[] data) {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+
+        for (int i = 0; i < data.length; i++) {
+            if (data[i] < min) {
+                min = data[i];
+            }
+            if (data[i] > max) {
+                max = data[i];
+            }
+        }
+        return new MinMaxResult<Integer>(min, max);
     }
 
 
