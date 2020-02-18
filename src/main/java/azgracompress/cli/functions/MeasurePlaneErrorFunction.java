@@ -22,7 +22,7 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
 
     @Override
     public boolean run() {
-        final int channel = 1;
+        final int channel = 0;
         assert (channel == 0 || channel == 1);
         final String comp_file = channel == 0 ? COMP_FILE_ch0 : COMP_FILE_ch1;
         final String method = "sq";

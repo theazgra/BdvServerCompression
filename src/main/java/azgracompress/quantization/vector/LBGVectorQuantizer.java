@@ -24,12 +24,12 @@ public class LBGVectorQuantizer {
         assert (vectors.length > 0) : "No training vectors provided";
 
         this.vectorSize = vectors[0].length;
-        final int[][] vectorsCopy = new int[vectors.length][vectorSize];
-        System.arraycopy(vectors, 0, vectorsCopy, 0, vectors.length);
+//        final int[][] vectorsCopy = new int[vectors.length][vectorSize];
+//        System.arraycopy(vectors, 0, vectorsCopy, 0, vectors.length);
 
         this.trainingVectors = new TrainingVector[vectors.length];
-        for (int i = 0; i < vectorsCopy.length; i++) {
-            trainingVectors[i] = new TrainingVector(vectorsCopy[i]);
+        for (int i = 0; i < vectors.length; i++) {
+            trainingVectors[i] = new TrainingVector(Arrays.copyOf(vectors[i],vectors[i].length));
         }
 
         this.codebookSize = codebookSize;
