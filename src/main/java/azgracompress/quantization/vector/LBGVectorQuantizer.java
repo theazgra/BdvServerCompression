@@ -317,7 +317,7 @@ public class LBGVectorQuantizer {
                 }
 
                 // We always want to carry zero vector to next iteration.
-                if (VectorQuantizer.isZeroVector(entryToSplit.getVector())) {
+                if (isZeroVector(entryToSplit.getVector())) {
                     // Use zero vector in next iteration.
                     newCodebook[cbIndex++] = entryToSplit;
 
@@ -333,8 +333,10 @@ public class LBGVectorQuantizer {
                     continue;
                 }
 
-                if (VectorQuantizer.isZeroVector(prtV)) {
-                    // Zero perturbation vector can't create two different entries.
+                // Zero perturbation vector can't create two different entries.
+                // Also vector with values from range [0.0;1.0) is considered as 'zero' vector,
+                // because those values would be rounded down by the cast to integer.
+                if (isPotentialZeroVector(prtV)) {
                     // The original entry is going to be moved to the next codebook with the new
                     // random entry, which will get improved in the LBG algorithm.
                     final int[] randomEntryValues = generateRandomVector();
@@ -724,14 +726,7 @@ public class LBGVectorQuantizer {
 
         // NOTE(Moravec): We can't select random training vector, because zero vector would create another zero vector.
         for (int i = 0; i < codebook.length; i++) {
-            if ((codebook[i].getVectorCount() > largestEntrySize) && !VectorQuantizer.isZeroVector(codebook[i].getVector())) {
-                /*
-
-                if (VectorQuantizer.isZeroVector(codebook[i].getVector())) {
-                    System.out.println("ZERO vector is biggest??");
-                }
-                */
-
+            if ((codebook[i].getVectorCount() > largestEntrySize) && !isZeroVector(codebook[i].getVector())) {
                 largestEntryIndex = i;
                 largestEntrySize = codebook[i].getVectorCount();
             }
@@ -750,13 +745,7 @@ public class LBGVectorQuantizer {
 
         // Choose random trainingVector from biggest partition and set it as new entry.
         int randomIndex = new Random().nextInt(largestPartitionVectors.length);
-        //        int counter = 0;
-        //        while (VectorQuantizer.isZeroVector(largestPartitionVectors[randomIndex].getVector())) {
-        //            randomIndex = new Random().nextInt(largestPartitionVectors.length);
-        //            ++counter;
-        //            //            System.out.println("x");
-        //        }
-        //        System.out.println("FOund non zero random after " + counter);
+
         // Plane the new entry on the index of the empty entry.
         codebook[emptyEntryIndex] = new LearningCodebookEntry(largestPartitionVectors[randomIndex].getVector());
 
@@ -832,7 +821,6 @@ public class LBGVectorQuantizer {
 
         int index = 0;
 
-        //        TrainingVector[] vectors = new TrainingVector[vectorCount];
         int count = 0;
         for (final TrainingVector trainingVector : trainingVectors) {
             if (trainingVector.getEntryIndex() == entryIndex) {
@@ -840,17 +828,43 @@ public class LBGVectorQuantizer {
             }
         }
         TrainingVector[] vectors = new TrainingVector[count];
-        //        if (count > vectorCount) {
-        //            System.err.println(String.format(
-        //                    "WARNING: got more training vectors than vectorCount! DIFF: %d",
-        //                    count - vectorCount));
-        //        }
+
         for (final TrainingVector trainingVector : trainingVectors) {
             if (trainingVector.getEntryIndex() == entryIndex) {
                 vectors[index++] = trainingVector;
             }
         }
         return vectors;
+    }
+
+    /**
+     * Check whether all vector elements less than 1.0 .
+     *
+     * @param vector Vector array.
+     * @return True if all elements less than 1.0.
+     */
+    private boolean isPotentialZeroVector(final double[] vector) {
+        for (final double value : vector) {
+            if (value >= 1.0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check whether all vector elements are equal to 0
+     *
+     * @param vector Vector array.
+     * @return True if all elements are zeros.
+     */
+    private boolean isZeroVector(final int[] vector) {
+        for (final double value : vector) {
+            if (value != 0.0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
