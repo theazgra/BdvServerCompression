@@ -123,7 +123,6 @@ public class VectorQuantizer {
     }
 
     private int findClosestCodebookEntryIndex(final int[] dataVector, final VectorDistanceMetric metric) {
-        boolean closesIsZero = false;
         double minDist = Double.MAX_VALUE;
         int closestEntryIndex = 0;
         for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
@@ -133,48 +132,14 @@ public class VectorQuantizer {
             if (dist < minDist) {
                 minDist = dist;
                 closestEntryIndex = entryIndex;
-                closesIsZero = isZeroVector(codebook[entryIndex].getVector());
             }
         }
 
-        if (closesIsZero) {
-//            System.out.println("One of zero vectors.");
-        }
         return closestEntryIndex;
     }
 
     public CodebookEntry[] getCodebook() {
         return codebook;
-    }
-
-    /**
-     * Check whether all vector elements are equal to 0.0
-     *
-     * @param vector Vector array.
-     * @return True if all elements are zeros.
-     */
-    public static boolean isZeroVector(final double[] vector) {
-        for (final double value : vector) {
-            if (value != 0.0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Check whether all vector elements are equal to 0
-     *
-     * @param vector Vector array.
-     * @return True if all elements are zeros.
-     */
-    public static boolean isZeroVector(final int[] vector) {
-        for (final double value : vector) {
-            if (value != 0.0) {
-                return false;
-            }
-        }
-        return true;
     }
 }
 

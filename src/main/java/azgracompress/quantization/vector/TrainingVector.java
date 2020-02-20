@@ -1,5 +1,7 @@
 package azgracompress.quantization.vector;
 
+import java.util.Arrays;
+
 /**
  * Training image vector.
  */
@@ -11,6 +13,10 @@ public class TrainingVector {
 
     public TrainingVector(int[] vector) {
         this.vector = vector;
+    }
+
+    public boolean vectorEqual(final TrainingVector other) {
+        return Arrays.equals(vector, other.vector);
     }
 
     /**
