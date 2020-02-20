@@ -434,8 +434,17 @@ public class ParsedCliOptions {
             case Decompress:
                 sb.append("Decompress\n");
                 break;
+            case Benchmark:
+                sb.append("Benchmark\n");
+                break;
+            case TrainCodebook:
+                sb.append("TrainCodebook\n");
+                break;
             case PrintHelp:
                 sb.append("PrintHelp\n");
+                break;
+            case CustomFunction:
+                sb.append("CustomFunction\n");
                 break;
             case InspectFile:
                 sb.append("InspectFile\n");
