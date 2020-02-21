@@ -27,13 +27,13 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
 
         boolean result = true;
 
-        result &= runPlaneDifferenceForAllBits(0, "sq", "middle_frame", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(0, "vq3x3", "middle_frame", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(0, "vq9x1", "middle_frame", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(0, "sq", "file_codebook", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(0, "vq3x3", "file_codebook", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(0, "vq9x1", "file_codebook", "D:\\biology\\tiff_data\\quantized");
 
-//        result &= runPlaneDifferenceForAllBits(1, "sq", "middle_frame", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(1, "vq3x3", "middle_frame", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(1, "vq9x1", "middle_frame", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(1, "sq", "file_codebook", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(1, "vq3x3", "file_codebook", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(1, "vq9x1", "file_codebook", "D:\\biology\\tiff_data\\quantized");
 
         //        result &= reportPlaneDifference(
         //                String.format("%s\\%s\\fused_tp_10_ch_%d_16bit_%s_cb4.raw",

@@ -46,7 +46,16 @@ public class ParsedCliOptions {
         parseCLI(cmdInput);
     }
 
+    private String removeQCMPFileExtension(final String originalPath) {
+        if (originalPath.toUpperCase().endsWith(CompressorDecompressorBase.EXTENSION)) {
+            return originalPath.substring(0, originalPath.length() - CompressorDecompressorBase.EXTENSION.length());
+        }
+        return originalPath;
+    }
+
+
     private String getDefaultOutputFilePath(final String inputPath) {
+        // No default output file for custom function.
         if (method == ProgramMethod.CustomFunction)
             return "";
 
@@ -54,28 +63,34 @@ public class ParsedCliOptions {
         final File outputFile = new File(Paths.get("").toAbsolutePath().toString(), inputFile.getName());
 
 
+        // Default value is current directory with input file name.
         String defaultValue = outputFile.getAbsolutePath();
 
         switch (method) {
             case Compress: {
+                // Add compressed file extension.
                 defaultValue += CompressorDecompressorBase.EXTENSION;
             }
             break;
             case Decompress: {
-                if (defaultValue.toUpperCase().endsWith(CompressorDecompressorBase.EXTENSION)) {
-                    defaultValue = defaultValue.substring(0,
-                                                          defaultValue.length() - CompressorDecompressorBase.EXTENSION.length());
-                }
+                // If it ends with QCMP file extension remove the extension.
+                defaultValue = removeQCMPFileExtension(defaultValue);
+                // Remove the old extension and add RAW extension
+                defaultValue = defaultValue.replace(FilenameUtils.getExtension(defaultValue),
+                                                    CompressorDecompressorBase.RAW_EXTENSION_NO_DOT);
+
             }
             break;
             case Benchmark: {
                 defaultValue = new File(inputFile.getParent(), "benchmark").getAbsolutePath();
             }
             break;
-            case PrintHelp:
-                break;
             case InspectFile:
                 defaultValue += ".txt";
+                break;
+            case TrainCodebook:
+            case PrintHelp:
+            case CustomFunction:
                 break;
         }
 

@@ -5,6 +5,7 @@ import azgracompress.cli.ParsedCliOptions;
 
 public abstract class CompressorDecompressorBase {
     public static final String EXTENSION = ".QCMP";
+    public static final String RAW_EXTENSION_NO_DOT = "raw";
 
     protected final ParsedCliOptions options;
     protected final int codebookSize;
