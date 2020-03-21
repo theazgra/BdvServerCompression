@@ -31,7 +31,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
                                                                                    codebookSize,
                                                                                    options.getWorkerCount());
         lloydMax.train(false);
-        return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCentroids());
+        return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCodebook());
     }
 
     /**
@@ -65,8 +65,10 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     private ScalarQuantizer loadQuantizerFromCache() throws ImageCompressionException {
         QuantizationValueCache cache = new QuantizationValueCache(options.getCodebookCacheFolder());
         try {
-            final int[] quantizationValues = cache.readCachedValues(options.getInputFile(), codebookSize);
-            return new ScalarQuantizer(U16.Min, U16.Max, quantizationValues);
+            final int[] quantizationValues = cache.readCachedValues(options.getInputFileInfo().getFilePath(),
+                                                                    codebookSize);
+            // TODO(Moravec): FIXME the null value.
+            return new ScalarQuantizer(U16.Min, U16.Max, null);
         } catch (IOException e) {
             throw new ImageCompressionException("Failed to read quantization values from cache file.", e);
         }

@@ -2,9 +2,8 @@ package azgracompress.benchmark;
 
 import azgracompress.U16;
 import azgracompress.cli.ParsedCliOptions;
-import azgracompress.data.V3i;
-import azgracompress.de.DeException;
-import azgracompress.de.shade.ILShadeSolver;
+import azgracompress.io.IPlaneLoader;
+import azgracompress.io.PlaneLoaderFactory;
 import azgracompress.quantization.QTrainIteration;
 import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
@@ -43,7 +42,8 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
             QuantizationValueCache cache = new QuantizationValueCache(cacheFolder);
             try {
                 final int[] quantizationValues = cache.readCachedValues(inputFile, codebookSize);
-                quantizer = new ScalarQuantizer(U16.Min, U16.Max, quantizationValues);
+                // TODO(Moravec): FIXME!
+                quantizer = null;//new ScalarQuantizer(U16.Min, U16.Max, quantizationValues);
             } catch (IOException e) {
                 System.err.println("Failed to read quantization values from cache file.");
                 e.printStackTrace();
@@ -57,7 +57,8 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                 return;
             }
             if (useDiffEvolution) {
-                quantizer = trainDifferentialEvolution(refPlaneData, codebookSize);
+                assert (false) : "DE is depracated";
+                quantizer = null;
             } else {
                 quantizer = trainLloydMaxQuantizer(refPlaneData, codebookSize);
             }
@@ -75,8 +76,10 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
 
 
             if (!hasGeneralQuantizer) {
+
                 if (useDiffEvolution) {
-                    quantizer = trainDifferentialEvolution(planeData, codebookSize);
+                    assert (false) : "DE is depracated";
+                    quantizer = null;
                 } else {
                     quantizer = trainLloydMaxQuantizer(planeData, codebookSize);
                 }
@@ -136,22 +139,23 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
 
         //saveQTrainLog(String.format("p%d_cb_%d_lloyd.csv", planeIndex, codebookSize), trainingReport);
 
-        return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCentroids());
+        // TODO(Moravec): FIXME
+        return new ScalarQuantizer(U16.Min, U16.Max, null);//lloydMax.getCentroids());
     }
 
-    private ScalarQuantizer trainDifferentialEvolution(final int[] data,
-                                                       final int codebookSize) {
-        ILShadeSolver ilshade = new ILShadeSolver(codebookSize, 100, 2000, 15);
-        ilshade.setTrainingData(data);
-
-        try {
-            ilshade.train();
-        } catch (DeException deEx) {
-            deEx.printStackTrace();
-            return null;
-        }
-        return new ScalarQuantizer(U16.Min, U16.Max, ilshade.getBestSolution().getAttributes());
-    }
+    //    private ScalarQuantizer trainDifferentialEvolution(final int[] data,
+    //                                                       final int codebookSize) {
+    //        ILShadeSolver ilshade = new ILShadeSolver(codebookSize, 100, 2000, 15);
+    //        ilshade.setTrainingData(data);
+    //
+    //        try {
+    //            ilshade.train();
+    //        } catch (DeException deEx) {
+    //            deEx.printStackTrace();
+    //            return null;
+    //        }
+    //        return new ScalarQuantizer(U16.Min, U16.Max, ilshade.getBestSolution().getAttributes());
+    //    }
 
 
     public boolean isUseDiffEvolution() {

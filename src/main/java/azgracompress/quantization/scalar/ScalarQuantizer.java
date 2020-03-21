@@ -3,12 +3,12 @@ package azgracompress.quantization.scalar;
 public class ScalarQuantizer {
     private final int min;
     private final int max;
-    private int[] centroids;
+    private final ScalarQuantizationCodebook codebook;
     private int[] boundaryPoints;
 
-    public ScalarQuantizer(final int min, final int max, final int[] centroids) {
-        this.centroids = centroids;
-        boundaryPoints = new int[centroids.length + 1];
+    public ScalarQuantizer(final int min, final int max, final ScalarQuantizationCodebook codebook) {
+        this.codebook = codebook;
+        boundaryPoints = new int[codebook.getCodebookSize() + 1];
         this.min = min;
         this.max = max;
 
@@ -63,14 +63,15 @@ public class ScalarQuantizer {
 
     private void calculateBoundaryPoints() {
         boundaryPoints[0] = min;
-        boundaryPoints[centroids.length] = max;
+        boundaryPoints[codebook.getCodebookSize()] = max;
+        final int[] centroids = codebook.getCentroids();
         for (int j = 1; j < centroids.length; j++) {
-            boundaryPoints[j] = (this.centroids[j] + this.centroids[j - 1]) / 2;
+            boundaryPoints[j] = (centroids[j] + centroids[j - 1]) / 2;
         }
     }
 
     public int quantizeIndex(final int value) {
-        for (int intervalId = 1; intervalId <= centroids.length; intervalId++) {
+        for (int intervalId = 1; intervalId <= codebook.getCodebookSize(); intervalId++) {
             if ((value >= boundaryPoints[intervalId - 1]) && (value <= boundaryPoints[intervalId])) {
                 return (intervalId - 1);
             }
@@ -79,7 +80,7 @@ public class ScalarQuantizer {
     }
 
     public int quantize(final int value) {
-        return centroids[quantizeIndex(value)];
+        return codebook.getCentroids()[quantizeIndex(value)];
     }
 
     public double getMse(final int[] data) {
@@ -93,6 +94,6 @@ public class ScalarQuantizer {
     }
 
     public int[] getCentroids() {
-        return centroids;
+        return codebook.getCentroids();
     }
 }

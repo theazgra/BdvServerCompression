@@ -5,6 +5,9 @@ import azgracompress.quantization.vector.CodebookEntry;
 
 import java.io.*;
 
+// TODO(Moravec):   If we want to use Huffman codes we have to save additional information with the codebook.
+//                  This information can be probability or the absolute frequencies of codebook indices.
+
 public class QuantizationValueCache {
 
     private final String cacheFolder;

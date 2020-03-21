@@ -7,6 +7,7 @@ import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.Utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 
 public class LloydMaxU16ScalarQuantization {
@@ -15,9 +16,11 @@ public class LloydMaxU16ScalarQuantization {
 
     private int dataMin;
     private int dataMax;
-    private int dataSpan;
+
+    private long[] frequencies;
     private int[] centroids;
     private int[] boundaryPoints;
+
     private double[] pdf;
 
     private final int workerCount;
@@ -35,6 +38,7 @@ public class LloydMaxU16ScalarQuantization {
     }
 
     private void initialize() {
+        frequencies = new long[codebookSize];
         centroids = new int[codebookSize];
 
         boundaryPoints = new int[codebookSize + 1];
@@ -42,7 +46,7 @@ public class LloydMaxU16ScalarQuantization {
         MinMaxResult<Integer> minMax = Utils.getMinAndMax(trainingData);
         dataMin = minMax.getMin();
         dataMax = minMax.getMax();
-        dataSpan = dataMax - dataMin;
+        final int dataSpan = dataMax - dataMin;
         centroids[0] = dataMin;
 
         boundaryPoints[0] = dataMin;
@@ -59,8 +63,8 @@ public class LloydMaxU16ScalarQuantization {
         Stopwatch s = new Stopwatch();
         s.start();
 
-        for (int i = 0; i < trainingData.length; i++) {
-            pdf[trainingData[i]] += 1.0;
+        for (final int trainingDatum : trainingData) {
+            pdf[trainingDatum] += 1.0;
         }
 
         s.stop();
@@ -120,24 +124,23 @@ public class LloydMaxU16ScalarQuantization {
     public int quantize(final int value) {
         for (int intervalId = 1; intervalId <= codebookSize; intervalId++) {
             if ((value >= boundaryPoints[intervalId - 1]) && (value <= boundaryPoints[intervalId])) {
+                ++frequencies[intervalId - 1];
                 return centroids[intervalId - 1];
             }
         }
         throw new RuntimeException("Value couldn't be quantized!");
     }
 
-    private double calculateMAE() {
-        double mae = 0.0;
-        for (final int trainingDatum : trainingData) {
-            int quantizedValue = quantize(trainingDatum);
-            mae += Math.abs((double) trainingDatum - (double) quantizedValue);
-        }
-        return (mae / (double) trainingData.length);
+    /**
+     * Reset the frequencies array to zeros.
+     */
+    private void resetFrequencies() {
+        Arrays.fill(frequencies, 0);
     }
-
 
     private double getCurrentMse() {
         double mse = 0.0;
+        resetFrequencies();
 
         Stopwatch s = new Stopwatch();
         s.start();
@@ -163,6 +166,7 @@ public class LloydMaxU16ScalarQuantization {
             try {
                 for (int wId = 0; wId < workerCount; wId++) {
                     workers[wId].join();
+                    addWorkerFrequencies(runnables[wId].getFrequencies());
                     mse += runnables[wId].getMse();
                 }
             } catch (InterruptedException e) {
@@ -182,6 +186,13 @@ public class LloydMaxU16ScalarQuantization {
         mse /= (double) trainingData.length;
 
         return mse;
+    }
+
+    private void addWorkerFrequencies(final long[] workerFrequencies) {
+        assert (frequencies.length == workerFrequencies.length) : "Frequency array length mismatch.";
+        for (int i = 0; i < frequencies.length; i++) {
+            frequencies[i] += workerFrequencies[i];
+        }
     }
 
     public QTrainIteration[] train(final boolean shouldBeVerbose) {
@@ -224,21 +235,15 @@ public class LloydMaxU16ScalarQuantization {
                 recalculateCentroids();
             }
 
-            currMAE = calculateMAE();
-
             prevMse = currentMse;
             currentMse = getCurrentMse();
             mseImprovement = prevMse - currentMse;
 
-            //            System.out.println(String.format("Improvement: %.4f", mseImprovement));
-
             psnr = Utils.calculatePsnr(currentMse, U16.Max);
             solutionHistory.add(new QTrainIteration(++iteration, currentMse, currentMse, psnr, psnr));
-            //            dist = (prevMse - currentMse) / currentMse;
 
             if (verbose) {
-                System.out.println(String.format("Current MAE: %.4f MSE: %.4f PSNR: %.4f dB",
-                                                 currMAE,
+                System.out.println(String.format("Current MSE: %.4f PSNR: %.4f dB",
                                                  currentMse,
                                                  psnr));
             }
@@ -259,6 +264,10 @@ public class LloydMaxU16ScalarQuantization {
 
     public int[] getCentroids() {
         return centroids;
+    }
+
+    public ScalarQuantizationCodebook getCodebook() {
+        return new ScalarQuantizationCodebook(centroids, frequencies);
     }
 }
 
