@@ -4,6 +4,7 @@ import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.huffman.Huffman;
+import azgracompress.huffman.HuffmanNode;
 import azgracompress.io.InBitStream;
 import azgracompress.quantization.scalar.ScalarQuantizationCodebook;
 import azgracompress.utilities.Stopwatch;
@@ -39,17 +40,26 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         // Quantization value count.
         final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
 
-        // Total codebook size in bytes.
-        long codebookDataSize = (2 * codebookSize) * (header.isCodebookPerPlane() ? header.getImageSizeZ() : 1);
+        // Total codebook size in bytes. Also symbol frequencies for Huffman.
+        long codebookDataSize = ((2 * codebookSize) + (LONG_BYTES * codebookSize)) *
+                (header.isCodebookPerPlane() ? header.getImageSizeZ() : 1);
 
-        // Data size of single plane indices.
-        final long planeIndicesDataSize =
-                (long) Math.ceil(((header.getImageSizeX() * header.getImageSizeY()) * header.getBitsPerPixel()) / 8.0);
+        // Indices are encoded using huffman. Plane data size is written in the header.
+        long[] planeDataSizes = header.getPlaneDataSizes();
+        long totalPlaneDataSize = 0;
+        for (final long planeDataSize : planeDataSizes) {
+            totalPlaneDataSize += planeDataSize;
+        }
 
-        // All planes data size.
-        final long allPlaneIndicesDataSize = planeIndicesDataSize * header.getImageSizeZ();
+        //        // Data size of single plane indices.
+        //        final long planeIndicesDataSize =
+        //                (long) Math.ceil(((header.getImageSizeX() * header.getImageSizeY()) * header
+        //                .getBitsPerPixel()) / 8.0);
+        //
+        //        // All planes data size.
+        //        final long allPlaneIndicesDataSize = planeIndicesDataSize * header.getImageSizeZ();
 
-        return (codebookDataSize + allPlaneIndicesDataSize);
+        return (codebookDataSize + totalPlaneDataSize);
     }
 
     @Override
@@ -89,17 +99,24 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
 
             Log(String.format("Decompressing plane %d...", planeIndex));
             byte[] decompressedPlaneData = null;
+            final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (InBitStream inBitStream = new InBitStream(compressedStream,
                                                            header.getBitsPerPixel(),
-                                                           planeIndicesDataSize)) {
+                                                           planeDataSize)) {
                 inBitStream.readToBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
-                final int[] indices = inBitStream.readNValues(planePixelCount);
 
                 int[] decompressedValues = new int[planePixelCount];
-                for (int i = 0; i < planePixelCount; i++) {
-                    decompressedValues[i] = quantizationValues[indices[i]];
+                for (int pixel = 0; pixel < planePixelCount; pixel++) {
+                    HuffmanNode currentHuffmanNode = huffman.getRoot();
+                    boolean bit;
+                    while (!currentHuffmanNode.isLeaf()) {
+                        bit = inBitStream.readBit();
+                        currentHuffmanNode = currentHuffmanNode.traverse(bit);
+                    }
+                    decompressedValues[pixel] = quantizationValues[currentHuffmanNode.getSymbol()];
                 }
+
                 decompressedPlaneData =
                         TypeConverter.unsignedShortArrayToByteArray(decompressedValues, false);
 

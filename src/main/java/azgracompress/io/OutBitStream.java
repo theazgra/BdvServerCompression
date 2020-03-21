@@ -14,6 +14,8 @@ public class OutBitStream implements AutoCloseable {
 
     private final int bitsPerValue;
 
+    private long bytesWritten = 0;
+
     public OutBitStream(OutputStream outputStream, final int bitsPerValue, final int bufferSize) {
         outStream = outputStream;
 
@@ -31,6 +33,7 @@ public class OutBitStream implements AutoCloseable {
      */
     private void flushBuffer() throws IOException {
         outStream.write(buffer, 0, bufferPosition);
+        bytesWritten += bufferPosition;
         bufferPosition = 0;
     }
 
@@ -107,5 +110,15 @@ public class OutBitStream implements AutoCloseable {
     @Override
     public void close() throws Exception {
         flush();
+    }
+
+    /**
+     * Get the number of bytes written to this stream so far.
+     *
+     * @return Bytes written.
+     */
+    public long getBytesWritten() {
+        // Bytes written to the underlying stream + bytes count in this stream buffer.
+        return bytesWritten + bufferPosition + ((bitBufferSize > 0) ? 1 : 0);
     }
 }

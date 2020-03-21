@@ -90,7 +90,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      */
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
         Stopwatch stopwatch = new Stopwatch();
-        long[] planeDataSizes = new long[options.getImageDimension().getZ()];
+
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.hasReferencePlaneIndex();
 
         ScalarQuantizer quantizer = null;
@@ -126,6 +126,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression();
+        long[] planeDataSizes = new long[planeIndices.length];
+        int planeCounter = 0;
         for (final int planeIndex : planeIndices) {
             stopwatch.restart();
             Log(String.format("Loading plane %d.", planeIndex));
@@ -148,20 +150,38 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
                 huffman = new Huffman(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
                 huffman.buildHuffmanTree();
             }
+
             assert (quantizer != null) : "Scalar Quantizer wasn't initialized.";
             assert (huffman != null) : "Huffman wasn't initialized.";
 
             Log("Compressing plane...");
             final int[] indices = quantizer.quantizeIntoIndices(plane.getData(), 1);
 
+//            ////////////////////////
+//            for (int i = 0; i < indices.length; i++) {
+//                final boolean[] huffmanCode = huffman.getCode(indices[i]);
+//                HuffmanNode currentHuffmanNode = huffman.getRoot();
+//                boolean bit;
+//                int index = 0;
+//                while (!currentHuffmanNode.isLeaf()) {
+//                    bit = huffmanCode[index++];
+//                    currentHuffmanNode = currentHuffmanNode.traverse(bit);
+//                }
+//                assert (indices[i] == currentHuffmanNode.getSymbol());
+//            }
+//            ////////////////////////////////
+
+
             try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
                 for (final int index : indices) {
                     outBitStream.write(huffman.getCode(index));
                 }
+                planeDataSizes[planeCounter++] = outBitStream.getBytesWritten();
                 //outBitStream.write(indices);
             } catch (Exception ex) {
                 throw new ImageCompressionException("Unable to write indices to OutBitStream.", ex);
             }
+
             // TODO: Fill plane data size
             stopwatch.stop();
             Log("Plane time: " + stopwatch.getElapsedTimeString());

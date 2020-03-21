@@ -3,6 +3,7 @@ package azgracompress.compression;
 import azgracompress.cli.ParsedCliOptions;
 
 public abstract class CompressorDecompressorBase {
+    public static final int LONG_BYTES = 8;
     public static final String EXTENSION = ".QCMP";
 
     protected final ParsedCliOptions options;

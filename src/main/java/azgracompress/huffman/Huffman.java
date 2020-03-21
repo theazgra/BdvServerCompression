@@ -1,56 +1,11 @@
 package azgracompress.huffman;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 
 public class Huffman {
-
-    class Node implements Comparable<Node> {
-        private int symbol = -1;
-        private long symbolFrequency = -1;
-
-        private boolean bit;
-        private boolean leaf = false;
-        private double probability = 0.0;
-
-        final Node subNodeA;
-        final Node subNodeB;
-
-        public Node(final int symbol, final double probability, final long frequency) {
-            this.symbol = symbol;
-            this.probability = probability;
-            this.symbolFrequency = frequency;
-            subNodeA = null;
-            subNodeB = null;
-            this.leaf = true;
-        }
-
-        public Node(final double probability, Node parentA, Node parentB) {
-            this.probability = probability;
-            this.subNodeA = parentA;
-            this.subNodeB = parentB;
-        }
-
-        Node traverse(final boolean bit) {
-            if (subNodeA != null && subNodeA.bit == bit)
-                return subNodeA;
-            if (subNodeB != null && subNodeB.bit == bit)
-                return subNodeB;
-
-            assert (false) : "Corrupted huffman tree";
-            return null;
-        }
-
-        @Override
-        public int compareTo(@NotNull Huffman.Node otherNode) {
-            return Double.compare(probability, otherNode.probability);
-        }
-    }
-
-    Node root = null;
+    HuffmanNode root = null;
     HashMap<Integer, boolean[]> symbolCodes;
     final int[] symbols;
     final long[] symbolFrequencies;
@@ -62,20 +17,26 @@ public class Huffman {
     }
 
     public void buildHuffmanTree() {
-        PriorityQueue<Node> queue = buildPriorityQueue();
+        PriorityQueue<HuffmanNode> queue = buildPriorityQueue();
 
 
         while (queue.size() != 1) {
-            final Node parentA = queue.poll();
-            final Node parentB = queue.poll();
-            assert (parentA.probability <= parentB.probability);
+            final HuffmanNode parentA = queue.poll();
+            final HuffmanNode parentB = queue.poll();
+            if (!(parentA.getProbability() <= parentB.getProbability())) {
+                System.err.println(String.format("Parent A prob: %.6f\nParent B prob: %.6f",
+                                                 parentA.getProbability(),
+                                                 parentB.getProbability()));
+                assert (parentA.getProbability() <= parentB.getProbability());
+            }
             assert (parentA != null && parentB != null);
 
-            parentA.bit = true;
-            parentB.bit = false;
 
-            final double mergedProbabilities = parentA.probability + parentB.probability;
-            final Node mergedNode = new Node(mergedProbabilities, parentA, parentB);
+            parentA.setBit(1);
+            parentB.setBit(0);
+
+            final double mergedProbabilities = parentA.getProbability() + parentB.getProbability();
+            final HuffmanNode mergedNode = new HuffmanNode(mergedProbabilities, parentA, parentB);
             queue.add(mergedNode);
         }
         root = queue.poll();
@@ -88,10 +49,11 @@ public class Huffman {
         traverseSymbolCodes(root, new ArrayList<Boolean>());
     }
 
-    private void traverseSymbolCodes(Node currentNode, ArrayList<Boolean> currentCode) {
+    private void traverseSymbolCodes(HuffmanNode currentNode, ArrayList<Boolean> currentCode) {
         boolean inLeaf = true;
-        if (!currentNode.leaf) {
-            currentCode.add(currentNode.bit);
+        final int bit = currentNode.getBit();
+        if (bit != -1) {
+            currentCode.add(bit == 1);
         }
 
         if (currentNode.subNodeA != null) {
@@ -106,28 +68,29 @@ public class Huffman {
         }
 
         if (inLeaf) {
-            assert (currentNode.leaf);
+            assert (currentNode.isLeaf());
+            //currentNode.setIsLeaf(true);
 
             boolean[] finalSymbolCode = new boolean[currentCode.size()];
             for (int i = 0; i < finalSymbolCode.length; i++) {
                 finalSymbolCode[i] = currentCode.get(i);
             }
-            symbolCodes.put(currentNode.symbol, finalSymbolCode);
+            symbolCodes.put(currentNode.getSymbol(), finalSymbolCode);
         }
 
     }
 
-    private PriorityQueue<Node> buildPriorityQueue() {
+    private PriorityQueue<HuffmanNode> buildPriorityQueue() {
         double totalFrequency = 0.0;
         for (final long symbolFrequency : symbolFrequencies) {
             totalFrequency += symbolFrequency;
         }
 
-        PriorityQueue<Node> queue = new PriorityQueue<>(symbols.length);
+        PriorityQueue<HuffmanNode> queue = new PriorityQueue<>(symbols.length);
 
         for (int sIndex = 0; sIndex < symbols.length; sIndex++) {
             final double symbolProbability = (double) symbolFrequencies[sIndex] / totalFrequency;
-            queue.add(new Node(symbols[sIndex], symbolProbability, symbolFrequencies[sIndex]));
+            queue.add(new HuffmanNode(symbols[sIndex], symbolProbability, symbolFrequencies[sIndex]));
         }
 
         return queue;
@@ -138,7 +101,7 @@ public class Huffman {
         return symbolCodes.get(symbol);
     }
 
-    public Node getRoot() {
+    public HuffmanNode getRoot() {
         return root;
     }
 }

@@ -109,8 +109,10 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             logBuilder.append("Vector size Z:\t\t").append(header.getVectorSizeZ()).append('\n');
 
             final long fileSize = new File(options.getInputFile()).length();
-            final long dataSize = fileSize - QCMPFileHeader.QCMP_HEADER_SIZE;
+            final long dataSize = fileSize - header.getHeaderSize();
+
             final IImageDecompressor decompressor = getImageDecompressor(header);
+
             if (decompressor != null) {
                 final long expectedDataSize = decompressor.getExpectedDataSize(header);
                 validFile = (dataSize == expectedDataSize);
@@ -149,7 +151,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             }
 
             final long fileSize = new File(options.getInputFile()).length();
-            final long dataSize = fileSize - QCMPFileHeader.QCMP_HEADER_SIZE;
+            final long dataSize = fileSize - header.getHeaderSize();
             final long expectedDataSize = imageDecompressor.getExpectedDataSize(header);
             if (dataSize != expectedDataSize) {
                 System.err.println("Invalid file size.");
