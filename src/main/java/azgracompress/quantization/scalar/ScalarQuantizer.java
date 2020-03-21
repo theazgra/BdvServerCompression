@@ -93,7 +93,7 @@ public class ScalarQuantizer {
         return mse;
     }
 
-    public int[] getCentroids() {
-        return codebook.getCentroids();
+    public ScalarQuantizationCodebook getCodebook() {
+        return codebook;
     }
 }

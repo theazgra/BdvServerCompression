@@ -62,8 +62,13 @@ public class OutBitStream implements AutoCloseable {
      * @param bit True for 1
      */
     private void writeBit(final int bit) throws IOException {
+        writeBit(bit > 0);
+    }
+
+    private void writeBit(final boolean bit) throws IOException {
         ++bitBufferSize;
-        if (bit > 0) {
+
+        if (bit) {
             bitBuffer |= (1 << (8 - bitBufferSize));
         }
 
@@ -76,10 +81,14 @@ public class OutBitStream implements AutoCloseable {
         int bit;
 
         for (int shift = 0; shift < bitsPerValue; shift++) {
-
             bit = (value & (1 << shift));
+            writeBit(bit);
+        }
+    }
 
-            //bit = (value & (1 << (31 - shift)));
+
+    public void write(final boolean[] bits) throws IOException {
+        for (final boolean bit : bits) {
             writeBit(bit);
         }
     }
@@ -92,6 +101,7 @@ public class OutBitStream implements AutoCloseable {
 
     /**
      * Flush the bitsteam on close.
+     *
      * @throws Exception when flush fails.
      */
     @Override

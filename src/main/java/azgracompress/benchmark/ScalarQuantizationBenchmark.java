@@ -2,8 +2,7 @@ package azgracompress.benchmark;
 
 import azgracompress.U16;
 import azgracompress.cli.ParsedCliOptions;
-import azgracompress.io.IPlaneLoader;
-import azgracompress.io.PlaneLoaderFactory;
+import azgracompress.data.V3i;
 import azgracompress.quantization.QTrainIteration;
 import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;

@@ -13,6 +13,14 @@ public abstract class CompressorDecompressorBase {
         this.codebookSize = (int) Math.pow(2, this.options.getBitsPerPixel());
     }
 
+    protected int[] createHuffmanSymbols() {
+        int[] symbols = new int[codebookSize];
+        for (int i = 0; i < codebookSize; i++) {
+            symbols[i] = i;
+        }
+        return symbols;
+    }
+
     protected int[] getPlaneIndicesForCompression() {
         if (options.hasPlaneIndexSet()) {
             return new int[]{options.getPlaneIndex()};

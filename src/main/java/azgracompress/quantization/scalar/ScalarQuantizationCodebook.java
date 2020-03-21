@@ -28,7 +28,7 @@ public class ScalarQuantizationCodebook {
         return centroids;
     }
 
-    public long[] getIndicesFrequency() {
+    public long[] getSymbolFrequencies() {
         return indexFrequencies;
     }
 
