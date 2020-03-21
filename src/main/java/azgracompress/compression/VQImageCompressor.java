@@ -85,7 +85,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @param compressStream Stream to which compressed data will be written.
      * @throws ImageCompressionException When compress process fails.
      */
-    public void compress(DataOutputStream compressStream) throws ImageCompressionException {
+    public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
+        long[] planeDataSizes = new long[options.getImageDimension().getZ()];
         Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.hasReferencePlaneIndex();
         VectorQuantizer quantizer = null;
@@ -149,10 +150,12 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             } catch (Exception ex) {
                 throw new ImageCompressionException("Unable to write indices to OutBitStream.", ex);
             }
+            // TODO: Fill plane data size
             stopwatch.stop();
             Log("Plane time: " + stopwatch.getElapsedTimeString());
             Log(String.format("Finished processing of plane %d.", planeIndex));
         }
+        return planeDataSizes;
     }
 
 

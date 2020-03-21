@@ -88,8 +88,9 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      * @param compressStream Stream to which compressed data will be written.
      * @throws ImageCompressionException When compress process fails.
      */
-    public void compress(DataOutputStream compressStream) throws ImageCompressionException {
+    public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
         Stopwatch stopwatch = new Stopwatch();
+        long[] planeDataSizes = new long[options.getImageDimension().getZ()];
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.hasReferencePlaneIndex();
 
         ScalarQuantizer quantizer = null;
@@ -161,10 +162,12 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             } catch (Exception ex) {
                 throw new ImageCompressionException("Unable to write indices to OutBitStream.", ex);
             }
+            // TODO: Fill plane data size
             stopwatch.stop();
             Log("Plane time: " + stopwatch.getElapsedTimeString());
             Log(String.format("Finished processing of plane %d", planeIndex));
         }
+        return planeDataSizes;
     }
 
     private int[] loadConfiguredPlanesData() throws ImageCompressionException {

@@ -3,7 +3,9 @@ package azgracompress.compression;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.fileformat.QCMPFileHeader;
+import azgracompress.huffman.Huffman;
 import azgracompress.io.InBitStream;
+import azgracompress.quantization.scalar.ScalarQuantizationCodebook;
 import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.TypeConverter;
 
@@ -16,17 +18,20 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         super(options);
     }
 
-    private int[] readScalarQuantizationValues(DataInputStream compressedStream,
-                                               final int n) throws ImageDecompressionException {
-        int[] quantizationValues = new int[n];
+    private ScalarQuantizationCodebook readScalarQuantizationValues(DataInputStream compressedStream) throws ImageDecompressionException {
+        int[] quantizationValues = new int[codebookSize];
+        long[] symbolFrequencies = new long[codebookSize];
         try {
-            for (int i = 0; i < n; i++) {
+            for (int i = 0; i < codebookSize; i++) {
                 quantizationValues[i] = compressedStream.readUnsignedShort();
+            }
+            for (int i = 0; i < codebookSize; i++) {
+                symbolFrequencies[i] = compressedStream.readLong();
             }
         } catch (IOException ioEx) {
             throw new ImageDecompressionException("Unable to read quantization values from compressed stream.", ioEx);
         }
-        return quantizationValues;
+        return new ScalarQuantizationCodebook(quantizationValues, symbolFrequencies);
     }
 
     @Override
@@ -51,6 +56,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
     public void decompress(DataInputStream compressedStream,
                            DataOutputStream decompressStream,
                            QCMPFileHeader header) throws ImageDecompressionException {
+
+        final int[] huffmanSymbols = createHuffmanSymbols();
         final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
         final int planeCountForDecompression = header.getImageSizeZ();
 
@@ -58,10 +65,13 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         final int planeIndicesDataSize = (int) Math.ceil((planePixelCount * header.getBitsPerPixel()) / 8.0);
 
         int[] quantizationValues = null;
+        Huffman huffman = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
             Log("Loading reference codebook...");
-            quantizationValues = readScalarQuantizationValues(compressedStream, codebookSize);
+            huffman = null;
+            // TODO(Moravec): Handle loading of Huffman.
+            //quantizationValues = readScalarQuantizationValues(compressedStream, codebookSize);
         }
 
         Stopwatch stopwatch = new Stopwatch();
@@ -69,9 +79,13 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             stopwatch.restart();
             if (header.isCodebookPerPlane()) {
                 Log("Loading plane codebook...");
-                quantizationValues = readScalarQuantizationValues(compressedStream, codebookSize);
+                ScalarQuantizationCodebook codebook = readScalarQuantizationValues(compressedStream);
+                quantizationValues = codebook.getCentroids();
+                huffman = new Huffman(huffmanSymbols, codebook.getSymbolFrequencies());
+                huffman.buildHuffmanTree();
             }
             assert (quantizationValues != null);
+            assert (huffman != null);
 
             Log(String.format("Decompressing plane %d...", planeIndex));
             byte[] decompressedPlaneData = null;

@@ -69,6 +69,12 @@ public class QCMPFileHeader {
         outputStream.writeShort(vectorSizeX);
         outputStream.writeShort(vectorSizeY);
         outputStream.writeShort(vectorSizeZ);
+
+
+        // NOTE(Moravec): Allocate space for plane data sizes. Offset: 23.
+        for (int i = 0; i < imageSizeZ; i++) {
+            outputStream.writeInt(0x0);
+        }
     }
 
     public boolean readHeader(DataInputStream inputStream) throws IOException {

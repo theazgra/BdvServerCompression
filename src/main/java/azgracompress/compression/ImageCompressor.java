@@ -4,12 +4,11 @@ import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.fileformat.QCMPFileHeader;
 
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 
 public class ImageCompressor extends CompressorDecompressorBase {
 
+    final int PLANE_DATA_SIZES_OFFSET = 23;
     private final int codebookSize;
 
     public ImageCompressor(ParsedCliOptions options) {
@@ -67,18 +66,19 @@ public class ImageCompressor extends CompressorDecompressorBase {
             return false;
         }
 
+        long[] planeDataSizes = null;
+
         try (FileOutputStream fos = new FileOutputStream(options.getOutputFile(), false);
              DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(fos, 8192))) {
 
             final QCMPFileHeader header = createHeader();
             header.writeHeader(compressStream);
 
-            imageCompressor.compress(compressStream);
+            planeDataSizes = imageCompressor.compress(compressStream);
 
             if (options.isVerbose()) {
                 reportCompressionRatio(header, compressStream.size());
             }
-
         } catch (ImageCompressionException ex) {
             System.err.println(ex.getMessage());
             return false;
@@ -86,9 +86,35 @@ public class ImageCompressor extends CompressorDecompressorBase {
             e.printStackTrace();
             return false;
         }
+
+        if (planeDataSizes == null) {
+            System.err.println("Plane data sizes are unknown!");
+            return false;
+        }
+
+        try (RandomAccessFile raf = new RandomAccessFile(options.getOutputFile(), "rw")) {
+            raf.seek(PLANE_DATA_SIZES_OFFSET);
+            writePlaneDataSizes(raf, planeDataSizes);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+
         return true;
     }
 
+    /**
+     * Write plane data size to compressed file.
+     *
+     * @param outStream      Compressed file stream.
+     * @param planeDataSizes Written compressed plane sizes.
+     * @throws IOException when fails to write plane data size.
+     */
+    private void writePlaneDataSizes(RandomAccessFile outStream, final long[] planeDataSizes) throws IOException {
+        for (final long planeDataSize : planeDataSizes) {
+            outStream.writeInt((int) planeDataSize);
+        }
+    }
 
     /**
      * Create QCMPFile header for compressed file.
