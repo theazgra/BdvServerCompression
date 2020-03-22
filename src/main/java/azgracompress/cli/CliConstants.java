@@ -51,8 +51,8 @@ public class CliConstants {
     public static final String VECTOR_QUANTIZATION_SHORT = "vq";
     public static final String VECTOR_QUANTIZATION_LONG = "vector-quantization";
 
-    public static final String REFERENCE_PLANE_SHORT = "rp";
-    public static final String REFERENCE_PLANE_LONG = "reference-plane";
+    public static final String USE_MIDDLE_PLANE_SHORT = "md";
+    public static final String USE_MIDDLE_PLANE_LONG = "middle-plane";
 
     @NotNull
     public static Options getOptions() {
@@ -105,10 +105,10 @@ public class CliConstants {
         options.addOptionGroup(compressionMethodGroup);
         options.addOption(CliConstants.BITS_SHORT, CliConstants.BITS_LONG, true, "Bit count per pixel [Default 8]");
 
-        options.addOption(CliConstants.REFERENCE_PLANE_SHORT,
-                          CliConstants.REFERENCE_PLANE_LONG,
-                          true,
-                          "Reference plane index");
+        options.addOption(CliConstants.USE_MIDDLE_PLANE_SHORT,
+                          CliConstants.USE_MIDDLE_PLANE_LONG,
+                          false,
+                          "Use middle plane for codebook creation");
 
         options.addOption(new Option(CliConstants.VERBOSE_SHORT,
                                      CliConstants.VERBOSE_LONG,

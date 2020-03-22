@@ -76,19 +76,20 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
                 return;
             }
             System.out.println("Created quantizer from cache");
-        } else if (hasReferencePlane) {
-            final ImageU16 plane = loadPlane(referencePlaneIndex);
+        } else if (useMiddlePlane) {
+            final int middlePlaneIndex = rawImageDims.getZ() / 2;
+            final ImageU16 middlePlane = loadPlane(middlePlaneIndex);
 
-            if (plane == null) {
-                System.err.println("Failed to load reference plane data.");
+            if (middlePlane == null) {
+                System.err.println("Failed to load middle plane data.");
                 return;
             }
 
-            final int[][] refPlaneData = getPlaneVectors(plane, qVector);
+            final int[][] refPlaneData = getPlaneVectors(middlePlane, qVector);
             LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData, codebookSize, workerCount);
             final LBGResult vqResult = vqInitializer.findOptimalCodebook();
             quantizer = new VectorQuantizer(vqResult.getCodebook());
-            System.out.println("Created reference quantizer.");
+            System.out.println("Created quantizer from middle plane.");
         }
 
         for (final int planeIndex : planes) {

@@ -102,7 +102,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         int[][] quantizationVectors = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
-            Log("Loading reference codebook...");
+            Log("Loading codebook from cache...");
             quantizationVectors = readCodebookVectors(compressedStream, codebookSize, vectorSize);
         }
 

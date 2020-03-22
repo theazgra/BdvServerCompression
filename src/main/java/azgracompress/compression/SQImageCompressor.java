@@ -90,9 +90,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      */
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
         Stopwatch stopwatch = new Stopwatch();
-
-        final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.hasReferencePlaneIndex();
-
+        final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.shouldUseMiddlePlane();
         ScalarQuantizer quantizer = null;
         Huffman huffman = null;
         final int[] huffmanSymbols = createHuffmanSymbols();
@@ -102,27 +100,27 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             quantizer = loadQuantizerFromCache();
             Log("Cached quantizer created.");
             writeCodebookToOutputStream(quantizer, compressStream);
-        } else if (options.hasReferencePlaneIndex()) {
-            // TODO(Moravec): Reference plane will be deprecated in favor of 'middle' plane.
+        } else if (options.shouldUseMiddlePlane()) {
             stopwatch.restart();
-            ImageU16 referencePlane = null;
+            ImageU16 middlePlane = null;
+            final int middlePlaneIndex = getMiddlePlaneIndex();
             try {
-                referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
-                                                        options.getImageDimension(),
-                                                        options.getReferencePlaneIndex());
+                middlePlane = RawDataIO.loadImageU16(options.getInputFile(),
+                                                     options.getImageDimension(),
+                                                     getMiddlePlaneIndex());
                 // TODO(Moravec): Create huffman.
             } catch (Exception ex) {
-                throw new ImageCompressionException("Unable to load reference plane data.", ex);
+                throw new ImageCompressionException("Unable to load plane data.", ex);
             }
 
 
-            Log(String.format("Training scalar quantizer from reference plane %d.", options.getReferencePlaneIndex()));
-            quantizer = trainScalarQuantizerFromData(referencePlane.getData());
+            Log(String.format("Training scalar quantizer from middle plane %d.", middlePlaneIndex));
+            quantizer = trainScalarQuantizerFromData(middlePlane.getData());
             stopwatch.stop();
 
             writeCodebookToOutputStream(quantizer, compressStream);
 
-            Log("Reference codebook created in: " + stopwatch.getElapsedTimeString());
+            Log("Middle plane codebook created in: " + stopwatch.getElapsedTimeString());
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression();
@@ -157,19 +155,19 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             Log("Compressing plane...");
             final int[] indices = quantizer.quantizeIntoIndices(plane.getData(), 1);
 
-//            ////////////////////////
-//            for (int i = 0; i < indices.length; i++) {
-//                final boolean[] huffmanCode = huffman.getCode(indices[i]);
-//                HuffmanNode currentHuffmanNode = huffman.getRoot();
-//                boolean bit;
-//                int index = 0;
-//                while (!currentHuffmanNode.isLeaf()) {
-//                    bit = huffmanCode[index++];
-//                    currentHuffmanNode = currentHuffmanNode.traverse(bit);
-//                }
-//                assert (indices[i] == currentHuffmanNode.getSymbol());
-//            }
-//            ////////////////////////////////
+            //            ////////////////////////
+            //            for (int i = 0; i < indices.length; i++) {
+            //                final boolean[] huffmanCode = huffman.getCode(indices[i]);
+            //                HuffmanNode currentHuffmanNode = huffman.getRoot();
+            //                boolean bit;
+            //                int index = 0;
+            //                while (!currentHuffmanNode.isLeaf()) {
+            //                    bit = huffmanCode[index++];
+            //                    currentHuffmanNode = currentHuffmanNode.traverse(bit);
+            //                }
+            //                assert (indices[i] == currentHuffmanNode.getSymbol());
+            //            }
+            //            ////////////////////////////////
 
 
             try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
@@ -199,7 +197,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
                                                    options.getImageDimension(),
                                                    options.getPlaneIndex()).getData();
             } catch (IOException e) {
-                throw new ImageCompressionException("Failed to load reference image data.", e);
+                throw new ImageCompressionException("Failed to load plane data.", e);
             }
         } else if (options.hasPlaneRangeSet()) {
             Log("Loading plane range data.");

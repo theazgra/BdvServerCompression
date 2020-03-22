@@ -78,9 +78,9 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         Huffman huffman = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
-            Log("Loading reference codebook...");
             huffman = null;
             // TODO(Moravec): Handle loading of Huffman.
+            Log("Loading codebook from cache...");
             //quantizationValues = readScalarQuantizationValues(compressedStream, codebookSize);
         }
 

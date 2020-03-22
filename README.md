@@ -13,7 +13,7 @@ usage: azgracompress.DataCompressor [options] input
  -h,--help                         Print help
  -i,--inspect                      Inspect the compressed file
  -o,--output <arg>                 Custom output file
- -rp,--reference-plane <arg>       Reference plane index
+ -mp,--middle-plane                Use middle plane for codebook training.
  -sq,--scalar-quantization         Use scalar quantization.
  -tcb,--train-codebook             Train codebook and save learned
                                    codebook to cache file.
@@ -39,9 +39,9 @@ usage: azgracompress.DataCompressor [options] input
 - QT is required
 - Set the bits per pixel using `-b` or `--bits` and integer value from 1 to 8. Codebook size is equal to (*2^bits*).
 - Normally the codebook is created for each image plane separately, if one wants to use general codebook for all planes, these are the options:
-  - Set the reference plane index using `-rp` or `--reference-plane`. Reference plane is used to create codebook for all planes.
+  - Set the middle plane index using `-mp` or `--middle-plane`. Middle plane is used to create codebook for all planes.
   - Set the cache folder by `cbc` or `--codebook-cache`, quantizer will look for cached codebook of given file and codebook size.
-- For input file info seee Input File section
+- For input file info see Input File section
 
 ### Decompress
 - Use with `-d` or `--decompress`
@@ -50,7 +50,7 @@ usage: azgracompress.DataCompressor [options] input
 
 ### Inspect
 - Use with `-i` or `--inspect` 
-- Inspect the compressed file. Read compressed file header are write the informations from that header.
+- Inspect the compressed file. Read compressed file header are write the information from that header.
 
 ### Train codebook
 - Use with `-tcb` or `--train-codebook`

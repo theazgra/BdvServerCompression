@@ -23,8 +23,7 @@ abstract class BenchmarkBase {
     protected final int[] planes;
     protected final V3i rawImageDims;
 
-    protected final boolean hasReferencePlane;
-    protected final int referencePlaneIndex;
+    protected final boolean useMiddlePlane;
     protected final int codebookSize;
     protected final boolean hasCacheFolder;
     protected final String cacheFolder;
@@ -41,8 +40,7 @@ abstract class BenchmarkBase {
         this.planes = planes;
         this.rawImageDims = rawImageDims;
 
-        hasReferencePlane = false;
-        referencePlaneIndex = -1;
+        useMiddlePlane = false;
         codebookSize = 256;
 
         hasCacheFolder = false;
@@ -56,8 +54,7 @@ abstract class BenchmarkBase {
         this.inputFile = options.getInputFile();
         this.outputDirectory = options.getOutputFile();
         this.rawImageDims = options.getImageDimension();
-        this.hasReferencePlane = options.hasReferencePlaneIndex();
-        this.referencePlaneIndex = options.getReferencePlaneIndex();
+        this.useMiddlePlane = options.shouldUseMiddlePlane();
         this.codebookSize = (int) Math.pow(2, options.getBitsPerPixel());
 
         if (options.hasPlaneIndexSet()) {
@@ -81,7 +78,7 @@ abstract class BenchmarkBase {
 
         hasCacheFolder = options.hasCodebookCacheFolder();
         cacheFolder = options.getCodebookCacheFolder();
-        hasGeneralQuantizer = hasReferencePlane || hasCacheFolder;
+        hasGeneralQuantizer = useMiddlePlane || hasCacheFolder;
         workerCount = options.getWorkerCount();
     }
 

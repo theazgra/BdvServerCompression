@@ -49,19 +49,20 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                 return;
             }
             System.out.println("Created quantizer from cache");
-        } else if (hasReferencePlane) {
-            final int[] refPlaneData = loadPlaneData(referencePlaneIndex);
-            if (refPlaneData.length == 0) {
-                System.err.println("Failed to load reference plane data.");
+        } else if (useMiddlePlane) {
+            final int middlePlaneIndex = rawImageDims.getZ() / 2;
+            final int[] middlePlaneData = loadPlaneData(middlePlaneIndex);
+            if (middlePlaneData.length == 0) {
+                System.err.println("Failed to load middle plane data.");
                 return;
             }
             if (useDiffEvolution) {
                 assert (false) : "DE is depracated";
                 quantizer = null;
             } else {
-                quantizer = trainLloydMaxQuantizer(refPlaneData, codebookSize);
+                quantizer = trainLloydMaxQuantizer(middlePlaneData, codebookSize);
             }
-            System.out.println("Created reference quantizer.");
+            System.out.println("Created quantizer from middle plane.");
         }
 
         for (final int planeIndex : planes) {

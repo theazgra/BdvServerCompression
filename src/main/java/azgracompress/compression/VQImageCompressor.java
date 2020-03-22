@@ -88,7 +88,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
         long[] planeDataSizes = new long[options.getImageDimension().getZ()];
         Stopwatch stopwatch = new Stopwatch();
-        final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.hasReferencePlaneIndex();
+        final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.shouldUseMiddlePlane();
         VectorQuantizer quantizer = null;
 
         if (options.hasCodebookCacheFolder()) {
@@ -96,24 +96,25 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             quantizer = loadQuantizerFromCache();
             Log("Cached quantizer created.");
             writeQuantizerToCompressStream(quantizer, compressStream);
-        } else if (options.hasReferencePlaneIndex()) {
+        } else if (options.shouldUseMiddlePlane()) {
             stopwatch.restart();
 
-            ImageU16 referencePlane = null;
+            final int middlePlaneIndex = getMiddlePlaneIndex();
+            ImageU16 middlePlane = null;
             try {
-                referencePlane = RawDataIO.loadImageU16(options.getInputFile(),
+                middlePlane = RawDataIO.loadImageU16(options.getInputFile(),
                                                         options.getImageDimension(),
-                                                        options.getReferencePlaneIndex());
+                                                        middlePlaneIndex);
             } catch (Exception ex) {
-                throw new ImageCompressionException("Unable to load reference plane data.", ex);
+                throw new ImageCompressionException("Unable to load plane data.", ex);
             }
 
-            Log(String.format("Training vector quantizer from reference plane %d.", options.getReferencePlaneIndex()));
-            final int[][] refPlaneVectors = referencePlane.toQuantizationVectors(options.getVectorDimension());
+            Log(String.format("Training vector quantizer from middle plane %d.", middlePlaneIndex));
+            final int[][] refPlaneVectors = middlePlane.toQuantizationVectors(options.getVectorDimension());
             quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
             writeQuantizerToCompressStream(quantizer, compressStream);
             stopwatch.stop();
-            Log("Reference codebook created in: " + stopwatch.getElapsedTimeString());
+            Log("Middle plane codebook created in: " + stopwatch.getElapsedTimeString());
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression();
@@ -184,7 +185,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             try {
                 trainData = loadPlaneQuantizationVectors(options.getPlaneIndex());
             } catch (IOException e) {
-                throw new ImageCompressionException("Failed to load reference image data.", e);
+                throw new ImageCompressionException("Failed to load plane data.", e);
             }
         } else {
             Log(options.hasPlaneRangeSet() ? "VQ: Loading plane range data." : "VQ: Loading all planes data.");

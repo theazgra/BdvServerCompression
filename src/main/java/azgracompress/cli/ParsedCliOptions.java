@@ -27,8 +27,7 @@ public class ParsedCliOptions {
     private boolean planeIndexSet = false;
     private int planeIndex;
 
-    private boolean refPlaneIndexSet = false;
-    private int referencePlaneIndex = -1;
+    private boolean useMiddlePlane = false;
 
     private boolean verbose;
 
@@ -93,7 +92,7 @@ public class ParsedCliOptions {
 
         parseBitsPerPixel(cmd, errorBuilder);
 
-        parseReferencePlaneIndex(cmd, errorBuilder);
+        useMiddlePlane = cmd.hasOption(CliConstants.USE_MIDDLE_PLANE_LONG);
 
         final String[] fileInfo = cmd.getArgs();
         parseInputFilePart(errorBuilder, fileInfo);
@@ -217,23 +216,6 @@ public class ParsedCliOptions {
             }
         }
 
-    }
-
-    private void parseReferencePlaneIndex(CommandLine cmd, StringBuilder errorBuilder) {
-        if (cmd.hasOption(CliConstants.REFERENCE_PLANE_LONG)) {
-            final String rpString = cmd.getOptionValue(CliConstants.REFERENCE_PLANE_LONG);
-            final ParseResult<Integer> parseResult = tryParseInt(rpString);
-            if (parseResult.isSuccess()) {
-                referencePlaneIndex = parseResult.getValue();
-                refPlaneIndexSet = true;
-            } else {
-                errorOccurred = true;
-                errorBuilder.append("Failed to parse reference plane index").append('\n');
-                errorBuilder.append(parseResult.getErrorMessage()).append('\n');
-            }
-        } else {
-            refPlaneIndexSet = false;
-        }
     }
 
     private void parseBitsPerPixel(CommandLine cmd, StringBuilder errorBuilder) {
@@ -375,16 +357,12 @@ public class ParsedCliOptions {
         return planeIndex;
     }
 
-    public int getReferencePlaneIndex() {
-        return referencePlaneIndex;
-    }
-
     public boolean isVerbose() {
         return verbose;
     }
 
-    public boolean hasReferencePlaneIndex() {
-        return refPlaneIndexSet;
+    public boolean shouldUseMiddlePlane() {
+        return useMiddlePlane;
     }
 
     public boolean hasPlaneIndexSet() {
@@ -482,8 +460,8 @@ public class ParsedCliOptions {
         if (planeIndexSet) {
             sb.append("PlaneIndex: ").append(planeIndex).append('\n');
         }
-        if (refPlaneIndexSet) {
-            sb.append("ReferencePlaneIndex: ").append(referencePlaneIndex).append('\n');
+        if (useMiddlePlane) {
+            sb.append("Use middle plane for codebook training\n");
         }
         if (planeRangeSet) {
             sb.append("FromPlaneIndex: ").append(fromPlaneIndex).append('\n');
