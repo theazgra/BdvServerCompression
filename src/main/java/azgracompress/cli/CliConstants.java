@@ -51,7 +51,7 @@ public class CliConstants {
     public static final String VECTOR_QUANTIZATION_SHORT = "vq";
     public static final String VECTOR_QUANTIZATION_LONG = "vector-quantization";
 
-    public static final String USE_MIDDLE_PLANE_SHORT = "md";
+    public static final String USE_MIDDLE_PLANE_SHORT = "mp";
     public static final String USE_MIDDLE_PLANE_LONG = "middle-plane";
 
     @NotNull

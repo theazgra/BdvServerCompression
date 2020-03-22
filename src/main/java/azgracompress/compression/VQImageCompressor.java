@@ -28,7 +28,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     private VectorQuantizer trainVectorQuantizerFromPlaneVectors(final int[][] planeVectors) {
 
         LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeVectors,
-                                                                  codebookSize,
+                                                                  getCodebookSize(),
                                                                   options.getWorkerCount(),
                                                                   options.getVectorDimension().toV3i());
         LBGResult vqResult = vqInitializer.findOptimalCodebook(false);
@@ -74,7 +74,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
         final VQCodebook codebook = cacheManager.loadVQCodebook(options.getInputFile(),
-                                                                codebookSize,
+                                                                getCodebookSize(),
                                                                 options.getVectorDimension().toV3i());
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization vectors from cache.");
@@ -94,7 +94,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.shouldUseMiddlePlane();
 
 
-        final int[] huffmanSymbols = createHuffmanSymbols();
+        final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
         VectorQuantizer quantizer = null;
         Huffman huffman = null;
 
@@ -231,7 +231,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final int[][] trainingData = loadConfiguredPlanesData();
 
         LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData,
-                                                                  codebookSize,
+                                                                  getCodebookSize(),
                                                                   options.getWorkerCount(),
                                                                   options.getVectorDimension().toV3i());
         Log("Starting LBG optimization.");

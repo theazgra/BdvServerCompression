@@ -27,7 +27,7 @@ public class VQCodebook {
     private final V3i vectorDims;
 
     public VQCodebook(final V3i vectorDims, final CodebookEntry[] vectors, final long[] vectorFrequencies) {
-        assert (vectors.length == vectorFrequencies.length);
+        //assert (vectors.length == vectorFrequencies.length);
         this.vectorDims = vectorDims;
         this.vectors = vectors;
         this.vectorFrequencies = vectorFrequencies;

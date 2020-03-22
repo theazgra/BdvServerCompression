@@ -12,14 +12,14 @@ public abstract class CompressorDecompressorBase {
     public static final String EXTENSION = ".QCMP";
 
     protected final ParsedCliOptions options;
-    protected final int codebookSize;
+    private final int codebookSize;
 
     public CompressorDecompressorBase(ParsedCliOptions options) {
         this.options = options;
         this.codebookSize = (int) Math.pow(2, this.options.getBitsPerPixel());
     }
 
-    protected int[] createHuffmanSymbols() {
+    protected int[] createHuffmanSymbols(final int codebookSize) {
         int[] symbols = new int[codebookSize];
         for (int i = 0; i < codebookSize; i++) {
             symbols[i] = i;
@@ -111,5 +111,9 @@ public abstract class CompressorDecompressorBase {
         } catch (Exception ex) {
             throw new ImageCompressionException("Unable to write indices to OutBitStream.", ex);
         }
+    }
+
+    protected int getCodebookSize() {
+        return codebookSize;
     }
 }

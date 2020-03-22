@@ -19,7 +19,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         super(options);
     }
 
-    private SQCodebook readScalarQuantizationValues(DataInputStream compressedStream) throws ImageDecompressionException {
+    private SQCodebook readScalarQuantizationValues(DataInputStream compressedStream,
+                                                    final int codebookSize) throws ImageDecompressionException {
         int[] quantizationValues = new int[codebookSize];
         long[] symbolFrequencies = new long[codebookSize];
         try {
@@ -59,8 +60,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
                            DataOutputStream decompressStream,
                            QCMPFileHeader header) throws ImageDecompressionException {
 
-        final int[] huffmanSymbols = createHuffmanSymbols();
         final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
+        final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
         final int planeCountForDecompression = header.getImageSizeZ();
 
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
@@ -71,7 +72,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
             Log("Loading single codebook and huffman coder.");
-            codebook = readScalarQuantizationValues(compressedStream);
+            codebook = readScalarQuantizationValues(compressedStream, codebookSize);
             huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
         }
 
@@ -80,7 +81,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             stopwatch.restart();
             if (header.isCodebookPerPlane()) {
                 Log("Loading plane codebook...");
-                codebook = readScalarQuantizationValues(compressedStream);
+                codebook = readScalarQuantizationValues(compressedStream, codebookSize);
                 huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
             }
             assert (codebook != null && huffman != null);

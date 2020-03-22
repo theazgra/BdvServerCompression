@@ -102,18 +102,4 @@ public class ScalarQuantizer {
     public SQCodebook getCodebook() {
         return codebook;
     }
-
-    public long[] calculateFrequencies(int[] trainData) {
-        long[] frequencies = new long[codebook.getCodebookSize()];
-
-        // Speedup maybe?
-        for (final int value : trainData) {
-            for (int intervalId = 1; intervalId <= codebook.getCodebookSize(); intervalId++) {
-                if ((value >= boundaryPoints[intervalId - 1]) && (value <= boundaryPoints[intervalId])) {
-                    ++frequencies[intervalId - 1];
-                }
-            }
-        }
-        return frequencies;
-    }
 }

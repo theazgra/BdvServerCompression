@@ -45,6 +45,7 @@ public class LBGVectorQuantizer {
         this.codebookSize = codebookSize;
         this.workerCount = workerCount;
 
+        frequencies = new long[this.codebookSize];
         findUniqueVectors();
     }
 
@@ -167,8 +168,7 @@ public class LBGVectorQuantizer {
     }
 
     private synchronized void addWorkerFrequencies(final long[] workerFrequencies) {
-        assert (frequencies.length == workerFrequencies.length) : "Frequency array length mismatch.";
-        for (int i = 0; i < frequencies.length; i++) {
+        for (int i = 0; i < workerFrequencies.length; i++) {
             frequencies[i] += workerFrequencies[i];
         }
     }
@@ -193,30 +193,30 @@ public class LBGVectorQuantizer {
                 final int toIndex = (wId == workerCount - 1) ? trainingVectors.length : (workSize + (wId * workSize));
 
                 workers[wId] = new Thread(() -> {
+                    long[] workerFrequencies = new long[codebook.length];
                     VectorQuantizer quantizer = new VectorQuantizer(new VQCodebook(vectorDimensions,
                                                                                    codebook,
                                                                                    frequencies));
 
-
                     double threadMse = 0.0;
-                    int cnt = 0;
                     int[] vector;
-                    int[] quantizedVector;
+                    int qIndex;
+                    int[] qVector;
                     for (int i = fromIndex; i < toIndex; i++) {
-                        ++cnt;
                         vector = trainingVectors[i].getVector();
-                        quantizedVector = quantizer.quantize(vector);
+                        qIndex = quantizer.quantizeToIndex(vector);
+                        ++workerFrequencies[qIndex];
 
+                        qVector = quantizer.getCodebookVectors()[qIndex].getVector();
                         for (int vI = 0; vI < vectorSize; vI++) {
-                            threadMse += Math.pow(((double) vector[vI] - (double) quantizedVector[vI]), 2);
+                            threadMse += Math.pow(((double) vector[vI] - (double) qVector[vI]), 2);
                         }
                     }
-                    assert (cnt == toIndex - fromIndex);
                     threadMse /= (double) (toIndex - fromIndex);
 
                     // Update global mse, updateMse function is synchronized.
                     updateMse(threadMse);
-                    addWorkerFrequencies(quantizer.getFrequencies());
+                    addWorkerFrequencies(workerFrequencies);
                 });
                 workers[wId].start();
 
@@ -234,11 +234,14 @@ public class LBGVectorQuantizer {
             VectorQuantizer quantizer = new VectorQuantizer(new VQCodebook(vectorDimensions,
                                                                            codebook,
                                                                            frequencies));
+            int qIndex;
+            int[] qVector;
             for (final TrainingVector trV : trainingVectors) {
-                int[] quantizedV = quantizer.quantize(trV.getVector());
-
+                qIndex = quantizer.quantizeToIndex(trV.getVector());
+                qVector = quantizer.getCodebookVectors()[qIndex].getVector();
+                ++frequencies[qIndex];
                 for (int i = 0; i < vectorSize; i++) {
-                    mse += Math.pow(((double) trV.getVector()[i] - (double) quantizedV[i]), 2);
+                    mse += Math.pow(((double) trV.getVector()[i] - (double) qVector[i]), 2);
                 }
             }
             mse /= (double) trainingVectors.length;

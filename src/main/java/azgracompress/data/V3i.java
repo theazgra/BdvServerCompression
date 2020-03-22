@@ -12,7 +12,7 @@ public class V3i {
     }
 
     public V3i(final int x, final int y) {
-        this(x,y,1);
+        this(x, y, 1);
     }
 
     public V3i(final int universalValue) {
@@ -66,5 +66,9 @@ public class V3i {
      */
     public V2i toV2i() {
         return new V2i(x, y);
+    }
+
+    public long multiplyTogether() {
+        return (x * y * z);
     }
 }

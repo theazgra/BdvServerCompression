@@ -97,8 +97,12 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                     break;
             }
             logBuilder.append("Bits per pixel:\t\t").append(header.getBitsPerPixel()).append('\n');
+
             logBuilder.append("Codebook:\t\t").append(header.isCodebookPerPlane() ? "one per plane\n" : "one for " +
                     "all\n");
+
+            final int codebookSize = (int)Math.pow(2, header.getBitsPerPixel());
+            logBuilder.append("Codebook size:\t\t").append(codebookSize).append('\n');
 
             logBuilder.append("Image size X:\t\t").append(header.getImageSizeX()).append('\n');
             logBuilder.append("Image size Y:\t\t").append(header.getImageSizeY()).append('\n');
@@ -121,6 +125,10 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                                                 (fileSize / 1000),
                                                 ((fileSize / 1000) / 1000)));
                 logBuilder.append("Data size:\t\t").append(dataSize).append(" Bytes ").append(dataSize == expectedDataSize ? "(correct)\n" : "(INVALID)\n");
+
+                 final long uncompressedSize = header.getImageDims().multiplyTogether() * 2;
+                 final double compressionRatio = (double)fileSize / (double)uncompressedSize;
+                 logBuilder.append(String.format("Compression ratio:\t%.5f\n", compressionRatio));
             }
         }
 
