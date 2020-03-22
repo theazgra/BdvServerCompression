@@ -14,8 +14,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 
 public class ScalarQuantizationBenchmark extends BenchmarkBase {
-    private boolean useDiffEvolution = false;
-
     public ScalarQuantizationBenchmark(final String inputFile,
                                        final String outputDirectory,
                                        final int[] planes,
@@ -56,12 +54,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                 System.err.println("Failed to load middle plane data.");
                 return;
             }
-            if (useDiffEvolution) {
-                assert (false) : "DE is depracated";
-                quantizer = null;
-            } else {
-                quantizer = trainLloydMaxQuantizer(middlePlaneData, codebookSize);
-            }
+            quantizer = trainLloydMaxQuantizer(middlePlaneData, codebookSize);
             System.out.println("Created quantizer from middle plane.");
         }
 
@@ -77,12 +70,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
 
             if (!hasGeneralQuantizer) {
 
-                if (useDiffEvolution) {
-                    assert (false) : "DE is depracated";
-                    quantizer = null;
-                } else {
-                    quantizer = trainLloydMaxQuantizer(planeData, codebookSize);
-                }
+                quantizer = trainLloydMaxQuantizer(planeData, codebookSize);
                 System.out.println("Created plane quantizer");
             }
             if (quantizer == null) {
@@ -141,28 +129,5 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
 
         // TODO(Moravec): FIXME
         return new ScalarQuantizer(U16.Min, U16.Max, null);//lloydMax.getCentroids());
-    }
-
-    //    private ScalarQuantizer trainDifferentialEvolution(final int[] data,
-    //                                                       final int codebookSize) {
-    //        ILShadeSolver ilshade = new ILShadeSolver(codebookSize, 100, 2000, 15);
-    //        ilshade.setTrainingData(data);
-    //
-    //        try {
-    //            ilshade.train();
-    //        } catch (DeException deEx) {
-    //            deEx.printStackTrace();
-    //            return null;
-    //        }
-    //        return new ScalarQuantizer(U16.Min, U16.Max, ilshade.getBestSolution().getAttributes());
-    //    }
-
-
-    public boolean isUseDiffEvolution() {
-        return useDiffEvolution;
-    }
-
-    public void setUseDiffEvolution(boolean useDiffEvolution) {
-        this.useDiffEvolution = useDiffEvolution;
     }
 }
