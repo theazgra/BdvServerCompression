@@ -218,7 +218,7 @@ public class QuantizationCacheManager {
      * @param codebookSize Codebook size.
      * @return SQ codebook or null.
      */
-    public SQCodebook readSQCodebook(final String trainFile, final int codebookSize) {
+    public SQCodebook loadSQCodebook(final String trainFile, final int codebookSize) {
         final SQCacheFile cacheFile = loadSQCacheFile(trainFile, codebookSize);
         if (cacheFile != null)
             return cacheFile.getCodebook();
@@ -234,7 +234,7 @@ public class QuantizationCacheManager {
      * @param vDim         Quantization vector dimension.
      * @return VQ codebook.
      */
-    public VQCodebook readVQCodebook(final String trainFile,
+    public VQCodebook loadVQCodebook(final String trainFile,
                                      final int codebookSize,
                                      final V3i vDim) {
         final VQCacheFile cacheFile = loadVQCacheFile(trainFile, codebookSize, vDim);

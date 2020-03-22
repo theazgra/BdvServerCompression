@@ -262,12 +262,8 @@ public class LloydMaxU16ScalarQuantization {
         return solutionHistory.toArray(new QTrainIteration[0]);
     }
 
-    public int[] getCentroids() {
-        return centroids;
-    }
-
-    public ScalarQuantizationCodebook getCodebook() {
-        return new ScalarQuantizationCodebook(centroids, frequencies);
+    public SQCodebook getCodebook() {
+        return new SQCodebook(centroids, frequencies);
     }
 }
 

@@ -1,14 +1,21 @@
 package azgracompress.quantization.vector;
 
+import java.util.Arrays;
+
 public class VectorQuantizer {
 
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
-    private final CodebookEntry[] codebook;
+    private final VQCodebook codebook;
+    private final CodebookEntry[] codebookVectors;
     private final int vectorSize;
 
-    public VectorQuantizer(final CodebookEntry[] codebook) {
+    private long[] frequencies;
+
+    public VectorQuantizer(final VQCodebook codebook) {
         this.codebook = codebook;
-        vectorSize = codebook[0].getVector().length;
+        this.codebookVectors = codebook.getVectors();
+        vectorSize = codebookVectors[0].getVector().length;
+        frequencies = codebook.getVectorFrequencies();
     }
 
     public int[] quantize(final int[] dataVector) {
@@ -29,7 +36,7 @@ public class VectorQuantizer {
         } else {
             final int[] indices = quantizeIntoIndices(dataVectors, workerCount);
             for (int i = 0; i < dataVectors.length; i++) {
-                result[i] = codebook[indices[i]].getVector();
+                result[i] = codebookVectors[indices[i]].getVector();
             }
         }
 
@@ -40,15 +47,25 @@ public class VectorQuantizer {
         return quantizeIntoIndices(dataVectors, 1);
     }
 
+    private synchronized void addWorkerFrequencies(final long[] workerFrequencies) {
+        assert (frequencies.length == workerFrequencies.length) : "Frequency array length mismatch.";
+        for (int i = 0; i < frequencies.length; i++) {
+            frequencies[i] += workerFrequencies[i];
+        }
+    }
 
     public int[] quantizeIntoIndices(final int[][] dataVectors, final int maxWorkerCount) {
 
         assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
         int[] indices = new int[dataVectors.length];
+        Arrays.fill(frequencies, 0);
 
         if (maxWorkerCount == 1) {
+            int closestIndex;
             for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-                indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
+                closestIndex = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
+                indices[vectorIndex] = closestIndex;
+                ++frequencies[closestIndex];
             }
         } else {
             // Cap the worker count on 8
@@ -60,10 +77,16 @@ public class VectorQuantizer {
                 final int fromIndex = wId * workSize;
                 final int toIndex = (wId == workerCount - 1) ? dataVectors.length : (workSize + (wId * workSize));
 
+
                 workers[wId] = new Thread(() -> {
+                    int closestIndex;
+                    long[] workerFrequencies = new long[codebookVectors.length];
                     for (int vectorIndex = fromIndex; vectorIndex < toIndex; vectorIndex++) {
-                        indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
+                        closestIndex = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
+                        indices[vectorIndex] = closestIndex;
+                        ++workerFrequencies[vectorIndex];
                     }
+                    addWorkerFrequencies(workerFrequencies);
                 });
 
                 workers[wId].start();
@@ -119,16 +142,16 @@ public class VectorQuantizer {
     }
 
     private CodebookEntry findClosestCodebookEntry(final int[] dataVector, final VectorDistanceMetric metric) {
-        return codebook[findClosestCodebookEntryIndex(dataVector, metric)];
+        return codebookVectors[findClosestCodebookEntryIndex(dataVector, metric)];
     }
 
     private int findClosestCodebookEntryIndex(final int[] dataVector, final VectorDistanceMetric metric) {
         double minDist = Double.MAX_VALUE;
         int closestEntryIndex = 0;
-        for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
+        for (int entryIndex = 0; entryIndex < codebookVectors.length; entryIndex++) {
 
 
-            final double dist = distanceBetweenVectors(dataVector, codebook[entryIndex].getVector(), metric);
+            final double dist = distanceBetweenVectors(dataVector, codebookVectors[entryIndex].getVector(), metric);
             if (dist < minDist) {
                 minDist = dist;
                 closestEntryIndex = entryIndex;
@@ -138,8 +161,51 @@ public class VectorQuantizer {
         return closestEntryIndex;
     }
 
-    public CodebookEntry[] getCodebook() {
-        return codebook;
+    public CodebookEntry[] getCodebookVectors() {
+        return codebookVectors;
+    }
+
+    public long[] getFrequencies() {
+        return frequencies;
+    }
+
+    public long[] calculateFrequencies(int[][] dataVectors, final int maxWorkerCount) {
+        Arrays.fill(frequencies, 0);
+        assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
+
+        if (maxWorkerCount == 1) {
+            for (final int[] dataVector : dataVectors) {
+                ++frequencies[findClosestCodebookEntryIndex(dataVector, metric)];
+            }
+        } else {
+            // Cap the worker count on 8
+            final int workerCount = Math.min(maxWorkerCount, 8);
+            Thread[] workers = new Thread[workerCount];
+            final int workSize = dataVectors.length / workerCount;
+
+            for (int wId = 0; wId < workerCount; wId++) {
+                final int fromIndex = wId * workSize;
+                final int toIndex = (wId == workerCount - 1) ? dataVectors.length : (workSize + (wId * workSize));
+
+                workers[wId] = new Thread(() -> {
+                    long[] workerFrequencies = new long[codebookVectors.length];
+                    for (int vectorIndex = fromIndex; vectorIndex < toIndex; vectorIndex++) {
+                        ++workerFrequencies[findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric)];
+                    }
+                    addWorkerFrequencies(workerFrequencies);
+                });
+
+                workers[wId].start();
+            }
+            try {
+                for (int wId = 0; wId < workerCount; wId++) {
+                    workers[wId].join();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return frequencies;
     }
 }
 

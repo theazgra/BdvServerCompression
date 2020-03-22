@@ -1,15 +1,14 @@
 package azgracompress.compression;
 
 import azgracompress.U16;
+import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.ImageU16;
 import azgracompress.huffman.Huffman;
-import azgracompress.io.OutBitStream;
 import azgracompress.io.RawDataIO;
-import azgracompress.quantization.QuantizationValueCache;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
-import azgracompress.quantization.scalar.ScalarQuantizationCodebook;
+import azgracompress.quantization.scalar.SQCodebook;
 import azgracompress.quantization.scalar.ScalarQuantizer;
 import azgracompress.utilities.Stopwatch;
 
@@ -45,7 +44,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      */
     private void writeCodebookToOutputStream(final ScalarQuantizer quantizer,
                                              DataOutputStream compressStream) throws ImageCompressionException {
-        final ScalarQuantizationCodebook codebook = quantizer.getCodebook();
+        final SQCodebook codebook = quantizer.getCodebook();
         final int[] centroids = codebook.getCentroids();
         final long[] frequencies = codebook.getSymbolFrequencies();
         try {
@@ -70,16 +69,13 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException when fails to read cached codebook.
      */
     private ScalarQuantizer loadQuantizerFromCache() throws ImageCompressionException {
-        QuantizationValueCache cache = new QuantizationValueCache(options.getCodebookCacheFolder());
-        try {
+        QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
-            final int[] quantizationValues = cache.readCachedValues(options.getInputFile(),
-                                                                    codebookSize);
-            // TODO(Moravec): FIXME the null value.
-            return new ScalarQuantizer(U16.Min, U16.Max, null);
-        } catch (IOException e) {
-            throw new ImageCompressionException("Failed to read quantization values from cache file.", e);
+        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputFile(), codebookSize);
+        if (codebook == null) {
+            throw new ImageCompressionException("Failed to read quantization values from cache file.");
         }
+        return new ScalarQuantizer(codebook);
     }
 
     /**
@@ -95,10 +91,12 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         Huffman huffman = null;
         final int[] huffmanSymbols = createHuffmanSymbols();
         if (options.hasCodebookCacheFolder()) {
-            // TODO(Moravec): Create huffman.
             Log("Loading codebook from cache file.");
+
             quantizer = loadQuantizerFromCache();
-            Log("Cached quantizer created.");
+            huffman = createHuffmanCoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
+
+            Log("Cached quantizer with huffman coder created.");
             writeCodebookToOutputStream(quantizer, compressStream);
         } else if (options.shouldUseMiddlePlane()) {
             stopwatch.restart();
@@ -108,19 +106,17 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
                 middlePlane = RawDataIO.loadImageU16(options.getInputFile(),
                                                      options.getImageDimension(),
                                                      getMiddlePlaneIndex());
-                // TODO(Moravec): Create huffman.
             } catch (Exception ex) {
                 throw new ImageCompressionException("Unable to load plane data.", ex);
             }
 
-
             Log(String.format("Training scalar quantizer from middle plane %d.", middlePlaneIndex));
             quantizer = trainScalarQuantizerFromData(middlePlane.getData());
+            huffman = createHuffmanCoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
+
             stopwatch.stop();
-
             writeCodebookToOutputStream(quantizer, compressStream);
-
-            Log("Middle plane codebook created in: " + stopwatch.getElapsedTimeString());
+            Log("Middle plane codebook with huffman coder created in: " + stopwatch.getElapsedTimeString());
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression();
@@ -155,32 +151,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             Log("Compressing plane...");
             final int[] indices = quantizer.quantizeIntoIndices(plane.getData(), 1);
 
-            //            ////////////////////////
-            //            for (int i = 0; i < indices.length; i++) {
-            //                final boolean[] huffmanCode = huffman.getCode(indices[i]);
-            //                HuffmanNode currentHuffmanNode = huffman.getRoot();
-            //                boolean bit;
-            //                int index = 0;
-            //                while (!currentHuffmanNode.isLeaf()) {
-            //                    bit = huffmanCode[index++];
-            //                    currentHuffmanNode = currentHuffmanNode.traverse(bit);
-            //                }
-            //                assert (indices[i] == currentHuffmanNode.getSymbol());
-            //            }
-            //            ////////////////////////////////
+            planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream,huffman, indices);
 
-
-            try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
-                for (final int index : indices) {
-                    outBitStream.write(huffman.getCode(index));
-                }
-                planeDataSizes[planeCounter++] = outBitStream.getBytesWritten();
-                //outBitStream.write(indices);
-            } catch (Exception ex) {
-                throw new ImageCompressionException("Unable to write indices to OutBitStream.", ex);
-            }
-
-            // TODO: Fill plane data size
             stopwatch.stop();
             Log("Plane time: " + stopwatch.getElapsedTimeString());
             Log(String.format("Finished processing of plane %d", planeIndex));
@@ -221,23 +193,21 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
 
     @Override
     public void trainAndSaveCodebook() throws ImageCompressionException {
-
-
         int[] trainData = loadConfiguredPlanesData();
 
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(trainData,
                                                                                    codebookSize,
                                                                                    options.getWorkerCount());
-
         Log("Starting LloydMax training.");
         lloydMax.train(options.isVerbose());
-        final int[] qValues = lloydMax.getCentroids();
+        final SQCodebook codebook = lloydMax.getCodebook();
+        final int[] qValues = codebook.getCentroids();
         Log("Finished LloydMax training.");
 
         Log(String.format("Saving cache file to %s", options.getOutputFile()));
-        QuantizationValueCache cache = new QuantizationValueCache(options.getOutputFile());
+        QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getOutputFile());
         try {
-            cache.saveQuantizationValues(options.getInputFile(), qValues);
+            cacheManager.saveCodebook(options.getInputFile(), codebook);
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write cache.", e);
         }

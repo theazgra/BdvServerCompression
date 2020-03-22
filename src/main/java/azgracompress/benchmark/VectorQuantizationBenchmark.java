@@ -1,17 +1,14 @@
 package azgracompress.benchmark;
 
+import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.*;
-import azgracompress.quantization.QuantizationValueCache;
-import azgracompress.quantization.vector.CodebookEntry;
 import azgracompress.quantization.vector.LBGResult;
 import azgracompress.quantization.vector.LBGVectorQuantizer;
+import azgracompress.quantization.vector.VQCodebook;
 import azgracompress.quantization.vector.VectorQuantizer;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 
 public class VectorQuantizationBenchmark extends BenchmarkBase {
 
@@ -62,19 +59,13 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
 
         if (hasCacheFolder) {
             System.out.println("Loading codebook from cache");
-            QuantizationValueCache cache = new QuantizationValueCache(cacheFolder);
-            try {
-                final CodebookEntry[] codebook = cache.readCachedValues(inputFile,
-                                                                        codebookSize,
-                                                                        qVector.getX(),
-                                                                        qVector.getY());
-                quantizer = new VectorQuantizer(codebook);
-
-            } catch (IOException e) {
-                e.printStackTrace();
+            QuantizationCacheManager cacheManager = new QuantizationCacheManager(cacheFolder);
+            final VQCodebook codebook = cacheManager.loadVQCodebook(inputFile, codebookSize, qVector.toV3i());
+            if (codebook == null) {
                 System.err.println("Failed to read quantization vectors from cache.");
                 return;
             }
+            quantizer = new VectorQuantizer(codebook);
             System.out.println("Created quantizer from cache");
         } else if (useMiddlePlane) {
             final int middlePlaneIndex = rawImageDims.getZ() / 2;
@@ -86,7 +77,10 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
             }
 
             final int[][] refPlaneData = getPlaneVectors(middlePlane, qVector);
-            LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData, codebookSize, workerCount);
+            LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData,
+                                                                      codebookSize,
+                                                                      workerCount,
+                                                                      qVector.toV3i());
             final LBGResult vqResult = vqInitializer.findOptimalCodebook();
             quantizer = new VectorQuantizer(vqResult.getCodebook());
             System.out.println("Created quantizer from middle plane.");
@@ -105,7 +99,10 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
 
 
             if (!hasGeneralQuantizer) {
-                LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData, codebookSize,workerCount);
+                LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData,
+                                                                          codebookSize,
+                                                                          workerCount,
+                                                                          qVector.toV3i());
                 LBGResult vqResult = vqInitializer.findOptimalCodebook();
                 quantizer = new VectorQuantizer(vqResult.getCodebook());
                 System.out.println("Created plane quantizer.");
@@ -119,6 +116,8 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
 
             final int[][] quantizedData = quantizer.quantize(planeData, workerCount);
 
+            // TODO(Moravec): Add huffman coding.
+
             final ImageU16 quantizedImage = reconstructImageFromQuantizedVectors(plane, quantizedData, qVector);
 
             if (!saveQuantizedPlaneData(quantizedImage.getData(), quantizedFile)) {
@@ -129,25 +128,4 @@ public class VectorQuantizationBenchmark extends BenchmarkBase {
             saveDifference(plane.getData(), quantizedImage.getData(), diffFile, absoluteDiffFile);
         }
     }
-
-    private void saveCodebook(final CodebookEntry[] codebook, final String codebookFile) {
-        final String outFile = getFileNamePathIntoOutDir(codebookFile);
-        try {
-            FileOutputStream fileStream = new FileOutputStream(outFile);
-            OutputStreamWriter writer = new OutputStreamWriter(fileStream);
-
-            for (final CodebookEntry entry : codebook) {
-                writer.write(entry.getVectorString());
-            }
-
-            writer.flush();
-            fileStream.flush();
-            fileStream.close();
-        } catch (IOException ioE) {
-            ioE.printStackTrace();
-            System.err.println("Failed to save codebook vectors.");
-        }
-    }
-
-
 }

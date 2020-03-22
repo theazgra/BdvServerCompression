@@ -6,7 +6,7 @@ import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.huffman.Huffman;
 import azgracompress.huffman.HuffmanNode;
 import azgracompress.io.InBitStream;
-import azgracompress.quantization.scalar.ScalarQuantizationCodebook;
+import azgracompress.quantization.scalar.SQCodebook;
 import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.TypeConverter;
 
@@ -19,7 +19,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         super(options);
     }
 
-    private ScalarQuantizationCodebook readScalarQuantizationValues(DataInputStream compressedStream) throws ImageDecompressionException {
+    private SQCodebook readScalarQuantizationValues(DataInputStream compressedStream) throws ImageDecompressionException {
         int[] quantizationValues = new int[codebookSize];
         long[] symbolFrequencies = new long[codebookSize];
         try {
@@ -32,7 +32,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         } catch (IOException ioEx) {
             throw new ImageDecompressionException("Unable to read quantization values from compressed stream.", ioEx);
         }
-        return new ScalarQuantizationCodebook(quantizationValues, symbolFrequencies);
+        return new SQCodebook(quantizationValues, symbolFrequencies);
     }
 
     @Override
@@ -51,14 +51,6 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             totalPlaneDataSize += planeDataSize;
         }
 
-        //        // Data size of single plane indices.
-        //        final long planeIndicesDataSize =
-        //                (long) Math.ceil(((header.getImageSizeX() * header.getImageSizeY()) * header
-        //                .getBitsPerPixel()) / 8.0);
-        //
-        //        // All planes data size.
-        //        final long allPlaneIndicesDataSize = planeIndicesDataSize * header.getImageSizeZ();
-
         return (codebookDataSize + totalPlaneDataSize);
     }
 
@@ -74,14 +66,13 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
         final int planeIndicesDataSize = (int) Math.ceil((planePixelCount * header.getBitsPerPixel()) / 8.0);
 
-        int[] quantizationValues = null;
+        SQCodebook codebook = null;
         Huffman huffman = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
-            huffman = null;
-            // TODO(Moravec): Handle loading of Huffman.
-            Log("Loading codebook from cache...");
-            //quantizationValues = readScalarQuantizationValues(compressedStream, codebookSize);
+            Log("Loading single codebook and huffman coder.");
+            codebook = readScalarQuantizationValues(compressedStream);
+            huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
         }
 
         Stopwatch stopwatch = new Stopwatch();
@@ -89,13 +80,10 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             stopwatch.restart();
             if (header.isCodebookPerPlane()) {
                 Log("Loading plane codebook...");
-                ScalarQuantizationCodebook codebook = readScalarQuantizationValues(compressedStream);
-                quantizationValues = codebook.getCentroids();
-                huffman = new Huffman(huffmanSymbols, codebook.getSymbolFrequencies());
-                huffman.buildHuffmanTree();
+                codebook = readScalarQuantizationValues(compressedStream);
+                huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
             }
-            assert (quantizationValues != null);
-            assert (huffman != null);
+            assert (codebook != null && huffman != null);
 
             Log(String.format("Decompressing plane %d...", planeIndex));
             byte[] decompressedPlaneData = null;
@@ -107,6 +95,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
                 int[] decompressedValues = new int[planePixelCount];
+                final int[] quantizationValues = codebook.getCentroids();
                 for (int pixel = 0; pixel < planePixelCount; pixel++) {
                     HuffmanNode currentHuffmanNode = huffman.getRoot();
                     boolean bit;

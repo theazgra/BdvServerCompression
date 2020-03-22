@@ -1,18 +1,24 @@
 package azgracompress.quantization.scalar;
 
+import azgracompress.U16;
+
 public class ScalarQuantizer {
     private final int min;
     private final int max;
-    private final ScalarQuantizationCodebook codebook;
+    private final SQCodebook codebook;
     private int[] boundaryPoints;
 
-    public ScalarQuantizer(final int min, final int max, final ScalarQuantizationCodebook codebook) {
+    public ScalarQuantizer(final int min, final int max, final SQCodebook codebook) {
         this.codebook = codebook;
         boundaryPoints = new int[codebook.getCodebookSize() + 1];
         this.min = min;
         this.max = max;
 
         calculateBoundaryPoints();
+    }
+
+    public ScalarQuantizer(final SQCodebook codebook) {
+        this(U16.Min, U16.Max, codebook);
     }
 
     public int[] quantize(int[] data) {
@@ -93,7 +99,21 @@ public class ScalarQuantizer {
         return mse;
     }
 
-    public ScalarQuantizationCodebook getCodebook() {
+    public SQCodebook getCodebook() {
         return codebook;
+    }
+
+    public long[] calculateFrequencies(int[] trainData) {
+        long[] frequencies = new long[codebook.getCodebookSize()];
+
+        // Speedup maybe?
+        for (final int value : trainData) {
+            for (int intervalId = 1; intervalId <= codebook.getCodebookSize(); intervalId++) {
+                if ((value >= boundaryPoints[intervalId - 1]) && (value <= boundaryPoints[intervalId])) {
+                    ++frequencies[intervalId - 1];
+                }
+            }
+        }
+        return frequencies;
     }
 }

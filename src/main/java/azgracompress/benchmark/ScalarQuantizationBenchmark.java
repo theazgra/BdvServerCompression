@@ -4,8 +4,9 @@ import azgracompress.U16;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.V3i;
 import azgracompress.quantization.QTrainIteration;
-import azgracompress.quantization.QuantizationValueCache;
+import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
+import azgracompress.quantization.scalar.SQCodebook;
 import azgracompress.quantization.scalar.ScalarQuantizer;
 
 import java.io.File;
@@ -36,16 +37,15 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
         ScalarQuantizer quantizer = null;
         if (hasCacheFolder) {
             System.out.println("Loading codebook from cache");
-            QuantizationValueCache cache = new QuantizationValueCache(cacheFolder);
-            try {
-                final int[] quantizationValues = cache.readCachedValues(inputFile, codebookSize);
-                // TODO(Moravec): FIXME!
-                quantizer = null;//new ScalarQuantizer(U16.Min, U16.Max, quantizationValues);
-            } catch (IOException e) {
+            QuantizationCacheManager cacheManager = new QuantizationCacheManager(cacheFolder);
+            final SQCodebook codebook = cacheManager.loadSQCodebook(inputFile, codebookSize);
+
+            if (codebook == null) {
                 System.err.println("Failed to read quantization values from cache file.");
-                e.printStackTrace();
                 return;
             }
+
+            quantizer = new ScalarQuantizer(codebook);
             System.out.println("Created quantizer from cache");
         } else if (useMiddlePlane) {
             final int middlePlaneIndex = rawImageDims.getZ() / 2;
@@ -67,17 +67,17 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
                 return;
             }
 
-
             if (!hasGeneralQuantizer) {
-
                 quantizer = trainLloydMaxQuantizer(planeData, codebookSize);
                 System.out.println("Created plane quantizer");
             }
+
             if (quantizer == null) {
                 System.err.println("Failed to initialize scalar quantizer.");
                 return;
             }
 
+            // TODO(Moravec): Add huffman coding.
 
             final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
             final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
@@ -124,10 +124,7 @@ public class ScalarQuantizationBenchmark extends BenchmarkBase {
     private ScalarQuantizer trainLloydMaxQuantizer(final int[] data, final int codebookSize) {
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(data, codebookSize, workerCount);
         QTrainIteration[] trainingReport = lloydMax.train(false);
-
-        //saveQTrainLog(String.format("p%d_cb_%d_lloyd.csv", planeIndex, codebookSize), trainingReport);
-
-        // TODO(Moravec): FIXME
-        return new ScalarQuantizer(U16.Min, U16.Max, null);//lloydMax.getCentroids());
+//        saveQTrainLog(String.format("p%d_cb_%d_lloyd.csv", planeIndex, codebookSize), trainingReport);
+        return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCodebook());
     }
 }
