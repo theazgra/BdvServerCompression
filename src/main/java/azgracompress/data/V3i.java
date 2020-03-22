@@ -11,6 +11,10 @@ public class V3i {
         this.z = z;
     }
 
+    public V3i(final int x, final int y) {
+        this(x,y,1);
+    }
+
     public V3i(final int universalValue) {
         this(universalValue, universalValue, universalValue);
     }
