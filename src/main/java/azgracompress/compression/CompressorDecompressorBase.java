@@ -91,7 +91,7 @@ public abstract class CompressorDecompressorBase {
      * @return Index of the middle plane.
      */
     protected int getMiddlePlaneIndex() {
-        return (options.getImageDimension().getZ() / 2);
+            return (options.getInputFileInfo().getDimensions().getZ() / 2);
     }
 
     /**
