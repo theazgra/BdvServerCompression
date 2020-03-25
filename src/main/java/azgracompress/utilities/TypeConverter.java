@@ -90,9 +90,10 @@ public class TypeConverter {
      */
     public static void unsignedShortBytesToIntArray(final byte[] bytes, final int[] values, final int offset) {
         assert (bytes.length % 2 == 0);
+        int valuesIndex = offset;
         for (int i = 0; i < bytes.length; i += 2) {
             final int value = (int) (((bytes[i] & 0xff) << 8) | (bytes[i + 1] & 0xff));
-            values[offset + i] = value;
+            values[valuesIndex++] = value;
         }
     }
 }
