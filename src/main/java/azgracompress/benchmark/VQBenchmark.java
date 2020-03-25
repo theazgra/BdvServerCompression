@@ -10,15 +10,15 @@ import azgracompress.quantization.vector.VectorQuantizer;
 
 import java.io.File;
 
-public class VectorQuantizationBenchmark extends BenchmarkBase {
+public class VQBenchmark extends BenchmarkBase {
 
     final static V2i DEFAULT_QVECTOR = new V2i(3, 3);
 
-    public VectorQuantizationBenchmark(String inputFile, String outputDirectory, int[] planes, V3i rawImageDims) {
+    public VQBenchmark(String inputFile, String outputDirectory, int[] planes, V3i rawImageDims) {
         super(inputFile, outputDirectory, planes, rawImageDims);
     }
 
-    public VectorQuantizationBenchmark(final ParsedCliOptions options) {
+    public VQBenchmark(final ParsedCliOptions options) {
         super(options);
     }
 

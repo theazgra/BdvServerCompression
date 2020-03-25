@@ -6,13 +6,13 @@ public class CompressionBenchmark {
     public static void runBenchmark(final ParsedCliOptions options) {
         switch (options.getQuantizationType()) {
             case Scalar: {
-                ScalarQuantizationBenchmark sqBenchmark = new ScalarQuantizationBenchmark(options);
+                SQBenchmark sqBenchmark = new SQBenchmark(options);
                 sqBenchmark.startBenchmark();
             }
             break;
             case Vector1D:
             case Vector2D: {
-                VectorQuantizationBenchmark vqBenchmark = new VectorQuantizationBenchmark(options);
+                VQBenchmark vqBenchmark = new VQBenchmark(options);
                 vqBenchmark.startBenchmark(options.getVectorDimension());
             }
             break;

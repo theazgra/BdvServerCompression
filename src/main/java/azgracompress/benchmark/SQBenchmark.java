@@ -1,10 +1,9 @@
 package azgracompress.benchmark;
 
 import azgracompress.U16;
-import azgracompress.cli.ParsedCliOptions;
-import azgracompress.data.V3i;
-import azgracompress.quantization.QTrainIteration;
 import azgracompress.cache.QuantizationCacheManager;
+import azgracompress.cli.ParsedCliOptions;
+import azgracompress.quantization.QTrainIteration;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
 import azgracompress.quantization.scalar.SQCodebook;
 import azgracompress.quantization.scalar.ScalarQuantizer;
@@ -14,15 +13,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 
-public class ScalarQuantizationBenchmark extends BenchmarkBase {
-    public ScalarQuantizationBenchmark(final String inputFile,
-                                       final String outputDirectory,
-                                       final int[] planes,
-                                       final V3i rawImageDims) {
-        super(inputFile, outputDirectory, planes, rawImageDims);
-    }
-
-    public ScalarQuantizationBenchmark(final ParsedCliOptions options) {
+public class SQBenchmark extends BenchmarkBase {
+    public SQBenchmark(final ParsedCliOptions options) {
         super(options);
     }
 
