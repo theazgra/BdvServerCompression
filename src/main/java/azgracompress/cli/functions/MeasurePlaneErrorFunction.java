@@ -191,4 +191,47 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
         System.out.println("Finished reportPlaneDifference");
         return true;
     }
+
+    /*
+    final String[] templates = new String[]{
+                "D:\\biology\\benchmark\\jpeg_comp\\jpeg2000\\ch0_400_cr%d.%s",
+                "D:\\biology\\benchmark\\jpeg_comp\\jpeg2000\\ch1_683_cr%d.%s"
+        };
+        final String[] referenceFiles = new String[]{
+                "D:\\biology\\benchmark\\jpeg_comp\\ch0_400.raw",
+                "D:\\biology\\benchmark\\jpeg_comp\\ch1_683.raw"
+        };
+        final int[] CRS = new int[]{1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30};
+        try {
+
+            for (int i = 0; i < templates.length; i++) {
+                final String refFile = referenceFiles[i];
+                final int[] refData = loadImageData(refFile);
+
+                for (final int cr : CRS) {
+                    final String inputFile = String.format(templates[i], cr, "raw");
+
+                    final int[] imageData = loadImageData(inputFile);
+
+                    final int[] diff = Utils.getDifference(refData, imageData);
+                    final double mse = Utils.calculateMse(diff);
+
+                    final double psnr = Utils.calculatePsnr(mse, U16.Max);
+
+                    final String channel = new File(inputFile).getName().substring(0, 3);
+                    DecimalFormat df = new DecimalFormat("#.####");
+
+                    System.out.println(String.format("%s CR: %d\n\tMSE: %s\n\tPSNR: %s\n",
+                                                     channel, cr, df.format(mse), df.format(psnr)));
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            ScifioWrapper.dispose();
+        }
+    * */
+
+
 }
