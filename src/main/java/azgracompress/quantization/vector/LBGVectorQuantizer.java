@@ -1,6 +1,7 @@
 package azgracompress.quantization.vector;
 
 import azgracompress.U16;
+import azgracompress.data.V3i;
 import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.Utils;
 
@@ -11,6 +12,7 @@ import java.util.Random;
 public class LBGVectorQuantizer {
     public final static double PRT_VECTOR_DIVIDER = 4.0;
     private final double EPSILON = 0.005;
+    final V3i vectorDimensions;
     private final int vectorSize;
     private final int codebookSize;
     private final int workerCount;
@@ -20,12 +22,18 @@ public class LBGVectorQuantizer {
     private final TrainingVector[] trainingVectors;
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
 
+    private long[] frequencies;
+
     boolean verbose = false;
     private double _mse = 0.0;
 
-    public LBGVectorQuantizer(final int[][] vectors, final int codebookSize, final int workerCount) {
+    public LBGVectorQuantizer(final int[][] vectors,
+                              final int codebookSize,
+                              final int workerCount,
+                              final V3i vectorDimensions) {
         assert (vectors.length > 0) : "No training vectors provided";
 
+        this.vectorDimensions = vectorDimensions;
         this.vectorSize = vectors[0].length;
 
 
@@ -34,16 +42,10 @@ public class LBGVectorQuantizer {
             trainingVectors[i] = new TrainingVector(Arrays.copyOf(vectors[i], vectorSize));
         }
 
-        //        boolean allzero = true;
-        //        for (int i = 0; i < vectors.length; i++) {
-        //            if (!VectorQuantizer.isZeroVector(trainingVectors[i].getVector())) {
-        //                allzero = false;
-        //            }
-        //        }
-
         this.codebookSize = codebookSize;
         this.workerCount = workerCount;
 
+        frequencies = new long[this.codebookSize];
         findUniqueVectors();
     }
 
@@ -92,7 +94,7 @@ public class LBGVectorQuantizer {
         if (verbose) {
             System.out.println(String.format("Final MSE: %.4f\nFinal PSNR: %.4f (dB)", mse, psnr));
         }
-        return new LBGResult(codebook, mse, psnr);
+        return new LBGResult(vectorDimensions, codebook, frequencies, mse, psnr);
     }
 
     /**
@@ -135,7 +137,7 @@ public class LBGVectorQuantizer {
         if (verbose) {
             System.out.println(stopwatch);
         }
-        return new LBGResult(learningCodebookToCodebook(codebook), finalMse, psnr);
+        return new LBGResult(vectorDimensions, learningCodebookToCodebook(codebook), frequencies, finalMse, psnr);
     }
 
     /**
@@ -161,6 +163,16 @@ public class LBGVectorQuantizer {
         _mse += threadMse;
     }
 
+    private void resetFrequencies() {
+        Arrays.fill(frequencies, 0);
+    }
+
+    private synchronized void addWorkerFrequencies(final long[] workerFrequencies) {
+        for (int i = 0; i < workerFrequencies.length; i++) {
+            frequencies[i] += workerFrequencies[i];
+        }
+    }
+
     /**
      * Calculate the average mean square error of the codebook.
      *
@@ -170,6 +182,7 @@ public class LBGVectorQuantizer {
     private double averageMse(final CodebookEntry[] codebook) {
         Stopwatch s = Stopwatch.startNew("averageMse");
         double mse = 0.0;
+        resetFrequencies();
         if (workerCount > 1) {
             // Reset the global mse
             _mse = 0.0;
@@ -180,25 +193,30 @@ public class LBGVectorQuantizer {
                 final int toIndex = (wId == workerCount - 1) ? trainingVectors.length : (workSize + (wId * workSize));
 
                 workers[wId] = new Thread(() -> {
-                    VectorQuantizer quantizer = new VectorQuantizer(codebook);
-                    double threadMse = 0.0;
-                    int cnt = 0;
-                    int[] vector;
-                    int[] quantizedVector;
-                    for (int i = fromIndex; i < toIndex; i++) {
-                        ++cnt;
-                        vector = trainingVectors[i].getVector();
-                        quantizedVector = quantizer.quantize(vector);
+                    long[] workerFrequencies = new long[codebook.length];
+                    VectorQuantizer quantizer = new VectorQuantizer(new VQCodebook(vectorDimensions,
+                                                                                   codebook,
+                                                                                   frequencies));
 
+                    double threadMse = 0.0;
+                    int[] vector;
+                    int qIndex;
+                    int[] qVector;
+                    for (int i = fromIndex; i < toIndex; i++) {
+                        vector = trainingVectors[i].getVector();
+                        qIndex = quantizer.quantizeToIndex(vector);
+                        ++workerFrequencies[qIndex];
+
+                        qVector = quantizer.getCodebookVectors()[qIndex].getVector();
                         for (int vI = 0; vI < vectorSize; vI++) {
-                            threadMse += Math.pow(((double) vector[vI] - (double) quantizedVector[vI]), 2);
+                            threadMse += Math.pow(((double) vector[vI] - (double) qVector[vI]), 2);
                         }
                     }
-                    assert (cnt == toIndex - fromIndex);
                     threadMse /= (double) (toIndex - fromIndex);
 
                     // Update global mse, updateMse function is synchronized.
                     updateMse(threadMse);
+                    addWorkerFrequencies(workerFrequencies);
                 });
                 workers[wId].start();
 
@@ -213,12 +231,17 @@ public class LBGVectorQuantizer {
             }
             mse = _mse / (double) workerCount;
         } else {
-            VectorQuantizer quantizer = new VectorQuantizer(codebook);
+            VectorQuantizer quantizer = new VectorQuantizer(new VQCodebook(vectorDimensions,
+                                                                           codebook,
+                                                                           frequencies));
+            int qIndex;
+            int[] qVector;
             for (final TrainingVector trV : trainingVectors) {
-                int[] quantizedV = quantizer.quantize(trV.getVector());
-
+                qIndex = quantizer.quantizeToIndex(trV.getVector());
+                qVector = quantizer.getCodebookVectors()[qIndex].getVector();
+                ++frequencies[qIndex];
                 for (int i = 0; i < vectorSize; i++) {
-                    mse += Math.pow(((double) trV.getVector()[i] - (double) quantizedV[i]), 2);
+                    mse += Math.pow(((double) trV.getVector()[i] - (double) qVector[i]), 2);
                 }
             }
             mse /= (double) trainingVectors.length;
@@ -373,8 +396,8 @@ public class LBGVectorQuantizer {
             LBG(codebook);
 
 
+            final double avgMse = averageMse(codebook);
             if (verbose) {
-                final double avgMse = averageMse(codebook);
                 System.out.println(String.format("Average MSE: %.4f", avgMse));
             }
         }

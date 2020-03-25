@@ -4,13 +4,19 @@ import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.data.*;
 import azgracompress.fileformat.QCMPFileHeader;
+import azgracompress.huffman.Huffman;
+import azgracompress.huffman.HuffmanNode;
 import azgracompress.io.InBitStream;
+import azgracompress.quantization.vector.CodebookEntry;
+import azgracompress.quantization.vector.VQCodebook;
 import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.TypeConverter;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+
+// TODO(Moravec): Handle huffman decoding.
 
 public class VQImageDecompressor extends CompressorDecompressorBase implements IImageDecompressor {
     public VQImageDecompressor(ParsedCliOptions options) {
@@ -29,21 +35,29 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         return (long) Math.ceil((planeVectorCount * bpp) / 8.0);
     }
 
-    private int[][] readCodebookVectors(DataInputStream compressedStream,
-                                        final int codebookSize,
-                                        final int vectorSize) throws ImageDecompressionException {
+    private VQCodebook readCodebook(DataInputStream compressedStream,
+                                    final int codebookSize,
+                                    final int vectorSize) throws ImageDecompressionException {
 
-        int[][] codebook = new int[codebookSize][vectorSize];
+        final CodebookEntry[] codebookVectors = new CodebookEntry[codebookSize];
+        final long[] frequencies = new long[codebookSize];
         try {
             for (int codebookIndex = 0; codebookIndex < codebookSize; codebookIndex++) {
+                final int[] vector = new int[vectorSize];
                 for (int vecIndex = 0; vecIndex < vectorSize; vecIndex++) {
-                    codebook[codebookIndex][vecIndex] = compressedStream.readUnsignedShort();
+                    vector[vecIndex] = compressedStream.readUnsignedShort();
                 }
+                codebookVectors[codebookIndex] = new CodebookEntry(vector);
+            }
+            for (int codebookIndex = 0; codebookIndex < codebookSize; codebookIndex++) {
+                frequencies[codebookIndex] = compressedStream.readLong();
             }
         } catch (IOException ioEx) {
             throw new ImageDecompressionException("Unable to read quantization values from compressed stream.", ioEx);
         }
-        return codebook;
+
+        // We don't care about vector dimensions in here.
+        return new VQCodebook(new V3i(0), codebookVectors, frequencies);
     }
 
 
@@ -71,19 +85,17 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         final int vectorDataSize = 2 * header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
 
         // Total codebook size in bytes.
-        final long codebookDataSize = (codebookSize * vectorDataSize) * (header.isCodebookPerPlane() ?
-                header.getImageSizeZ() : 1);
+        final long codebookDataSize = ((codebookSize * vectorDataSize) + (codebookSize * LONG_BYTES)) *
+                (header.isCodebookPerPlane() ? header.getImageSizeZ() : 1);
 
-        // Number of vectors per plane.
-        final long planeVectorCount = calculatePlaneVectorCount(header);
+        // Indices are encoded using huffman. Plane data size is written in the header.
+        long[] planeDataSizes = header.getPlaneDataSizes();
+        long totalPlaneDataSize = 0;
+        for (final long planeDataSize : planeDataSizes) {
+            totalPlaneDataSize += planeDataSize;
+        }
 
-        // Data size of single plane indices.
-        final long planeDataSize = calculatePlaneDataSize(planeVectorCount, header.getBitsPerPixel());
-
-        // All planes data size.
-        final long allPlanesDataSize = planeDataSize * header.getImageSizeZ();
-
-        return (codebookDataSize + allPlanesDataSize);
+        return (codebookDataSize + totalPlaneDataSize);
     }
 
     @Override
@@ -95,15 +107,18 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         final int vectorSize = header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
         final int planeCountForDecompression = header.getImageSizeZ();
         final long planeVectorCount = calculatePlaneVectorCount(header);
-        final long planeDataSize = calculatePlaneDataSize(planeVectorCount, header.getBitsPerPixel());
+        //final long planeDataSize = calculatePlaneDataSize(planeVectorCount, header.getBitsPerPixel());
         final V2i qVector = new V2i(header.getVectorSizeX(), header.getVectorSizeY());
+        final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
 
 
-        int[][] quantizationVectors = null;
+        VQCodebook codebook = null;
+        Huffman huffman = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
-            Log("Loading reference codebook...");
-            quantizationVectors = readCodebookVectors(compressedStream, codebookSize, vectorSize);
+            Log("Loading codebook from cache...");
+            codebook = readCodebook(compressedStream, codebookSize, vectorSize);
+            huffman = createHuffmanCoder(huffmanSymbols, codebook.getVectorFrequencies());
         }
 
         Stopwatch stopwatch = new Stopwatch();
@@ -111,25 +126,31 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             stopwatch.restart();
             if (header.isCodebookPerPlane()) {
                 Log("Loading plane codebook...");
-                quantizationVectors = readCodebookVectors(compressedStream, codebookSize, vectorSize);
+                codebook = readCodebook(compressedStream, codebookSize, vectorSize);
+                huffman = createHuffmanCoder(huffmanSymbols, codebook.getVectorFrequencies());
             }
-            assert (quantizationVectors != null);
+            assert (codebook != null && huffman != null);
 
             Log(String.format("Decompressing plane %d...", planeIndex));
 
             byte[] decompressedPlaneData = null;
 
+            final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (InBitStream inBitStream = new InBitStream(compressedStream,
                                                            header.getBitsPerPixel(),
-                                                           (int) planeDataSize)) {
+                                                           planeDataSize)) {
                 inBitStream.readToBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
-                final int[] indices = inBitStream.readNValues((int) planeVectorCount);
 
                 int[][] decompressedVectors = new int[(int) planeVectorCount][vectorSize];
                 for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
-
-                    System.arraycopy(quantizationVectors[indices[vecIndex]],
+                    HuffmanNode currentHuffmanNode = huffman.getRoot();
+                    boolean bit;
+                    while (!currentHuffmanNode.isLeaf()) {
+                        bit = inBitStream.readBit();
+                        currentHuffmanNode = currentHuffmanNode.traverse(bit);
+                    }
+                    System.arraycopy(codebook.getVectors()[currentHuffmanNode.getSymbol()].getVector(),
                                      0,
                                      decompressedVectors[vecIndex],
                                      0,

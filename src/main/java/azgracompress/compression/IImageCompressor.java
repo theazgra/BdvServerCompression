@@ -12,7 +12,7 @@ public interface IImageCompressor {
      * @param compressStream Compressed data stream.
      * @throws ImageCompressionException when compression fails.
      */
-    void compress(DataOutputStream compressStream) throws ImageCompressionException;
+    long[] compress(DataOutputStream compressStream) throws ImageCompressionException;
 
     /**
      * Train codebook from selected frames and save the learned codebook to cache file.

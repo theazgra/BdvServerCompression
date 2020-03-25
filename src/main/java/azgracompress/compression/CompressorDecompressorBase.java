@@ -2,17 +2,37 @@ package azgracompress.compression;
 
 import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.compression.exception.ImageCompressionException;
+import azgracompress.huffman.Huffman;
+import azgracompress.io.OutBitStream;
+
+import java.io.DataOutputStream;
 
 public abstract class CompressorDecompressorBase {
+    public static final int LONG_BYTES = 8;
     public static final String EXTENSION = ".QCMP";
     public static final String RAW_EXTENSION_NO_DOT = "raw";
 
     protected final ParsedCliOptions options;
-    protected final int codebookSize;
+    private final int codebookSize;
 
     public CompressorDecompressorBase(ParsedCliOptions options) {
         this.options = options;
         this.codebookSize = (int) Math.pow(2, this.options.getBitsPerPixel());
+    }
+
+    protected int[] createHuffmanSymbols(final int codebookSize) {
+        int[] symbols = new int[codebookSize];
+        for (int i = 0; i < codebookSize; i++) {
+            symbols[i] = i;
+        }
+        return symbols;
+    }
+
+    protected Huffman createHuffmanCoder(final int[] symbols, final long[] frequencies) {
+        Huffman huffman = new Huffman(symbols, frequencies);
+        huffman.buildHuffmanTree();
+        return huffman;
     }
 
     protected int[] getPlaneIndicesForCompression() {
@@ -63,5 +83,40 @@ public abstract class CompressorDecompressorBase {
         if (options.isVerbose()) {
             System.err.println(message);
         }
+    }
+
+    /**
+     * Get index of the middle plane.
+     *
+     * @return Index of the middle plane.
+     */
+    protected int getMiddlePlaneIndex() {
+        return (options.getImageDimension().getZ() / 2);
+    }
+
+    /**
+     * Write huffman encoded indices to the compress stream.
+     *
+     * @param compressStream Compress stream.
+     * @param huffman        Huffman encoder.
+     * @param indices        Indices to write.
+     * @return Number of bytes written.
+     * @throws ImageCompressionException when fails to write to compress stream.
+     */
+    protected long writeHuffmanEncodedIndices(DataOutputStream compressStream,
+                                              final Huffman huffman,
+                                              final int[] indices) throws ImageCompressionException {
+        try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
+            for (final int index : indices) {
+                outBitStream.write(huffman.getCode(index));
+            }
+            return outBitStream.getBytesWritten();
+        } catch (Exception ex) {
+            throw new ImageCompressionException("Unable to write indices to OutBitStream.", ex);
+        }
+    }
+
+    protected int getCodebookSize() {
+        return codebookSize;
     }
 }

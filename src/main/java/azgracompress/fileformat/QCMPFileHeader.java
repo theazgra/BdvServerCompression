@@ -9,7 +9,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class QCMPFileHeader {
-    public static final int QCMP_HEADER_SIZE = 23;
+    public static final int BASE_QCMP_HEADER_SIZE = 23;
     public static final String QCMP_MAGIC_VALUE = "QCMPFILE";
 
     private String magicValue = QCMP_MAGIC_VALUE;
@@ -24,6 +24,8 @@ public class QCMPFileHeader {
     private int vectorSizeX;
     private int vectorSizeY;
     private int vectorSizeZ;
+
+    private long[] planeDataSizes;
 
 
     /**
@@ -69,11 +71,17 @@ public class QCMPFileHeader {
         outputStream.writeShort(vectorSizeX);
         outputStream.writeShort(vectorSizeY);
         outputStream.writeShort(vectorSizeZ);
+
+
+        // NOTE(Moravec): Allocate space for plane data sizes. Offset: 23.
+        for (int i = 0; i < imageSizeZ; i++) {
+            outputStream.writeInt(0x0);
+        }
     }
 
     public boolean readHeader(DataInputStream inputStream) throws IOException {
 
-        if (inputStream.available() < QCMP_HEADER_SIZE) {
+        if (inputStream.available() < BASE_QCMP_HEADER_SIZE) {
             return false;
         }
 
@@ -100,6 +108,12 @@ public class QCMPFileHeader {
         vectorSizeX = inputStream.readUnsignedShort();
         vectorSizeY = inputStream.readUnsignedShort();
         vectorSizeZ = inputStream.readUnsignedShort();
+
+        planeDataSizes = new long[imageSizeZ];
+        for (int i = 0; i < imageSizeZ; i++) {
+            final long readValue = inputStream.readInt();
+            planeDataSizes[i] = (readValue & 0x00000000FFFFFFFFL);
+        }
 
         return true;
     }
@@ -194,5 +208,13 @@ public class QCMPFileHeader {
         vectorSizeX = vectorDims.getX();
         vectorSizeY = vectorDims.getY();
         vectorSizeZ = 1;
+    }
+
+    public long[] getPlaneDataSizes() {
+        return planeDataSizes;
+    }
+
+    public long getHeaderSize() {
+        return BASE_QCMP_HEADER_SIZE + (imageSizeZ * 4);
     }
 }

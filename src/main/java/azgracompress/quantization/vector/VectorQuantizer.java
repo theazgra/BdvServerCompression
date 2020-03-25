@@ -3,18 +3,27 @@ package azgracompress.quantization.vector;
 public class VectorQuantizer {
 
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
-    private final CodebookEntry[] codebook;
+    private final VQCodebook codebook;
+    private final CodebookEntry[] codebookVectors;
     private final int vectorSize;
+    private final long[] frequencies;
 
-    public VectorQuantizer(final CodebookEntry[] codebook) {
+    public VectorQuantizer(final VQCodebook codebook) {
         this.codebook = codebook;
-        vectorSize = codebook[0].getVector().length;
+        this.codebookVectors = codebook.getVectors();
+        vectorSize = codebookVectors[0].getVector().length;
+        this.frequencies = codebook.getVectorFrequencies();
     }
 
     public int[] quantize(final int[] dataVector) {
         assert (dataVector.length > 0 && dataVector.length % vectorSize == 0) : "Wrong vector size";
         final CodebookEntry closestEntry = findClosestCodebookEntry(dataVector, metric);
         return closestEntry.getVector();
+    }
+
+    public int quantizeToIndex(final int[] dataVector) {
+        assert (dataVector.length > 0 && dataVector.length % vectorSize == 0) : "Wrong vector size";
+        return findClosestCodebookEntryIndex(dataVector, metric);
     }
 
     public int[][] quantize(final int[][] dataVectors, final int workerCount) {
@@ -29,7 +38,7 @@ public class VectorQuantizer {
         } else {
             final int[] indices = quantizeIntoIndices(dataVectors, workerCount);
             for (int i = 0; i < dataVectors.length; i++) {
-                result[i] = codebook[indices[i]].getVector();
+                result[i] = codebookVectors[indices[i]].getVector();
             }
         }
 
@@ -40,15 +49,16 @@ public class VectorQuantizer {
         return quantizeIntoIndices(dataVectors, 1);
     }
 
-
     public int[] quantizeIntoIndices(final int[][] dataVectors, final int maxWorkerCount) {
 
         assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
         int[] indices = new int[dataVectors.length];
 
         if (maxWorkerCount == 1) {
+            int closestIndex;
             for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-                indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
+                closestIndex = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
+                indices[vectorIndex] = closestIndex;
             }
         } else {
             // Cap the worker count on 8
@@ -60,9 +70,12 @@ public class VectorQuantizer {
                 final int fromIndex = wId * workSize;
                 final int toIndex = (wId == workerCount - 1) ? dataVectors.length : (workSize + (wId * workSize));
 
+
                 workers[wId] = new Thread(() -> {
+                    int closestIndex;
                     for (int vectorIndex = fromIndex; vectorIndex < toIndex; vectorIndex++) {
-                        indices[vectorIndex] = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
+                        closestIndex = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
+                        indices[vectorIndex] = closestIndex;
                     }
                 });
 
@@ -119,16 +132,16 @@ public class VectorQuantizer {
     }
 
     private CodebookEntry findClosestCodebookEntry(final int[] dataVector, final VectorDistanceMetric metric) {
-        return codebook[findClosestCodebookEntryIndex(dataVector, metric)];
+        return codebookVectors[findClosestCodebookEntryIndex(dataVector, metric)];
     }
 
     private int findClosestCodebookEntryIndex(final int[] dataVector, final VectorDistanceMetric metric) {
         double minDist = Double.MAX_VALUE;
         int closestEntryIndex = 0;
-        for (int entryIndex = 0; entryIndex < codebook.length; entryIndex++) {
+        for (int entryIndex = 0; entryIndex < codebookVectors.length; entryIndex++) {
 
 
-            final double dist = distanceBetweenVectors(dataVector, codebook[entryIndex].getVector(), metric);
+            final double dist = distanceBetweenVectors(dataVector, codebookVectors[entryIndex].getVector(), metric);
             if (dist < minDist) {
                 minDist = dist;
                 closestEntryIndex = entryIndex;
@@ -138,8 +151,12 @@ public class VectorQuantizer {
         return closestEntryIndex;
     }
 
-    public CodebookEntry[] getCodebook() {
-        return codebook;
+    public CodebookEntry[] getCodebookVectors() {
+        return codebookVectors;
+    }
+
+    public long[] getFrequencies() {
+        return frequencies;
     }
 }
 

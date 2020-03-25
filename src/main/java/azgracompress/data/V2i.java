@@ -47,4 +47,8 @@ public class V2i {
     public V2l toV2l() {
         return new V2l(x, y);
     }
+
+    public V3i toV3i() {
+        return new V3i(x, y, 1);
+    }
 }

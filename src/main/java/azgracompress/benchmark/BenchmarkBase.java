@@ -24,8 +24,7 @@ abstract class BenchmarkBase {
     protected final int[] planes;
     protected final V3i rawImageDims;
 
-    protected final boolean hasReferencePlane;
-    protected final int referencePlaneIndex;
+    protected final boolean useMiddlePlane;
     protected final int codebookSize;
     protected final boolean hasCacheFolder;
     protected final String cacheFolder;
@@ -35,15 +34,35 @@ abstract class BenchmarkBase {
 
     protected final ParsedCliOptions options;
 
+//    protected BenchmarkBase(final String inputFile,
+//                            final String outputDirectory,
+//                            final int[] planes,
+//                            final V3i rawImageDims) {
+//        this.inputFile = inputFile;
+//        this.outputDirectory = outputDirectory;
+//        this.planes = planes;
+//        this.rawImageDims = rawImageDims;
+//
+//        useMiddlePlane = false;
+//        codebookSize = 256;
+//
+//        hasCacheFolder = false;
+//        cacheFolder = null;
+//        hasGeneralQuantizer = false;
+//
+//        workerCount = 1;
+//    }
+
     protected BenchmarkBase(final ParsedCliOptions options) {
         this.options = options;
 
         final InputFileInfo ifi = options.getInputFileInfo();
         this.inputFile = ifi.getFilePath();
         this.outputDirectory = options.getOutputFile();
+
         this.rawImageDims = ifi.getDimensions();
-        this.hasReferencePlane = options.hasReferencePlaneIndex();
-        this.referencePlaneIndex = options.getReferencePlaneIndex();
+        this.useMiddlePlane = options.shouldUseMiddlePlane();
+
         this.codebookSize = (int) Math.pow(2, options.getBitsPerPixel());
 
         if (ifi.isPlaneIndexSet()) {
@@ -67,7 +86,7 @@ abstract class BenchmarkBase {
 
         hasCacheFolder = options.hasCodebookCacheFolder();
         cacheFolder = options.getCodebookCacheFolder();
-        hasGeneralQuantizer = hasReferencePlane || hasCacheFolder;
+        hasGeneralQuantizer = useMiddlePlane || hasCacheFolder;
         workerCount = options.getWorkerCount();
     }
 

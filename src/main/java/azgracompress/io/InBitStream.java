@@ -52,7 +52,12 @@ public class InBitStream implements AutoCloseable {
         }
     }
 
-    private int readBit() throws IOException {
+
+    public boolean readBit() throws IOException {
+        return (readBitFromBuffer() == 1);
+    }
+
+    private int readBitFromBuffer() throws IOException {
         if (bitBufferSize == 0) {
             readByteToBitBuffer();
         }
@@ -67,7 +72,7 @@ public class InBitStream implements AutoCloseable {
 
         //writing => bit = (value & (1 << shift));
         for (int shift = 0; shift < bitsPerValue; shift++) {
-            bit = readBit();
+            bit = readBitFromBuffer();
             result |= (bit << shift);
         }
         return result;

@@ -122,9 +122,6 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
         final int workerCount = 8;
         final V3i dims = new V3i(1041, 996, 946);
         final int planePixelCount = dims.getX() * dims.getY();
-        //        ImageU16 compressedPlane = null;
-        //        ImageU16 originalPlane = null;
-        //        ImageU16 differencePlane = null;
 
         PlaneError[] planeErrors = new PlaneError[dims.getZ()];
 
