@@ -3,6 +3,7 @@ package azgracompress.compression;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.fileformat.QCMPFileHeader;
+import azgracompress.utilities.Stopwatch;
 
 import java.io.*;
 
@@ -101,7 +102,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             logBuilder.append("Codebook:\t\t").append(header.isCodebookPerPlane() ? "one per plane\n" : "one for " +
                     "all\n");
 
-            final int codebookSize = (int)Math.pow(2, header.getBitsPerPixel());
+            final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
             logBuilder.append("Codebook size:\t\t").append(codebookSize).append('\n');
 
             logBuilder.append("Image size X:\t\t").append(header.getImageSizeX()).append('\n');
@@ -126,9 +127,9 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                                                 ((fileSize / 1000) / 1000)));
                 logBuilder.append("Data size:\t\t").append(dataSize).append(" Bytes ").append(dataSize == expectedDataSize ? "(correct)\n" : "(INVALID)\n");
 
-                 final long uncompressedSize = header.getImageDims().multiplyTogether() * 2;
-                 final double compressionRatio = (double)fileSize / (double)uncompressedSize;
-                 logBuilder.append(String.format("Compression ratio:\t%.5f\n", compressionRatio));
+                final long uncompressedSize = header.getImageDims().multiplyTogether() * 2;
+                final double compressionRatio = (double) fileSize / (double) uncompressedSize;
+                logBuilder.append(String.format("Compression ratio:\t%.5f\n", compressionRatio));
             }
         }
 
@@ -138,11 +139,12 @@ public class ImageDecompressor extends CompressorDecompressorBase {
 
     public boolean decompress() {
 
+        final Stopwatch decompressionStopwatch = Stopwatch.startNew();
+        final long decompressedFileSize;
         try (FileInputStream fileInputStream = new FileInputStream(options.getInputFile());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
 
             final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
-
             if (header == null) {
                 System.err.println("Failed to read QCMPFile header");
                 return false;
@@ -151,6 +153,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 System.err.println("QCMPFile header is invalid");
                 return false;
             }
+            decompressedFileSize = header.getImageDims().multiplyTogether();
 
             IImageDecompressor imageDecompressor = getImageDecompressor(header);
             if (imageDecompressor == null) {
@@ -180,6 +183,11 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             ioEx.printStackTrace();
             return false;
         }
+        decompressionStopwatch.stop();
+        final double seconds = decompressionStopwatch.totalElapsedSeconds();
+        final double MBSize = ((double) decompressedFileSize / 1000.0) / 1000.0;
+        final double MBPerSec = MBSize / seconds;
+        Log("Decompression speed: %.4f MB/s", MBPerSec);
 
         return true;
     }

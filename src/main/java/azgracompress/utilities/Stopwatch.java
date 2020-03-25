@@ -53,8 +53,8 @@ public class Stopwatch {
         return elapsed.toMillis();
     }
 
-    public long totalElapsedSeconds() {
-        return elapsed.toSeconds();
+    public double totalElapsedSeconds() {
+        return (elapsed.toNanos() / 1_000_000_000.0);
     }
 
     public String getElapsedTimeString() {
