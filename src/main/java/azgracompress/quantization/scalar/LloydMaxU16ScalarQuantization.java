@@ -225,7 +225,7 @@ public class LloydMaxU16ScalarQuantization {
             System.out.println(String.format("Initial MSE: %f", currentMse));
         }
 
-        solutionHistory.add(new QTrainIteration(0, currentMse, currentMse, psnr, psnr));
+        solutionHistory.add(new QTrainIteration(0, currentMse, psnr));
 
         double mseImprovement = 1;
         int iteration = 0;
@@ -240,7 +240,7 @@ public class LloydMaxU16ScalarQuantization {
             mseImprovement = prevMse - currentMse;
 
             psnr = Utils.calculatePsnr(currentMse, U16.Max);
-            solutionHistory.add(new QTrainIteration(++iteration, currentMse, currentMse, psnr, psnr));
+            solutionHistory.add(new QTrainIteration(++iteration, currentMse, psnr));
 
             if (verbose) {
                 System.out.println(String.format("Current MSE: %.4f PSNR: %.4f dB",

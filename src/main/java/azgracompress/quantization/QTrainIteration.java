@@ -2,37 +2,25 @@ package azgracompress.quantization;
 
 public class QTrainIteration {
     private final int iteration;
-    private final double averageMSE;
-    private final double bestMSE;
-    private final double averagePSNR;
-    private final double bestPSNR;
+    private final double mse;
+    private final double PSNR;
 
 
-    public QTrainIteration(int iteration, double averageMSE, double bestMSE, double averagePSNR, double bestPSNR) {
+    public QTrainIteration(int iteration, double mse, double psnr) {
         this.iteration = iteration;
-        this.averageMSE = averageMSE;
-        this.bestMSE = bestMSE;
-        this.averagePSNR = averagePSNR;
-        this.bestPSNR = bestPSNR;
+        this.mse = mse;
+        this.PSNR = psnr;
     }
 
     public int getIteration() {
         return iteration;
     }
 
-    public double getAverageMSE() {
-        return averageMSE;
+    public double getMse() {
+        return mse;
     }
 
-    public double getBestMSE() {
-        return bestMSE;
-    }
-
-    public double getAveragePSNR() {
-        return averagePSNR;
-    }
-
-    public double getBestPSNR() {
-        return bestPSNR;
+    public double getPSNR() {
+        return PSNR;
     }
 }

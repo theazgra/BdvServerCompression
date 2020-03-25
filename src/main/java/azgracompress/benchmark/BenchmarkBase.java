@@ -17,6 +17,8 @@ abstract class BenchmarkBase {
     protected final static String QUANTIZED_FILE_TEMPLATE = "%d_cb%d.raw";
     protected final static String DIFFERENCE_FILE_TEMPLATE = "%d_cb%d.data";
     protected final static String ABSOLUTE_DIFFERENCE_FILE_TEMPLATE = "%d_cb%d_abs.data";
+    protected final static String TRAIN_FILE_TEMPLATE = "%d_cb%d_trainLog.csv";
+
 
     protected final String inputFile;
     protected final String outputDirectory;
@@ -186,7 +188,7 @@ abstract class BenchmarkBase {
      * @param trainingLog QTrainingLog
      */
     protected void saveQTrainLog(final String filename, final QTrainIteration[] trainingLog) {
-        final String CSV_HEADER = "It;AvgMSE;BestMSE;AvgPSNR;BestPSNR\n";
+        final String CSV_HEADER = "It;MSE;PSNR\n";
         try {
             FileOutputStream fileStream = new FileOutputStream(getFileNamePathIntoOutDir(filename));
             OutputStreamWriter writer = new OutputStreamWriter(fileStream);
@@ -194,12 +196,10 @@ abstract class BenchmarkBase {
             writer.write(CSV_HEADER);
 
             for (final QTrainIteration it : trainingLog) {
-                writer.write(String.format("%d;%.5f;%.5f;%.5f;%.5f\n",
+                writer.write(String.format("%d;%.5f;%.5f\n",
                                            it.getIteration(),
-                                           it.getAverageMSE(),
-                                           it.getBestMSE(),
-                                           it.getAveragePSNR(),
-                                           it.getBestPSNR()));
+                                           it.getMse(),
+                                           it.getPSNR()));
             }
             writer.flush();
             fileStream.flush();

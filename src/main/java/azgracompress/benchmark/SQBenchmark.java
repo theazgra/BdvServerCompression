@@ -7,6 +7,7 @@ import azgracompress.quantization.QTrainIteration;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
 import azgracompress.quantization.scalar.SQCodebook;
 import azgracompress.quantization.scalar.ScalarQuantizer;
+import azgracompress.utilities.Utils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -46,7 +47,7 @@ public class SQBenchmark extends BenchmarkBase {
                 System.err.println("Failed to load middle plane data.");
                 return;
             }
-            quantizer = trainLloydMaxQuantizer(middlePlaneData, codebookSize);
+            quantizer = trainLloydMaxQuantizer(middlePlaneData, codebookSize, null);
             System.out.println("Created quantizer from middle plane.");
         }
 
@@ -59,8 +60,15 @@ public class SQBenchmark extends BenchmarkBase {
                 return;
             }
 
+            final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
+            final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
+            final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
+                                                          planeIndex,
+                                                          codebookSize);
+            final String trainLogFile = String.format(TRAIN_FILE_TEMPLATE, planeIndex, codebookSize);
+
             if (!hasGeneralQuantizer) {
-                quantizer = trainLloydMaxQuantizer(planeData, codebookSize);
+                quantizer = trainLloydMaxQuantizer(planeData, codebookSize, trainLogFile);
                 System.out.println("Created plane quantizer");
             }
 
@@ -69,15 +77,15 @@ public class SQBenchmark extends BenchmarkBase {
                 return;
             }
 
-            // TODO(Moravec): Add huffman coding.
-
-            final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
-            final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
-            final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
-                                                          planeIndex,
-                                                          codebookSize);
-
             final int[] quantizedData = quantizer.quantize(planeData);
+
+            {
+                final int[] diffArray = Utils.getDifference(planeData, quantizedData);
+                final double mse = Utils.calculateMse(diffArray);
+                final double PSNR = Utils.calculatePsnr(mse, U16.Max);
+                System.out.println(String.format("MSE: %.4f\tPNSR: %.4f(dB)", mse, PSNR));
+            }
+
 
             if (!saveQuantizedPlaneData(quantizedData, quantizedFile)) {
                 System.err.println("Failed to save quantized plane.");
@@ -113,10 +121,15 @@ public class SQBenchmark extends BenchmarkBase {
         }
     }
 
-    private ScalarQuantizer trainLloydMaxQuantizer(final int[] data, final int codebookSize) {
+    private ScalarQuantizer trainLloydMaxQuantizer(final int[] data,
+                                                   final int codebookSize,
+                                                   final String trainLogFile) {
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(data, codebookSize, workerCount);
         QTrainIteration[] trainingReport = lloydMax.train(false);
-//        saveQTrainLog(String.format("p%d_cb_%d_lloyd.csv", planeIndex, codebookSize), trainingReport);
+        if (trainLogFile != null) {
+            saveQTrainLog(trainLogFile, trainingReport);
+            System.out.println("Saved the train log file to: " + trainLogFile);
+        }
         return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCodebook());
     }
 }
