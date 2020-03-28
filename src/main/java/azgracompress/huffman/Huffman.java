@@ -1,14 +1,13 @@
 package azgracompress.huffman;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.PriorityQueue;
+import java.util.*;
 
 public class Huffman {
-    HuffmanNode root = null;
-    HashMap<Integer, boolean[]> symbolCodes;
-    final int[] symbols;
-    final long[] symbolFrequencies;
+    private HuffmanNode root = null;
+    private HashMap<Integer, boolean[]> symbolCodes;
+    private HashMap<Integer, Double> symbolProbabilityMap;
+    private final int[] symbols;
+    private final long[] symbolFrequencies;
 
     public Huffman(int[] symbols, long[] symbolFrequencies) {
         assert (symbols.length == symbolFrequencies.length) : "Array lengths mismatch";
@@ -29,8 +28,6 @@ public class Huffman {
                                                  parentB.getProbability()));
                 assert (parentA.getProbability() <= parentB.getProbability());
             }
-            assert (parentA != null && parentB != null);
-
 
             parentA.setBit(1);
             parentB.setBit(0);
@@ -81,6 +78,7 @@ public class Huffman {
     }
 
     private PriorityQueue<HuffmanNode> buildPriorityQueue() {
+        symbolProbabilityMap = new HashMap<>(symbols.length);
         double totalFrequency = 0.0;
         for (final long symbolFrequency : symbolFrequencies) {
             totalFrequency += symbolFrequency;
@@ -90,6 +88,7 @@ public class Huffman {
 
         for (int sIndex = 0; sIndex < symbols.length; sIndex++) {
             final double symbolProbability = (double) symbolFrequencies[sIndex] / totalFrequency;
+            symbolProbabilityMap.put(symbols[sIndex], symbolProbability);
             queue.add(new HuffmanNode(symbols[sIndex], symbolProbability, symbolFrequencies[sIndex]));
         }
 
@@ -103,5 +102,26 @@ public class Huffman {
 
     public HuffmanNode getRoot() {
         return root;
+    }
+
+    public HashMap<Integer, Double> getSymbolProbabilityMap() {
+        return createSortedHashMap(symbolProbabilityMap);
+    }
+
+    private HashMap<Integer, Double> createSortedHashMap(HashMap<Integer, Double> map) {
+        List<Map.Entry<Integer, Double>> list = new LinkedList<Map.Entry<Integer, Double>>(map.entrySet());
+        //Custom Comparator
+        list.sort(new Comparator<Map.Entry<Integer, Double>>() {
+            @Override
+            public int compare(Map.Entry<Integer, Double> t0, Map.Entry<Integer, Double> t1) {
+                return -(t0.getValue().compareTo(t1.getValue()));
+            }
+        });
+        //copying the sorted list in HashMap to preserve the iteration order
+        HashMap<Integer,Double> sortedHashMap = new LinkedHashMap<Integer,Double>();
+        for (Map.Entry<Integer, Double> entry : list) {
+            sortedHashMap.put(entry.getKey(), entry.getValue());
+        }
+        return sortedHashMap;
     }
 }
