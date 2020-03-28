@@ -247,9 +247,9 @@ public class LBGVectorQuantizer {
             mse /= (double) trainingVectors.length;
         }
         s.stop();
-        if (this.verbose) {
-            System.out.println(s);
-        }
+        //        if (this.verbose) {
+        ////            System.out.println(s);
+        //        }
         return mse;
     }
 
@@ -499,7 +499,7 @@ public class LBGVectorQuantizer {
      * @param codebook Vector codebook.
      */
     private void assignVectorsToClosestEntry(LearningCodebookEntry[] codebook) {
-        Stopwatch stopwatch = Stopwatch.startNew("assignVectorsToClosestEntry");
+        //        Stopwatch stopwatch = Stopwatch.startNew("assignVectorsToClosestEntry");
         if (workerCount > 1) {
             parallelAssignVectors(codebook);
             // In parallel version entry properties are already calculated.
@@ -508,10 +508,10 @@ public class LBGVectorQuantizer {
             // Calculate all the entry properties.
             calculateEntryProperties(codebook);
         }
-        stopwatch.stop();
-        if (this.verbose) {
-            System.out.println(stopwatch);
-        }
+        //        stopwatch.stop();
+        //        if (this.verbose) {
+        //            System.out.println(stopwatch);
+        //        }
 
     }
 
