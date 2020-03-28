@@ -83,7 +83,7 @@ public class SQBenchmark extends BenchmarkBase {
                 final int[] diffArray = Utils.getDifference(planeData, quantizedData);
                 final double mse = Utils.calculateMse(diffArray);
                 final double PSNR = Utils.calculatePsnr(mse, U16.Max);
-                System.out.println(String.format("MSE: %.4f\tPNSR: %.4f(dB)", mse, PSNR));
+                System.out.println(String.format("MSE: %.4f\tPSNR: %.4f(dB)", mse, PSNR));
             }
 
 

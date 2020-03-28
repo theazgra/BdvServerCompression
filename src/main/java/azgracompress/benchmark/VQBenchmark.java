@@ -1,5 +1,6 @@
 package azgracompress.benchmark;
 
+import azgracompress.U16;
 import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.*;
@@ -7,6 +8,7 @@ import azgracompress.quantization.vector.LBGResult;
 import azgracompress.quantization.vector.LBGVectorQuantizer;
 import azgracompress.quantization.vector.VQCodebook;
 import azgracompress.quantization.vector.VectorQuantizer;
+import azgracompress.utilities.Utils;
 
 import java.io.File;
 
@@ -116,9 +118,15 @@ public class VQBenchmark extends BenchmarkBase {
 
             final int[][] quantizedData = quantizer.quantize(planeData, workerCount);
 
-            // TODO(Moravec): Add huffman coding.
-
             final ImageU16 quantizedImage = reconstructImageFromQuantizedVectors(plane, quantizedData, qVector);
+
+            {
+
+                final int[] diffArray = Utils.getDifference(plane.getData(), quantizedImage.getData());
+                final double mse = Utils.calculateMse(diffArray);
+                final double PSNR = Utils.calculatePsnr(mse, U16.Max);
+                System.out.println(String.format("MSE: %.4f\tPSNR: %.4f(dB)", mse, PSNR));
+            }
 
             if (!saveQuantizedPlaneData(quantizedImage.getData(), quantizedFile)) {
                 System.err.println("Failed to save quantized plane.");
