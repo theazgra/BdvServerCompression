@@ -114,7 +114,8 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             logBuilder.append("Vector size Z:\t\t").append(header.getVectorSizeZ()).append('\n');
 
             final long fileSize = new File(options.getInputFile()).length();
-            final long dataSize = fileSize - header.getHeaderSize();
+            final long headerSize = header.getHeaderSize();
+            final long dataSize = fileSize - headerSize;
 
             final IImageDecompressor decompressor = getImageDecompressor(header);
 
@@ -125,11 +126,17 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                                                 fileSize,
                                                 (fileSize / 1000),
                                                 ((fileSize / 1000) / 1000)));
+
+                logBuilder.append("Header size:\t\t").append(headerSize).append(" Bytes\n");
                 logBuilder.append("Data size:\t\t").append(dataSize).append(" Bytes ").append(dataSize == expectedDataSize ? "(correct)\n" : "(INVALID)\n");
 
-                final long uncompressedSize = header.getImageDims().multiplyTogether() * 2;
+                final long pixelCount = header.getImageDims().multiplyTogether();
+                final long uncompressedSize = 2 * pixelCount; // We assert 16 bit (2 byte) pixel.
                 final double compressionRatio = (double) fileSize / (double) uncompressedSize;
                 logBuilder.append(String.format("Compression ratio:\t%.5f\n", compressionRatio));
+
+                final double BPP = ((double) fileSize * 8.0) / (double) pixelCount;
+                logBuilder.append(String.format("Bits Per Pixel (BPP):\t%.5f\n", BPP));
             }
         }
 
