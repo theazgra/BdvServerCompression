@@ -122,13 +122,22 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             if (decompressor != null) {
                 final long expectedDataSize = decompressor.getExpectedDataSize(header);
                 validFile = (dataSize == expectedDataSize);
-                logBuilder.append(String.format("File size:\t\t%d B (%d kB) (%d MB)\n",
-                                                fileSize,
-                                                (fileSize / 1000),
-                                                ((fileSize / 1000) / 1000)));
+
+                logBuilder.append("File size:\t\t").append(fileSize).append(" B");
+
+                final long KB = (fileSize / 1000);
+                if (KB > 0) {
+                    logBuilder.append(" (").append(KB).append(" KB)");
+                    final long MB = (KB / 1000);
+                    if (MB > 0) {
+                        logBuilder.append(" (").append(MB).append(" MB)");
+                    }
+                }
+                logBuilder.append('\n');
 
                 logBuilder.append("Header size:\t\t").append(headerSize).append(" Bytes\n");
-                logBuilder.append("Data size:\t\t").append(dataSize).append(" Bytes ").append(dataSize == expectedDataSize ? "(correct)\n" : "(INVALID)\n");
+                logBuilder.append("Data size:\t\t").append(dataSize).append(" Bytes ")
+                        .append(dataSize == expectedDataSize ? "(correct)\n" : "(INVALID)\n");
 
                 final long pixelCount = header.getImageDims().multiplyTogether();
                 final long uncompressedSize = 2 * pixelCount; // We assert 16 bit (2 byte) pixel.
