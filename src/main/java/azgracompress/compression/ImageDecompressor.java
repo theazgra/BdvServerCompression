@@ -133,10 +133,10 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 final long pixelCount = header.getImageDims().multiplyTogether();
                 final long uncompressedSize = 2 * pixelCount; // We assert 16 bit (2 byte) pixel.
                 final double compressionRatio = (double) fileSize / (double) uncompressedSize;
-                logBuilder.append(String.format("Compression ratio:\t%.5f\n", compressionRatio));
+                logBuilder.append(String.format("Compression ratio:\t%.4f\n", compressionRatio));
 
                 final double BPP = ((double) fileSize * 8.0) / (double) pixelCount;
-                logBuilder.append(String.format("Bits Per Pixel (BPP):\t%.5f\n", BPP));
+                logBuilder.append(String.format("Bits Per Pixel (BPP):\t%.4f\n", BPP));
             }
         }
 
