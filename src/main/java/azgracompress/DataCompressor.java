@@ -4,7 +4,7 @@ import azgracompress.benchmark.CompressionBenchmark;
 import azgracompress.cli.CliConstants;
 import azgracompress.cli.CustomFunctionBase;
 import azgracompress.cli.ParsedCliOptions;
-import azgracompress.cli.functions.MeasurePlaneErrorFunction;
+import azgracompress.cli.functions.EntropyCalculation;
 import azgracompress.compression.ImageCompressor;
 import azgracompress.compression.ImageDecompressor;
 import org.apache.commons.cli.*;
@@ -69,7 +69,8 @@ public class DataCompressor {
             case CustomFunction: {
                 // NOTE(Moravec): Custom function class here |
                 //                                           V
-                CustomFunctionBase customFunction = new MeasurePlaneErrorFunction(parsedCliOptions);
+                //CustomFunctionBase customFunction = new MeasurePlaneErrorFunction(parsedCliOptions);
+                CustomFunctionBase customFunction = new EntropyCalculation(parsedCliOptions);
                 if (!customFunction.run()) {
                     System.err.println("Errors occurred during custom function.");
                 }

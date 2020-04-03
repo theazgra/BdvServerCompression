@@ -1,5 +1,7 @@
 package azgracompress.utilities;
 
+import azgracompress.U16;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -99,6 +101,43 @@ public class Utils {
         return new MinMaxResult<Integer>(min, max);
     }
 
+    /**
+     * Calculate individual pixel values frequencies.
+     * Same result as of histogram of bin width = 1
+     *
+     * @param data Pixel data.
+     * @return Pixel value frequencies.
+     */
+    public static double[] calculatePixelFrequencies(final int[] data) {
+        double[] frequencies = new double[U16.Max + 1];
+        for (final int pixelValue : data) {
+            ++frequencies[pixelValue];
+        }
+        return frequencies;
+    }
+
+    public static double log2(final double v) {
+        return (Math.log(v) / Math.log(2));
+    }
+
+    public static double calculateEntropy(final int[] pixelData) {
+        final double pixelCount = pixelData.length;
+        final double[] pixelFrequencies = Utils.calculatePixelFrequencies(pixelData);
+        final double[] pixelProbabilities = new double[pixelFrequencies.length];
+
+        for (int i = 0; i < pixelFrequencies.length; i++) {
+            pixelProbabilities[i] = pixelFrequencies[i] / pixelCount;
+        }
+
+        double entropy = 0.0;
+
+        for (double pixelProbability : pixelProbabilities) {
+            if (pixelProbability > 0.0) {
+                entropy += pixelProbability * log2(pixelProbability);
+            }
+        }
+        return (-entropy);
+    }
 
     public static double calculateMse(final int[] difference) {
         double sum = 0.0;
