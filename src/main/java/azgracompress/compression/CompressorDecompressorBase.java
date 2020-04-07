@@ -6,8 +6,6 @@ import azgracompress.huffman.Huffman;
 import azgracompress.io.OutBitStream;
 
 import java.io.DataOutputStream;
-import java.util.Iterator;
-import java.util.Map;
 
 public abstract class CompressorDecompressorBase {
     public static final int LONG_BYTES = 8;
@@ -33,18 +31,18 @@ public abstract class CompressorDecompressorBase {
         Huffman huffman = new Huffman(symbols, frequencies);
         huffman.buildHuffmanTree();
 
-        if (options.isVerbose()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Huffman symbols and their probabilities:\n");
-
-            Iterator<Map.Entry<Integer, Double>> it = huffman.getSymbolProbabilityMap().entrySet().iterator();
-            while (it.hasNext()) {
-                final Map.Entry<Integer, Double> pair = (Map.Entry<Integer, Double>) it.next();
-
-                sb.append(String.format("%d: %.10f\n", pair.getKey(), pair.getValue()));
-            }
-            System.out.println(sb.toString());
-        }
+//        if (options.isVerbose()) {
+//            StringBuilder sb = new StringBuilder();
+//            sb.append("Huffman symbols and their probabilities:\n");
+//
+//            Iterator<Map.Entry<Integer, Double>> it = huffman.getSymbolProbabilityMap().entrySet().iterator();
+//            while (it.hasNext()) {
+//                final Map.Entry<Integer, Double> pair = (Map.Entry<Integer, Double>) it.next();
+//
+//                sb.append(String.format("%d: %.10f\n", pair.getKey(), pair.getValue()));
+//            }
+//            System.out.println(sb.toString());
+//        }
 
         return huffman;
     }

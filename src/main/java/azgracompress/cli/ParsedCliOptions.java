@@ -9,7 +9,7 @@ import org.apache.commons.cli.CommandLine;
 import java.io.File;
 import java.nio.file.Paths;
 
-public class ParsedCliOptions {
+public class ParsedCliOptions implements Cloneable {
 
     private static final int DEFAULT_BITS_PER_PIXEL = 8;
 
@@ -487,5 +487,28 @@ public class ParsedCliOptions {
         } else {
             return imageDimension.getZ();
         }
+    }
+
+    /**
+     * Change te output file path.
+     *
+     * @param outputFile Output file path.
+     */
+    public void setOutputFile(final String outputFile) {
+        this.outputFile = outputFile;
+    }
+
+    /**
+     * Change te input file path.
+     *
+     * @param inputFile Input file path.
+     */
+    public void setInputFile(final String inputFile) {
+        this.inputFile = inputFile;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

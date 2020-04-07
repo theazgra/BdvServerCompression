@@ -14,6 +14,7 @@ import java.io.OutputStreamWriter;
 
 abstract class BenchmarkBase {
 
+    protected final static String COMPRESSED_FILE_TEMPLATE = "%d_cb%d.raw.qcmp";
     protected final static String QUANTIZED_FILE_TEMPLATE = "%d_cb%d.raw";
     protected final static String DIFFERENCE_FILE_TEMPLATE = "%d_cb%d.data";
     protected final static String ABSOLUTE_DIFFERENCE_FILE_TEMPLATE = "%d_cb%d_abs.data";
@@ -33,26 +34,10 @@ abstract class BenchmarkBase {
 
     protected final int workerCount;
 
-    protected BenchmarkBase(final String inputFile,
-                            final String outputDirectory,
-                            final int[] planes,
-                            final V3i rawImageDims) {
-        this.inputFile = inputFile;
-        this.outputDirectory = outputDirectory;
-        this.planes = planes;
-        this.rawImageDims = rawImageDims;
-
-        useMiddlePlane = false;
-        codebookSize = 256;
-
-        hasCacheFolder = false;
-        cacheFolder = null;
-        hasGeneralQuantizer = false;
-
-        workerCount = 1;
-    }
+    protected final ParsedCliOptions options;
 
     protected BenchmarkBase(final ParsedCliOptions options) {
+        this.options = options;
         this.inputFile = options.getInputFile();
         this.outputDirectory = options.getOutputFile();
         this.rawImageDims = options.getImageDimension();
@@ -152,12 +137,10 @@ abstract class BenchmarkBase {
      * @param absDiffFile     File storing u16 absolute difference values.
      * @return True if both files were saved successfully.
      */
-    protected boolean saveDifference(final int[] originalData,
-                                     final int[] transformedData,
+    protected boolean saveDifference(final int[] differenceData,
                                      final String diffFile,
                                      final String absDiffFile) {
 
-        final int[] differenceData = Utils.getDifference(originalData, transformedData);
         final int[] absDifferenceData = Utils.asAbsoluteValues(differenceData);
         final String diffFilePath = getFileNamePathIntoOutDir(diffFile);
         final String absDiffFilePath = getFileNamePathIntoOutDir(absDiffFile);

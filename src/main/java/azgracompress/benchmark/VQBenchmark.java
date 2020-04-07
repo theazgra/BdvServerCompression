@@ -16,10 +16,6 @@ public class VQBenchmark extends BenchmarkBase {
 
     final static V2i DEFAULT_QVECTOR = new V2i(3, 3);
 
-    public VQBenchmark(String inputFile, String outputDirectory, int[] planes, V3i rawImageDims) {
-        super(inputFile, outputDirectory, planes, rawImageDims);
-    }
-
     public VQBenchmark(final ParsedCliOptions options) {
         super(options);
     }
@@ -120,20 +116,18 @@ public class VQBenchmark extends BenchmarkBase {
 
             final ImageU16 quantizedImage = reconstructImageFromQuantizedVectors(plane, quantizedData, qVector);
 
-            {
 
-                final int[] diffArray = Utils.getDifference(plane.getData(), quantizedImage.getData());
-                final double mse = Utils.calculateMse(diffArray);
-                final double PSNR = Utils.calculatePsnr(mse, U16.Max);
-                System.out.println(String.format("MSE: %.4f\tPSNR: %.4f(dB)", mse, PSNR));
-            }
+            final int[] diffArray = Utils.getDifference(plane.getData(), quantizedImage.getData());
+            final double mse = Utils.calculateMse(diffArray);
+            final double PSNR = Utils.calculatePsnr(mse, U16.Max);
+            System.out.println(String.format("MSE: %.4f\tPSNR: %.4f(dB)", mse, PSNR));
 
             if (!saveQuantizedPlaneData(quantizedImage.getData(), quantizedFile)) {
                 System.err.println("Failed to save quantized plane.");
                 return;
             }
 
-            saveDifference(plane.getData(), quantizedImage.getData(), diffFile, absoluteDiffFile);
+            saveDifference(diffArray, diffFile, absoluteDiffFile);
         }
     }
 }

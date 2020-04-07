@@ -79,12 +79,10 @@ public class SQBenchmark extends BenchmarkBase {
 
             final int[] quantizedData = quantizer.quantize(planeData);
 
-            {
-                final int[] diffArray = Utils.getDifference(planeData, quantizedData);
-                final double mse = Utils.calculateMse(diffArray);
-                final double PSNR = Utils.calculatePsnr(mse, U16.Max);
-                System.out.println(String.format("MSE: %.4f\tPSNR: %.4f(dB)", mse, PSNR));
-            }
+            final int[] diffArray = Utils.getDifference(planeData, quantizedData);
+            final double mse = Utils.calculateMse(diffArray);
+            final double PSNR = Utils.calculatePsnr(mse, U16.Max);
+            System.out.println(String.format("MSE: %.4f\tPSNR: %.4f(dB)", mse, PSNR));
 
 
             if (!saveQuantizedPlaneData(quantizedData, quantizedFile)) {
@@ -92,7 +90,7 @@ public class SQBenchmark extends BenchmarkBase {
                 return;
             }
 
-            saveDifference(planeData, quantizedData, diffFile, absoluteDiffFile);
+            saveDifference(diffArray, diffFile, absoluteDiffFile);
         }
     }
 
