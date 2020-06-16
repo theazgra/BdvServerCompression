@@ -117,6 +117,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             final long headerSize = header.getHeaderSize();
             final long dataSize = fileSize - headerSize;
 
+
             final IImageDecompressor decompressor = getImageDecompressor(header);
 
             if (decompressor != null) {
@@ -150,6 +151,15 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         }
 
         logBuilder.append("\n=== Input file is ").append(validFile ? "VALID" : "INVALID").append(" ===\n");
+
+        if (header != null && options.isVerbose()) {
+            final long[] planeDataSizes = header.getPlaneDataSizes();
+            long planeIndex = 0;
+            for (final long planeDataSize : planeDataSizes) {
+                logBuilder.append(String.format("Plane: %d - %d Bytes\n", planeIndex++, planeDataSize));
+            }
+        }
+
         return logBuilder.toString();
     }
 
