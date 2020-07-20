@@ -9,6 +9,16 @@ import azgracompress.fileformat.QuantizationType;
  */
 public class CompressionOptions {
     /**
+     * Input image or compressed file.
+     */
+    private String inputFilePath;
+
+    /**
+     * Output image or compressed file.
+     */
+    private String outputFilePath;
+
+    /**
      * Type of quantization.
      */
     private QuantizationType quantizationType;
@@ -56,6 +66,23 @@ public class CompressionOptions {
 
     // NOTE(Moravec): Getters and setters for the private fields.
 
+
+    public String getInputFilePath() {
+        return inputFilePath;
+    }
+
+    public void setInputFilePath(String inputFilePath) {
+        this.inputFilePath = inputFilePath;
+    }
+
+    public String getOutputFilePath() {
+        return outputFilePath;
+    }
+
+    public void setOutputFilePath(String outputFilePath) {
+        this.outputFilePath = outputFilePath;
+    }
+
     public QuantizationType getQuantizationType() {
         return quantizationType;
     }
@@ -96,7 +123,7 @@ public class CompressionOptions {
         this.imageDimension = imageDimension;
     }
 
-    public boolean isUseMiddlePlane() {
+    public boolean shouldUseMiddlePlane() {
         return useMiddlePlane;
     }
 
@@ -106,6 +133,14 @@ public class CompressionOptions {
 
     public Integer getPlaneIndex() {
         return planeIndex;
+    }
+
+    public boolean isPlaneIndexSet() {
+        return (planeIndex != null);
+    }
+
+    public boolean isPlaneRangeSet() {
+        return (planeRange != null);
     }
 
     public void setPlaneIndex(Integer planeIndex) {
