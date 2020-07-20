@@ -78,7 +78,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
     @Override
     public long getExpectedDataSize(QCMPFileHeader header) {
         // Vector count in codebook
-        final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
+        final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
 
         // Single vector size in bytes.
         assert (header.getVectorSizeZ() == 1);
@@ -102,7 +102,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
     public void decompress(DataInputStream compressedStream,
                            DataOutputStream decompressStream,
                            QCMPFileHeader header) throws ImageDecompressionException {
-        final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
+        final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
         assert (header.getVectorSizeZ() == 1);
         final int vectorSize = header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
         final int planeCountForDecompression = header.getImageSizeZ();
@@ -137,7 +137,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (InBitStream inBitStream = new InBitStream(compressedStream,
-                                                           header.getBitsPerPixel(),
+                                                           header.getBitsPerCodebookIndex(),
                                                            planeDataSize)) {
                 inBitStream.readToBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);

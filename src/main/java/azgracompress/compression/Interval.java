@@ -33,7 +33,7 @@ public class Interval<T extends Comparable<T>> {
      * Get inclusive end of the interval.
      * @return Inclusive end of the interval.
      */
-    public T getInclusiveEnd() {
+    public T getInclusiveTo() {
         return to;
     }
 }

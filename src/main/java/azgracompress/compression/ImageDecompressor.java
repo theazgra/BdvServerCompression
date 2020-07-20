@@ -61,7 +61,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         boolean validFile = true;
 
         QCMPFileHeader header = null;
-        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFile());
+        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
             header = readQCMPFileHeader(dataInputStream);
         } catch (IOException ioEx) {
@@ -97,12 +97,12 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                     logBuilder.append("INVALID\n");
                     break;
             }
-            logBuilder.append("Bits per pixel:\t\t").append(header.getBitsPerPixel()).append('\n');
+            logBuilder.append("Bits per pixel:\t\t").append(header.getBitsPerCodebookIndex()).append('\n');
 
             logBuilder.append("Codebook:\t\t").append(header.isCodebookPerPlane() ? "one per plane\n" : "one for " +
                     "all\n");
 
-            final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
+            final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
             logBuilder.append("Codebook size:\t\t").append(codebookSize).append('\n');
 
             logBuilder.append("Image size X:\t\t").append(header.getImageSizeX()).append('\n');
@@ -113,7 +113,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             logBuilder.append("Vector size Y:\t\t").append(header.getVectorSizeY()).append('\n');
             logBuilder.append("Vector size Z:\t\t").append(header.getVectorSizeZ()).append('\n');
 
-            final long fileSize = new File(options.getInputFile()).length();
+            final long fileSize = new File(options.getInputFilePath()).length();
             final long headerSize = header.getHeaderSize();
             final long dataSize = fileSize - headerSize;
 
@@ -167,7 +167,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
 
         final Stopwatch decompressionStopwatch = Stopwatch.startNew();
         final long decompressedFileSize;
-        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFile());
+        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
 
             final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
@@ -187,7 +187,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 return false;
             }
 
-            final long fileSize = new File(options.getInputFile()).length();
+            final long fileSize = new File(options.getInputFilePath()).length();
             final long dataSize = fileSize - header.getHeaderSize();
             final long expectedDataSize = imageDecompressor.getExpectedDataSize(header);
             if (dataSize != expectedDataSize) {
@@ -195,7 +195,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 return false;
             }
 
-            try (FileOutputStream fos = new FileOutputStream(options.getOutputFile(), false);
+            try (FileOutputStream fos = new FileOutputStream(options.getOutputFilePath(), false);
                  DataOutputStream decompressStream = new DataOutputStream(fos)) {
 
                 imageDecompressor.decompress(dataInputStream, decompressStream, header);

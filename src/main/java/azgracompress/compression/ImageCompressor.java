@@ -7,13 +7,10 @@ import azgracompress.fileformat.QCMPFileHeader;
 import java.io.*;
 
 public class ImageCompressor extends CompressorDecompressorBase {
-
     final int PLANE_DATA_SIZES_OFFSET = 23;
-    private final int codebookSize;
 
     public ImageCompressor(ParsedCliOptions options) {
         super(options);
-        codebookSize = (int) Math.pow(2, options.getBitsPerPixel());
     }
 
     /**
@@ -68,7 +65,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
         long[] planeDataSizes = null;
 
-        try (FileOutputStream fos = new FileOutputStream(options.getOutputFile(), false);
+        try (FileOutputStream fos = new FileOutputStream(options.getOutputFilePath(), false);
              DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(fos, 8192))) {
 
             final QCMPFileHeader header = createHeader();
@@ -92,7 +89,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
             return false;
         }
 
-        try (RandomAccessFile raf = new RandomAccessFile(options.getOutputFile(), "rw")) {
+        try (RandomAccessFile raf = new RandomAccessFile(options.getOutputFilePath(), "rw")) {
             raf.seek(PLANE_DATA_SIZES_OFFSET);
             writePlaneDataSizes(raf, planeDataSizes);
         } catch (IOException ex) {
@@ -126,7 +123,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
 
         header.setQuantizationType(options.getQuantizationType());
-        header.setBitsPerPixel((byte) options.getBitsPerPixel());
+        header.setBitsPerCodebookIndex((byte) options.getBitsPerCodebookIndex());
 
         // Codebook per plane is used only if middle plane isn't set nor is the cache folder.
         final boolean oneCodebook = options.shouldUseMiddlePlane() || options.hasCodebookCacheFolder();

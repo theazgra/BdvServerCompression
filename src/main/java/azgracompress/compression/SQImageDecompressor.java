@@ -39,7 +39,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
     @Override
     public long getExpectedDataSize(QCMPFileHeader header) {
         // Quantization value count.
-        final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
+        final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
 
         // Total codebook size in bytes. Also symbol frequencies for Huffman.
         long codebookDataSize = ((2 * codebookSize) + (LONG_BYTES * codebookSize)) *
@@ -60,12 +60,12 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
                            DataOutputStream decompressStream,
                            QCMPFileHeader header) throws ImageDecompressionException {
 
-        final int codebookSize = (int) Math.pow(2, header.getBitsPerPixel());
+        final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
         final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
         final int planeCountForDecompression = header.getImageSizeZ();
 
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
-        final int planeIndicesDataSize = (int) Math.ceil((planePixelCount * header.getBitsPerPixel()) / 8.0);
+        final int planeIndicesDataSize = (int) Math.ceil((planePixelCount * header.getBitsPerCodebookIndex()) / 8.0);
 
         SQCodebook codebook = null;
         Huffman huffman = null;
@@ -90,7 +90,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             byte[] decompressedPlaneData = null;
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (InBitStream inBitStream = new InBitStream(compressedStream,
-                                                           header.getBitsPerPixel(),
+                                                           header.getBitsPerCodebookIndex(),
                                                            planeDataSize)) {
                 inBitStream.readToBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);

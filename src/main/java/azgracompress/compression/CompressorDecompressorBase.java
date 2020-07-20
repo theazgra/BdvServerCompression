@@ -16,7 +16,7 @@ public abstract class CompressorDecompressorBase {
 
     public CompressorDecompressorBase(ParsedCliOptions options) {
         this.options = options;
-        this.codebookSize = (int) Math.pow(2, this.options.getBitsPerPixel());
+        this.codebookSize = (int) Math.pow(2, this.options.getBitsPerCodebookIndex());
     }
 
     protected int[] createHuffmanSymbols(final int codebookSize) {
@@ -48,12 +48,11 @@ public abstract class CompressorDecompressorBase {
     }
 
     protected int[] getPlaneIndicesForCompression() {
-        if (options.hasPlaneIndexSet()) {
+        if (options.isPlaneIndexSet()) {
             return new int[]{options.getPlaneIndex()};
-        } else if (options.hasPlaneRangeSet()) {
-            final int from = options.getFromPlaneIndex();
-            final int to = options.getToPlaneIndex();
-            final int count = to - from;
+        } else if (options.isPlaneRangeSet()) {
+            final int from = options.getPlaneRange().getFrom();
+            final int count = options.getPlaneRange().getInclusiveTo() - from;
 
             int[] indices = new int[count + 1];
             for (int i = 0; i <= count; i++) {
@@ -117,7 +116,7 @@ public abstract class CompressorDecompressorBase {
     protected long writeHuffmanEncodedIndices(DataOutputStream compressStream,
                                               final Huffman huffman,
                                               final int[] indices) throws ImageCompressionException {
-        try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerPixel(), 2048)) {
+        try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerCodebookIndex(), 2048)) {
             for (final int index : indices) {
                 outBitStream.write(huffman.getCode(index));
             }

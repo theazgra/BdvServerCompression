@@ -31,26 +31,26 @@ public class Benchmark extends BenchmarkBase {
             return;
         }
 
-        boolean dirCreated = new File(options.getOutputFile()).mkdirs();
+        boolean dirCreated = new File(options.getOutputFilePath()).mkdirs();
         //"%d_cb%d.raw.qcmp"
         final String qcmpFilePath = getFileNamePathIntoOutDir(String.format(COMPRESSED_FILE_TEMPLATE,
                                                                             options.getPlaneIndex(),
                                                                             codebookSize));
-        compressOps.setOutputFile(qcmpFilePath);
+        compressOps.setOutputFilePath(qcmpFilePath);
         ImageCompressor compressor = new ImageCompressor(compressOps);
         if (!compressor.compress()) {
             System.err.println("Errors occurred during compression.");
             return;
         }
 
-        decompressOps.setInputFile(qcmpFilePath);
+        decompressOps.setInputFilePath(qcmpFilePath);
 
 
         final String decompressedFile = getFileNamePathIntoOutDir(String.format(QUANTIZED_FILE_TEMPLATE,
                                                                                 options.getPlaneIndex(),
                                                                                 codebookSize));
 
-        decompressOps.setOutputFile(decompressedFile);
+        decompressOps.setOutputFilePath(decompressedFile);
         ImageDecompressor decompressor = new ImageDecompressor(decompressOps);
         if (!decompressor.decompress()) {
             System.err.println("Errors occurred during decompression.");
@@ -58,7 +58,7 @@ public class Benchmark extends BenchmarkBase {
 
         final int[] originalData;
         try {
-            originalData = RawDataIO.loadImageU16(options.getInputFile(),
+            originalData = RawDataIO.loadImageU16(options.getInputFilePath(),
                                                   options.getImageDimension(),
                                                   options.getPlaneIndex()).getData();
         } catch (IOException e) {

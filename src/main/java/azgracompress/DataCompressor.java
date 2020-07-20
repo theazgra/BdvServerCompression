@@ -30,8 +30,8 @@ public class DataCompressor {
         }
 
         ParsedCliOptions parsedCliOptions = new ParsedCliOptions(cmd);
-        if (parsedCliOptions.hasErrorOccured()) {
-            System.err.println(parsedCliOptions.getError());
+        if (parsedCliOptions.parseError()) {
+            System.err.println(parsedCliOptions.getParseError());
             return;
         }
 

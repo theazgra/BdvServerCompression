@@ -1,6 +1,7 @@
 package azgracompress.benchmark;
 
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.compression.Interval;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.io.RawDataIO;
@@ -38,18 +39,18 @@ abstract class BenchmarkBase {
 
     protected BenchmarkBase(final ParsedCliOptions options) {
         this.options = options;
-        this.inputFile = options.getInputFile();
-        this.outputDirectory = options.getOutputFile();
+        this.inputFile = options.getInputFilePath();
+        this.outputDirectory = options.getOutputFilePath();
         this.rawImageDims = options.getImageDimension();
         this.useMiddlePlane = options.shouldUseMiddlePlane();
-        this.codebookSize = (int) Math.pow(2, options.getBitsPerPixel());
+        this.codebookSize = (int) Math.pow(2, options.getBitsPerCodebookIndex());
 
-        if (options.hasPlaneIndexSet()) {
+        if (options.isPlaneIndexSet()) {
             this.planes = new int[]{options.getPlaneIndex()};
-        } else if (options.hasPlaneRangeSet()) {
-            final int from = options.getFromPlaneIndex();
-            final int to = options.getToPlaneIndex();
-            final int count = to - from;
+        } else if (options.isPlaneRangeSet()) {
+            final Interval<Integer> planeRange = options.getPlaneRange();
+            final int from = planeRange.getFrom();
+            final int count = planeRange.getInclusiveTo() - from;
 
             this.planes = new int[count + 1];
             for (int i = 0; i <= count; i++) {
@@ -131,10 +132,9 @@ abstract class BenchmarkBase {
     /**
      * Save both U16 absolute difference image and I32 difference values
      *
-     * @param originalData    Original U16 plane data.
-     * @param transformedData Quantized U16 plane data.
-     * @param diffFile        File storing i32 difference values.
-     * @param absDiffFile     File storing u16 absolute difference values.
+     * @param differenceData Difference data.
+     * @param diffFile       File storing i32 difference values.
+     * @param absDiffFile    File storing u16 absolute difference values.
      * @return True if both files were saved successfully.
      */
     protected boolean saveDifference(final int[] differenceData,
@@ -146,8 +146,8 @@ abstract class BenchmarkBase {
         final String absDiffFilePath = getFileNamePathIntoOutDir(absDiffFile);
 
         ImageU16 img = new ImageU16(rawImageDims.getX(),
-                                    rawImageDims.getY(),
-                                    absDifferenceData);
+                rawImageDims.getY(),
+                absDifferenceData);
         try {
             // NOTE(Moravec): Use little endian so that gnuplot can read the array.
             RawDataIO.writeImageU16(absDiffFilePath, img, true);
@@ -180,9 +180,9 @@ abstract class BenchmarkBase {
 
             for (final QTrainIteration it : trainingLog) {
                 writer.write(String.format("%d;%.5f;%.5f\n",
-                                           it.getIteration(),
-                                           it.getMse(),
-                                           it.getPSNR()));
+                        it.getIteration(),
+                        it.getMse(),
+                        it.getPSNR()));
             }
             writer.flush();
             fileStream.flush();
