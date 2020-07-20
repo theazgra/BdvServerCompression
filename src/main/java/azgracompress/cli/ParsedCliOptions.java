@@ -8,7 +8,8 @@ import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.FileExtensions;
 import azgracompress.fileformat.QuantizationType;
-import azgracompress.io.InputDataInfo;
+import azgracompress.io.FileInputData;
+import azgracompress.io.InputData;
 import io.scif.FormatException;
 import io.scif.Plane;
 import io.scif.Reader;
@@ -139,7 +140,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         setCodebookCacheFolder(cmd.getOptionValue(CliConstants.CODEBOOK_CACHE_FOLDER_LONG, null));
 
         if (!parseErrorOccurred) {
-            setOutputFilePath(cmd.getOptionValue(CliConstants.OUTPUT_LONG, getDefaultOutputFilePath(getInputDataInfo().getFilePath())));
+            setOutputFilePath(cmd.getOptionValue(CliConstants.OUTPUT_LONG, getDefaultOutputFilePath(((FileInputData) getInputDataInfo()).getFilePath())));
             setCodebookCacheFolder(cmd.getOptionValue(CliConstants.CODEBOOK_CACHE_FOLDER_LONG, null));
         }
 
@@ -162,7 +163,8 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
             return;
         }
 
-        setInputDataInfo(new InputDataInfo(inputFileArguments[0]));
+        final FileInputData fileInputData = new FileInputData(inputFileArguments[0]);
+        setInputDataInfo(fileInputData);
 
         // Decompress and Inspect methods doesn't require additional file information.
         if ((method == ProgramMethod.Decompress) || (method == ProgramMethod.InspectFile)) {
@@ -170,7 +172,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         }
 
         // Check if input file exists.
-        if (!new File(getInputDataInfo().getFilePath()).exists()) {
+        if (!new File(fileInputData.getFilePath()).exists()) {
             parseErrorOccurred = true;
             errorBuilder.append("Input file doesn't exist.\n");
             return;
@@ -187,10 +189,10 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
 
 
     private void parseSCIFIOFileArguments(StringBuilder errorBuilder, final String[] inputFileArguments) {
-        getInputDataInfo().setDataLoaderType(InputDataInfo.DataLoaderType.SCIFIOLoader);
+        getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.SCIFIOLoader);
         Reader reader;
         try {
-            reader = ScifioWrapper.getReader(getInputDataInfo().getFilePath());
+            reader = ScifioWrapper.getReader(((FileInputData)getInputDataInfo()).getFilePath());
         } catch (IOException | FormatException e) {
             parseErrorOccurred = true;
             errorBuilder.append("Failed to get SCIFIO reader for file.\n");
@@ -251,7 +253,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
                     .append("e.g.: 1920x1080x1\n");
             return;
         }
-        getInputDataInfo().setDataLoaderType(InputDataInfo.DataLoaderType.RawDataLoader);
+        getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.RawDataLoader);
         parseImageDims(inputFileArguments[1], errorBuilder);
 
         // User specified plane index or plane range.
@@ -542,7 +544,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         }
 
 
-        sb.append("InputFile: ").append(getInputDataInfo().getFilePath()).append('\n');
+        sb.append("InputFile: ").append(((FileInputData)getInputDataInfo()).getFilePath()).append('\n');
         sb.append("Output: ").append(getOutputFilePath()).append('\n');
         sb.append("BitsPerCodebookIndex: ").append(getBitsPerCodebookIndex()).append('\n');
         if (hasCodebookCacheFolder()) {

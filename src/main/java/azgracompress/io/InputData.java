@@ -6,22 +6,28 @@ import azgracompress.data.V3i;
 /**
  * Information about the input file.
  */
-public class InputDataInfo {
+public abstract class InputData {
     public enum DataLoaderType {
         RawDataLoader,
         SCIFIOLoader,
         ImageJBufferLoader
     }
 
-    /**
-     * Input file path.
-     */
-    private final String filePath;
+    public enum PixelType {
+        Gray16,
+        AnythingElse
+    }
+
 
     /**
      * Type of an input data source.
      */
     private DataLoaderType dataLoaderType = DataLoaderType.RawDataLoader;
+
+    /**
+     * Pixel type of the image data.
+     */
+    private PixelType pixelType = PixelType.Gray16;
 
     /**
      * Image dimension.
@@ -38,9 +44,6 @@ public class InputDataInfo {
      */
     Interval<Integer> planeRange = null;
 
-    public InputDataInfo(final String filePath) {
-        this.filePath = filePath;
-    }
 
     public boolean isPlaneIndexSet() {
         return (planeIndex != null);
@@ -54,9 +57,6 @@ public class InputDataInfo {
         this.dimension = dimension;
     }
 
-    public String getFilePath() {
-        return filePath;
-    }
 
     public V3i getDimensions() {
         return dimension;
@@ -84,5 +84,25 @@ public class InputDataInfo {
 
     public void setDataLoaderType(DataLoaderType dataLoaderType) {
         this.dataLoaderType = dataLoaderType;
+    }
+
+    public PixelType getPixelType() {
+        return pixelType;
+    }
+
+    public void setPixelType(PixelType pixelType) {
+        this.pixelType = pixelType;
+    }
+
+    public V3i getDimension() {
+        return dimension;
+    }
+
+    /**
+     * Override in FileInputData!!!
+     * @return null!
+     */
+    public String getFilePath() {
+        return null;
     }
 }

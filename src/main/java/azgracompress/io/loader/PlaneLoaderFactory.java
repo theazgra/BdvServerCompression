@@ -1,6 +1,6 @@
 package azgracompress.io.loader;
 
-import azgracompress.io.InputDataInfo;
+import azgracompress.io.InputData;
 
 public final class PlaneLoaderFactory {
 
@@ -11,17 +11,17 @@ public final class PlaneLoaderFactory {
      * @return Concrete plane loader.
      * @throws Exception When fails to create plane loader.
      */
-    public static IPlaneLoader getPlaneLoaderForInputFile(final InputDataInfo inputDataInfo) throws Exception {
+    public static IPlaneLoader getPlaneLoaderForInputFile(final InputData inputDataInfo) throws Exception {
         switch (inputDataInfo.getDataLoaderType()) {
             case RawDataLoader:
                 return new RawDataLoader(inputDataInfo);
             case SCIFIOLoader:
                 return new SCIFIOLoader(inputDataInfo);
             case ImageJBufferLoader:
-                break;
+                return new ImageJBufferLoader();
             default:
                 throw new Exception("Unsupported data loader.");
         }
-        return null;
+//        return null;
     }
 }

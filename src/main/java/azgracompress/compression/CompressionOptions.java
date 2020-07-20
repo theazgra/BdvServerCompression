@@ -1,8 +1,7 @@
 package azgracompress.compression;
 
-import azgracompress.io.InputDataInfo;
+import azgracompress.io.InputData;
 import azgracompress.data.V2i;
-import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
 
 /**
@@ -12,7 +11,7 @@ public class CompressionOptions {
     /**
      * Input image or compressed file.
      */
-    private InputDataInfo inputDataInfo;
+    private InputData inputDataInfo;
 
     /**
      * Output image or compressed file.
@@ -70,11 +69,11 @@ public class CompressionOptions {
         return verbose;
     }
 
-    public InputDataInfo getInputDataInfo() {
+    public InputData getInputDataInfo() {
         return inputDataInfo;
     }
 
-    public void setInputDataInfo(InputDataInfo ifi) {
+    public void setInputDataInfo(InputData ifi) {
         this.inputDataInfo = ifi;
     }
 

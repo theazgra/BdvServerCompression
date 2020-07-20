@@ -1,6 +1,6 @@
 package azgracompress.benchmark;
 
-import azgracompress.io.InputDataInfo;
+import azgracompress.io.InputData;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
@@ -40,7 +40,7 @@ abstract class BenchmarkBase {
     protected BenchmarkBase(final ParsedCliOptions options) {
         this.options = options;
 
-        final InputDataInfo ifi = options.getInputDataInfo();
+        final InputData ifi = options.getInputDataInfo();
         this.inputFile = ifi.getFilePath();
         this.outputDirectory = options.getOutputFilePath();
 

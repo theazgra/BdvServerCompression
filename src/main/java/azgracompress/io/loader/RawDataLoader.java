@@ -2,16 +2,17 @@ package azgracompress.io.loader;
 
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
-import azgracompress.io.InputDataInfo;
+import azgracompress.io.FileInputData;
+import azgracompress.io.InputData;
 import azgracompress.utilities.TypeConverter;
 
 import java.io.*;
 import java.util.Arrays;
 
 public class RawDataLoader implements IPlaneLoader {
-    private final InputDataInfo inputDataInfo;
+    private final InputData inputDataInfo;
 
-    public RawDataLoader(final InputDataInfo inputDataInfo) {
+    public RawDataLoader(final InputData inputDataInfo) {
         this.inputDataInfo = inputDataInfo;
     }
 
@@ -20,7 +21,7 @@ public class RawDataLoader implements IPlaneLoader {
         byte[] buffer;
         final V3i rawDataDimension = inputDataInfo.getDimensions();
 
-        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
+        try (FileInputStream fileStream = new FileInputStream(((FileInputData)inputDataInfo).getFilePath())) {
             final long planeSize = (long) rawDataDimension.getX() * (long) rawDataDimension.getY() * 2;
             final long expectedFileSize = planeSize * rawDataDimension.getZ();
             final long fileSize = fileStream.getChannel().size();
@@ -69,7 +70,7 @@ public class RawDataLoader implements IPlaneLoader {
 
         Arrays.sort(planes);
 
-        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
+        try (FileInputStream fileStream = new FileInputStream(((FileInputData)inputDataInfo).getFilePath());
              DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 
             int lastIndex = 0;
@@ -106,7 +107,7 @@ public class RawDataLoader implements IPlaneLoader {
 
         int[] values = new int[(int) dataSize];
 
-        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
+        try (FileInputStream fileStream = new FileInputStream(((FileInputData)inputDataInfo).getFilePath());
              DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 
             for (int i = 0; i < (int) dataSize; i++) {

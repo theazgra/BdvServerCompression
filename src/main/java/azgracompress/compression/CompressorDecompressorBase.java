@@ -1,6 +1,6 @@
 package azgracompress.compression;
 
-import azgracompress.io.InputDataInfo;
+import azgracompress.io.InputData;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.huffman.Huffman;
 import azgracompress.io.OutBitStream;
@@ -50,7 +50,7 @@ public abstract class CompressorDecompressorBase {
 
     protected int[] getPlaneIndicesForCompression() {
 
-        final InputDataInfo ifi = options.getInputDataInfo();
+        final InputData ifi = options.getInputDataInfo();
         if (ifi.isPlaneIndexSet()) {
             return new int[]{ifi.getPlaneIndex()};
         } else if (ifi.isPlaneRangeSet()) {

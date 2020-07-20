@@ -3,7 +3,8 @@ package azgracompress.io.loader;
 import azgracompress.ScifioWrapper;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
-import azgracompress.io.InputDataInfo;
+import azgracompress.io.FileInputData;
+import azgracompress.io.InputData;
 import azgracompress.utilities.TypeConverter;
 import io.scif.FormatException;
 import io.scif.Reader;
@@ -13,7 +14,7 @@ import java.util.Arrays;
 
 public class SCIFIOLoader implements IPlaneLoader {
 
-    private final InputDataInfo inputDataInfo;
+    private final InputData inputDataInfo;
     private final Reader reader;
 
     /**
@@ -23,9 +24,9 @@ public class SCIFIOLoader implements IPlaneLoader {
      * @throws IOException     When fails to create SCIFIO reader.
      * @throws FormatException When fails to create SCIFIO reader.
      */
-    public SCIFIOLoader(final InputDataInfo inputDataInfo) throws IOException, FormatException {
+    public SCIFIOLoader(final InputData inputDataInfo) throws IOException, FormatException {
         this.inputDataInfo = inputDataInfo;
-        this.reader = ScifioWrapper.getReader(this.inputDataInfo.getFilePath());
+        this.reader = ScifioWrapper.getReader(((FileInputData)this.inputDataInfo).getFilePath());
     }
 
     @Override

@@ -2,7 +2,7 @@ package azgracompress.compression;
 
 import azgracompress.U16;
 import azgracompress.cache.QuantizationCacheManager;
-import azgracompress.io.InputDataInfo;
+import azgracompress.io.InputData;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.ImageU16;
 import azgracompress.huffman.Huffman;
@@ -88,7 +88,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException When compress process fails.
      */
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
-        final InputDataInfo inputDataInfo = options.getInputDataInfo();
+        final InputData inputDataInfo = options.getInputDataInfo();
         Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.shouldUseMiddlePlane();
 
@@ -171,7 +171,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     private int[] loadConfiguredPlanesData() throws ImageCompressionException {
-        final InputDataInfo inputDataInfo = options.getInputDataInfo();
+        final InputData inputDataInfo = options.getInputDataInfo();
         final IPlaneLoader planeLoader;
         try {
             planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputDataInfo);
