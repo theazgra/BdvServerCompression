@@ -94,9 +94,6 @@ public abstract class InputData {
         this.pixelType = pixelType;
     }
 
-    public V3i getDimension() {
-        return dimension;
-    }
 
     /**
      * Override in FileInputData!!!
