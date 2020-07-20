@@ -10,9 +10,9 @@ import java.io.*;
 import java.util.Arrays;
 
 public class RawDataLoader implements IPlaneLoader {
-    private final InputData inputDataInfo;
+    private final FileInputData inputDataInfo;
 
-    public RawDataLoader(final InputData inputDataInfo) {
+    public RawDataLoader(final FileInputData inputDataInfo) {
         this.inputDataInfo = inputDataInfo;
     }
 
@@ -21,7 +21,7 @@ public class RawDataLoader implements IPlaneLoader {
         byte[] buffer;
         final V3i rawDataDimension = inputDataInfo.getDimensions();
 
-        try (FileInputStream fileStream = new FileInputStream(((FileInputData)inputDataInfo).getFilePath())) {
+        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
             final long planeSize = (long) rawDataDimension.getX() * (long) rawDataDimension.getY() * 2;
             final long expectedFileSize = planeSize * rawDataDimension.getZ();
             final long fileSize = fileStream.getChannel().size();
@@ -70,7 +70,7 @@ public class RawDataLoader implements IPlaneLoader {
 
         Arrays.sort(planes);
 
-        try (FileInputStream fileStream = new FileInputStream(((FileInputData)inputDataInfo).getFilePath());
+        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
              DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 
             int lastIndex = 0;
@@ -107,7 +107,7 @@ public class RawDataLoader implements IPlaneLoader {
 
         int[] values = new int[(int) dataSize];
 
-        try (FileInputStream fileStream = new FileInputStream(((FileInputData)inputDataInfo).getFilePath());
+        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
              DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 
             for (int i = 0; i < (int) dataSize; i++) {
