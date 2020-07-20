@@ -11,10 +11,10 @@ public abstract class CompressorDecompressorBase {
     public static final int LONG_BYTES = 8;
     public static final String EXTENSION = ".QCMP";
 
-    protected final ParsedCliOptions options;
+    protected final CompressionOptions options;
     private final int codebookSize;
 
-    public CompressorDecompressorBase(ParsedCliOptions options) {
+    public CompressorDecompressorBase(CompressionOptions options) {
         this.options = options;
         this.codebookSize = (int) Math.pow(2, this.options.getBitsPerCodebookIndex());
     }

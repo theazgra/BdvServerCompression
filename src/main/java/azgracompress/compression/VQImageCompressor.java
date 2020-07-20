@@ -15,7 +15,7 @@ import java.io.IOException;
 
 public class VQImageCompressor extends CompressorDecompressorBase implements IImageCompressor {
 
-    public VQImageCompressor(ParsedCliOptions options) {
+    public VQImageCompressor(CompressionOptions options) {
         super(options);
     }
 

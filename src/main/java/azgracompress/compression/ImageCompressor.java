@@ -114,6 +114,22 @@ public class ImageCompressor extends CompressorDecompressorBase {
     }
 
     /**
+     * Get number of planes to be compressed.
+     *
+     * @return Number of planes for compression.
+     */
+    private int getNumberOfPlanes() {
+        if (options.isPlaneIndexSet()) {
+            return 1;
+        } else if (options.isPlaneRangeSet()) {
+            final Interval<Integer> planeRange = options.getPlaneRange();
+            return ((planeRange.getInclusiveTo() + 1) - planeRange.getFrom());
+        } else {
+            return options.getImageDimension().getZ();
+        }
+    }
+
+    /**
      * Create QCMPFile header for compressed file.
      *
      * @return Valid QCMPFile header for compressed file.
@@ -131,7 +147,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
         header.setImageSizeX(options.getImageDimension().getX());
         header.setImageSizeY(options.getImageDimension().getY());
-        header.setImageSizeZ(options.getNumberOfPlanes());
+        header.setImageSizeZ(getNumberOfPlanes());
 
         header.setVectorDimension(options.getVectorDimension());
 

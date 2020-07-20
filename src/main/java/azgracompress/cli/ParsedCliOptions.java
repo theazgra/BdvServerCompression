@@ -20,11 +20,6 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
     private ProgramMethod method;
 
     /**
-     * Flag whether the CLI app should be verbose while running.
-     */
-    private boolean verbose;
-
-    /**
      * Flag whether parse error occurred.
      */
     private boolean parseErrorOccurred;
@@ -107,7 +102,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         final String[] fileInfo = cmd.getArgs();
         parseInputFilePart(errorBuilder, fileInfo);
 
-        verbose = cmd.hasOption(CliConstants.VERBOSE_LONG);
+        setVerbose(cmd.hasOption(CliConstants.VERBOSE_LONG));
 
         if (cmd.hasOption(CliConstants.WORKER_COUNT_LONG)) {
             final String wcString = cmd.getOptionValue(CliConstants.WORKER_COUNT_LONG);
@@ -373,10 +368,6 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         return method;
     }
 
-    public boolean isVerbose() {
-        return verbose;
-    }
-
     public boolean parseError() {
         return parseErrorOccurred;
     }
@@ -456,26 +447,10 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
             sb.append("ToPlaneIndex: ").append(getPlaneRange().getInclusiveTo()).append('\n');
         }
 
-        sb.append("Verbose: ").append(verbose).append('\n');
+        sb.append("Verbose: ").append(isVerbose()).append('\n');
         sb.append("ThreadWorkerCount: ").append(getWorkerCount()).append('\n');
 
         return sb.toString();
-    }
-
-    /**
-     * Get number of planes to be compressed.
-     *
-     * @return Number of planes for compression.
-     */
-    public int getNumberOfPlanes() {
-        if (getPlaneIndex() != null) {
-            return 1;
-        } else if (getPlaneRange() != null) {
-            final Interval<Integer> planeRange = getPlaneRange();
-            return ((planeRange.getInclusiveTo() + 1) - planeRange.getFrom());
-        } else {
-            return getImageDimension().getZ();
-        }
     }
 
     @Override

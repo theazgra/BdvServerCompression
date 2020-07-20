@@ -64,8 +64,32 @@ public class CompressionOptions {
      */
     private int workerCount = 1;
 
-    // NOTE(Moravec): Getters and setters for the private fields.
+    /**
+     * Flag whether the CLI app should be verbose while running.
+     */
+    private boolean verbose;
 
+    public boolean isPlaneIndexSet() {
+        return (planeIndex != null);
+    }
+
+    public boolean isPlaneRangeSet() {
+        return (planeRange != null);
+    }
+
+    public boolean hasCodebookCacheFolder() {
+        return codebookCacheFolder != null;
+    }
+
+    protected void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
+
+    // NOTE(Moravec): Generated getters and setters for the private fields.
+
+    public boolean isVerbose() {
+        return verbose;
+    }
 
     public String getInputFilePath() {
         return inputFilePath;
@@ -133,14 +157,6 @@ public class CompressionOptions {
 
     public Integer getPlaneIndex() {
         return planeIndex;
-    }
-
-    public boolean isPlaneIndexSet() {
-        return (planeIndex != null);
-    }
-
-    public boolean isPlaneRangeSet() {
-        return (planeRange != null);
     }
 
     public void setPlaneIndex(Integer planeIndex) {

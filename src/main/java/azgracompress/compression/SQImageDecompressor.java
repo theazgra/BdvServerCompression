@@ -15,7 +15,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class SQImageDecompressor extends CompressorDecompressorBase implements IImageDecompressor {
-    public SQImageDecompressor(ParsedCliOptions options) {
+    public SQImageDecompressor(CompressionOptions options) {
         super(options);
     }
 

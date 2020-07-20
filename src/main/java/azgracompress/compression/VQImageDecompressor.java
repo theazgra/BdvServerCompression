@@ -19,7 +19,7 @@ import java.io.IOException;
 // TODO(Moravec): Handle huffman decoding.
 
 public class VQImageDecompressor extends CompressorDecompressorBase implements IImageDecompressor {
-    public VQImageDecompressor(ParsedCliOptions options) {
+    public VQImageDecompressor(CompressionOptions options) {
         super(options);
     }
 
