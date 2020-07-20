@@ -2,14 +2,12 @@ package azgracompress.compression;
 
 import azgracompress.U16;
 import azgracompress.cache.QuantizationCacheManager;
-import azgracompress.cli.InputFileInfo;
-import azgracompress.cli.ParsedCliOptions;
+import azgracompress.io.InputDataInfo;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.ImageU16;
 import azgracompress.huffman.Huffman;
 import azgracompress.io.IPlaneLoader;
 import azgracompress.io.PlaneLoaderFactory;
-import azgracompress.io.RawDataIO;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
 import azgracompress.quantization.scalar.SQCodebook;
 import azgracompress.quantization.scalar.ScalarQuantizer;
@@ -75,7 +73,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     private ScalarQuantizer loadQuantizerFromCache() throws ImageCompressionException {
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
-        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputFileInfo().getFilePath(),
+        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputDataInfo().getFilePath(),
                 getCodebookSize());
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization values from cache file.");
@@ -90,13 +88,13 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException When compress process fails.
      */
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
-        final InputFileInfo inputFileInfo = options.getInputFileInfo();
+        final InputDataInfo inputDataInfo = options.getInputDataInfo();
         Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.shouldUseMiddlePlane();
 
         final IPlaneLoader planeLoader;
         try {
-            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputFileInfo);
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputDataInfo);
         } catch (Exception e) {
             throw new ImageCompressionException("Unable to create SCIFIO reader. " + e.getMessage());
         }
@@ -173,23 +171,23 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     private int[] loadConfiguredPlanesData() throws ImageCompressionException {
-        final InputFileInfo inputFileInfo = options.getInputFileInfo();
+        final InputDataInfo inputDataInfo = options.getInputDataInfo();
         final IPlaneLoader planeLoader;
         try {
-            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputFileInfo);
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputDataInfo);
         } catch (Exception e) {
             throw new ImageCompressionException("Unable to create SCIFIO reader. " + e.getMessage());
         }
         int[] trainData = null;
 
-        if (inputFileInfo.isPlaneIndexSet()) {
+        if (inputDataInfo.isPlaneIndexSet()) {
             try {
                 Log("Loading single plane data.");
-                trainData = planeLoader.loadPlaneU16(inputFileInfo.getPlaneIndex()).getData();
+                trainData = planeLoader.loadPlaneU16(inputDataInfo.getPlaneIndex()).getData();
             } catch (IOException e) {
                 throw new ImageCompressionException("Failed to load plane data.", e);
             }
-        } else if (inputFileInfo.isPlaneRangeSet()) {
+        } else if (inputDataInfo.isPlaneRangeSet()) {
             Log("Loading plane range data.");
             final int[] planes = getPlaneIndicesForCompression();
             try {
@@ -224,7 +222,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         Log(String.format("Saving cache file to %s", options.getOutputFilePath()));
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getOutputFilePath());
         try {
-            cacheManager.saveCodebook(options.getInputFileInfo().getFilePath(), codebook);
+            cacheManager.saveCodebook(options.getInputDataInfo().getFilePath(), codebook);
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write cache.", e);
         }

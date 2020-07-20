@@ -119,15 +119,16 @@ public class ImageCompressor extends CompressorDecompressorBase {
      * @return Number of planes for compression.
      */
     private int getNumberOfPlanes() {
-        if (options.isPlaneIndexSet()) {
+        if (options.getInputDataInfo().isPlaneIndexSet()) {
             return 1;
-        } else if (options.isPlaneRangeSet()) {
-            final Interval<Integer> planeRange = options.getPlaneRange();
+        } else if (options.getInputDataInfo().isPlaneRangeSet()) {
+            final Interval<Integer> planeRange = options.getInputDataInfo().getPlaneRange();
             return ((planeRange.getInclusiveTo() + 1) - planeRange.getFrom());
         } else {
-            return options.getImageDimension().getZ();
+            return options.getInputDataInfo().getDimensions().getZ();
         }
     }
+
 
     /**
      * Create QCMPFile header for compressed file.
@@ -145,9 +146,9 @@ public class ImageCompressor extends CompressorDecompressorBase {
         final boolean oneCodebook = options.shouldUseMiddlePlane() || options.hasCodebookCacheFolder();
         header.setCodebookPerPlane(!oneCodebook);
 
-        header.setImageSizeX(options.getInputFileInfo().getDimensions().getX());
-        header.setImageSizeY(options.getInputFileInfo().getDimensions().getY());
-        header.setImageSizeZ(options.getInputFileInfo().getNumberOfPlanes());
+        header.setImageSizeX(options.getInputDataInfo().getDimensions().getX());
+        header.setImageSizeY(options.getInputDataInfo().getDimensions().getY());
+        header.setImageSizeZ(getNumberOfPlanes());
 
         header.setVectorDimension(options.getVectorDimension());
 

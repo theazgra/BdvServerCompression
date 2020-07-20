@@ -1,7 +1,6 @@
 package azgracompress.io;
 
 import azgracompress.ScifioWrapper;
-import azgracompress.cli.InputFileInfo;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.utilities.TypeConverter;
@@ -13,19 +12,19 @@ import java.util.Arrays;
 
 public class SCIFIOLoader implements IPlaneLoader {
 
-    private final InputFileInfo inputFileInfo;
+    private final InputDataInfo inputDataInfo;
     private final Reader reader;
 
     /**
      * Create SCIFIO reader from input file.
      *
-     * @param inputFileInfo Input file info.
+     * @param inputDataInfo Input file info.
      * @throws IOException     When fails to create SCIFIO reader.
      * @throws FormatException When fails to create SCIFIO reader.
      */
-    public SCIFIOLoader(final InputFileInfo inputFileInfo) throws IOException, FormatException {
-        this.inputFileInfo = inputFileInfo;
-        this.reader = ScifioWrapper.getReader(this.inputFileInfo.getFilePath());
+    public SCIFIOLoader(final InputDataInfo inputDataInfo) throws IOException, FormatException {
+        this.inputDataInfo = inputDataInfo;
+        this.reader = ScifioWrapper.getReader(this.inputDataInfo.getFilePath());
     }
 
     @Override
@@ -37,7 +36,7 @@ public class SCIFIOLoader implements IPlaneLoader {
             throw new IOException("Unable to open plane with the reader. " + e.getMessage());
         }
         final int[] data = TypeConverter.unsignedShortBytesToIntArray(planeBytes);
-        return new ImageU16(inputFileInfo.getDimensions().toV2i(), data);
+        return new ImageU16(inputDataInfo.getDimensions().toV2i(), data);
     }
 
     @SuppressWarnings("DuplicatedCode")
@@ -49,7 +48,7 @@ public class SCIFIOLoader implements IPlaneLoader {
             return loadPlaneU16(planes[0]).getData();
         }
 
-        final int planeValueCount = inputFileInfo.getDimensions().getX() * inputFileInfo.getDimensions().getY();
+        final int planeValueCount = inputDataInfo.getDimensions().getX() * inputDataInfo.getDimensions().getY();
         final long planeDataSize = 2 * (long) planeValueCount;
 
         final long totalValueCount = (long) planeValueCount * planes.length;
@@ -81,7 +80,7 @@ public class SCIFIOLoader implements IPlaneLoader {
 
     @Override
     public int[] loadAllPlanesU16Data() throws IOException {
-        final V3i imageDims = inputFileInfo.getDimensions();
+        final V3i imageDims = inputDataInfo.getDimensions();
         final long planePixelCount = (long) imageDims.getX() * (long) imageDims.getY();
         final long dataSize = planePixelCount * (long) imageDims.getZ();
 

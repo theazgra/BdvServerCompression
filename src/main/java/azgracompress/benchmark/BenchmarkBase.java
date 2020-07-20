@@ -1,8 +1,7 @@
 package azgracompress.benchmark;
 
-import azgracompress.cli.InputFileInfo;
+import azgracompress.io.InputDataInfo;
 import azgracompress.cli.ParsedCliOptions;
-import azgracompress.compression.Interval;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.io.RawDataIO;
@@ -41,7 +40,7 @@ abstract class BenchmarkBase {
     protected BenchmarkBase(final ParsedCliOptions options) {
         this.options = options;
 
-        final InputFileInfo ifi = options.getInputFileInfo();
+        final InputDataInfo ifi = options.getInputDataInfo();
         this.inputFile = ifi.getFilePath();
         this.outputDirectory = options.getOutputFilePath();
 
@@ -53,9 +52,8 @@ abstract class BenchmarkBase {
         if (ifi.isPlaneIndexSet()) {
             this.planes = new int[]{ifi.getPlaneIndex()};
         } else if (ifi.isPlaneRangeSet()) {
-            final int from = ifi.getPlaneRange().getX();
-            final int to = ifi.getPlaneRange().getY();
-            final int count = to - from;
+            final int from = ifi.getPlaneRange().getFrom();
+            final int count = ifi.getPlaneRange().getInclusiveTo() - from;
 
             this.planes = new int[count + 1];
             for (int i = 0; i <= count; i++) {

@@ -1,6 +1,5 @@
 package azgracompress.io;
 
-import azgracompress.cli.InputFileInfo;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.utilities.TypeConverter;
@@ -9,18 +8,18 @@ import java.io.*;
 import java.util.Arrays;
 
 public class RawDataLoader implements IPlaneLoader {
-    private final InputFileInfo inputFileInfo;
+    private final InputDataInfo inputDataInfo;
 
-    public RawDataLoader(final InputFileInfo inputFileInfo) {
-        this.inputFileInfo = inputFileInfo;
+    public RawDataLoader(final InputDataInfo inputDataInfo) {
+        this.inputDataInfo = inputDataInfo;
     }
 
     @Override
     public ImageU16 loadPlaneU16(int plane) throws IOException {
         byte[] buffer;
-        final V3i rawDataDimension = inputFileInfo.getDimensions();
+        final V3i rawDataDimension = inputDataInfo.getDimensions();
 
-        try (FileInputStream fileStream = new FileInputStream(inputFileInfo.getFilePath())) {
+        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
             final long planeSize = (long) rawDataDimension.getX() * (long) rawDataDimension.getY() * 2;
             final long expectedFileSize = planeSize * rawDataDimension.getZ();
             final long fileSize = fileStream.getChannel().size();
@@ -56,7 +55,7 @@ public class RawDataLoader implements IPlaneLoader {
             return loadPlaneU16(planes[0]).getData();
         }
 
-        final int planeValueCount = inputFileInfo.getDimensions().getX() * inputFileInfo.getDimensions().getY();
+        final int planeValueCount = inputDataInfo.getDimensions().getX() * inputDataInfo.getDimensions().getY();
         final long planeDataSize = 2 * (long) planeValueCount;
 
         final long totalValueCount = (long) planeValueCount * planes.length;
@@ -69,7 +68,7 @@ public class RawDataLoader implements IPlaneLoader {
 
         Arrays.sort(planes);
 
-        try (FileInputStream fileStream = new FileInputStream(inputFileInfo.getFilePath());
+        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
              DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 
             int lastIndex = 0;
@@ -97,7 +96,7 @@ public class RawDataLoader implements IPlaneLoader {
 
     @Override
     public int[] loadAllPlanesU16Data() throws IOException {
-        final V3i imageDims = inputFileInfo.getDimensions();
+        final V3i imageDims = inputDataInfo.getDimensions();
         final long dataSize = (long) imageDims.getX() * (long) imageDims.getY() * (long) imageDims.getZ();
 
         if (dataSize > (long) Integer.MAX_VALUE) {
@@ -106,7 +105,7 @@ public class RawDataLoader implements IPlaneLoader {
 
         int[] values = new int[(int) dataSize];
 
-        try (FileInputStream fileStream = new FileInputStream(inputFileInfo.getFilePath());
+        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
              DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 
             for (int i = 0; i < (int) dataSize; i++) {

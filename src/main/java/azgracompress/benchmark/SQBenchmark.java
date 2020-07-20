@@ -26,7 +26,7 @@ public class SQBenchmark extends BenchmarkBase {
     public void startBenchmark() {
         IPlaneLoader planeLoader;
         try {
-            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputFileInfo());
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Unable to create SCIFIO reader.");

@@ -1,6 +1,6 @@
 package azgracompress.compression;
 
-import azgracompress.cli.InputFileInfo;
+import azgracompress.io.InputDataInfo;
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
@@ -12,7 +12,7 @@ public class CompressionOptions {
     /**
      * Input image or compressed file.
      */
-    private InputFileInfo inputFileInfo;
+    private InputDataInfo inputDataInfo;
 
     /**
      * Output image or compressed file.
@@ -41,24 +41,9 @@ public class CompressionOptions {
     private V2i vectorDimension = new V2i(0);
 
     /**
-     * Dimensions of the input image data.
-     */
-    private V3i imageDimension = new V3i(0);
-
-    /**
      * Flag, whether to use middle plane as reference plane for codebook creation.
      */
     private boolean useMiddlePlane = false;
-
-    /**
-     * Index of the plane to compress.
-     */
-    private Integer planeIndex = null;
-
-    /**
-     * Range of the planes to compress.
-     */
-    Interval<Integer> planeRange = null;
 
     /**
      * Number of workers to be used for different operations.
@@ -70,13 +55,6 @@ public class CompressionOptions {
      */
     private boolean verbose;
 
-    public boolean isPlaneIndexSet() {
-        return (planeIndex != null);
-    }
-
-    public boolean isPlaneRangeSet() {
-        return (planeRange != null);
-    }
 
     public boolean hasCodebookCacheFolder() {
         return codebookCacheFolder != null;
@@ -92,12 +70,12 @@ public class CompressionOptions {
         return verbose;
     }
 
-    public InputFileInfo getInputFileInfo() {
-        return inputFileInfo;
+    public InputDataInfo getInputDataInfo() {
+        return inputDataInfo;
     }
 
-    public void setInputFileInfo(InputFileInfo ifi) {
-        this.inputFileInfo = ifi;
+    public void setInputDataInfo(InputDataInfo ifi) {
+        this.inputDataInfo = ifi;
     }
 
     public String getOutputFilePath() {
@@ -140,36 +118,12 @@ public class CompressionOptions {
         this.vectorDimension = vectorDimension;
     }
 
-    public V3i getImageDimension() {
-        return imageDimension;
-    }
-
-    public void setImageDimension(V3i imageDimension) {
-        this.imageDimension = imageDimension;
-    }
-
     public boolean shouldUseMiddlePlane() {
         return useMiddlePlane;
     }
 
     public void setUseMiddlePlane(boolean useMiddlePlane) {
         this.useMiddlePlane = useMiddlePlane;
-    }
-
-    public Integer getPlaneIndex() {
-        return planeIndex;
-    }
-
-    public void setPlaneIndex(Integer planeIndex) {
-        this.planeIndex = planeIndex;
-    }
-
-    public Interval<Integer> getPlaneRange() {
-        return planeRange;
-    }
-
-    public void setPlaneRange(Interval<Integer> planeRange) {
-        this.planeRange = planeRange;
     }
 
     public int getWorkerCount() {

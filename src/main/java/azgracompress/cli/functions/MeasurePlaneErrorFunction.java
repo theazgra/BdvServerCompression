@@ -1,7 +1,7 @@
 package azgracompress.cli.functions;
 
 import azgracompress.cli.CustomFunctionBase;
-import azgracompress.cli.InputFileInfo;
+import azgracompress.io.InputDataInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
@@ -125,9 +125,9 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
 
         PlaneError[] planeErrors = new PlaneError[dims.getZ()];
 
-        InputFileInfo refFileInfo = new InputFileInfo(compFile);
+        InputDataInfo refFileInfo = new InputDataInfo(compFile);
         refFileInfo.setDimension(dims);
-        InputFileInfo compFileInfo = new InputFileInfo(compressedFile);
+        InputDataInfo compFileInfo = new InputDataInfo(compressedFile);
         compFileInfo.setDimension(dims);
 
         final RawDataLoader refPlaneloader = new RawDataLoader(refFileInfo);

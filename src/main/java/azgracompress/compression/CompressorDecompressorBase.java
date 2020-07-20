@@ -1,7 +1,6 @@
 package azgracompress.compression;
 
-import azgracompress.cli.InputFileInfo;
-import azgracompress.cli.ParsedCliOptions;
+import azgracompress.io.InputDataInfo;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.huffman.Huffman;
 import azgracompress.io.OutBitStream;
@@ -51,13 +50,12 @@ public abstract class CompressorDecompressorBase {
 
     protected int[] getPlaneIndicesForCompression() {
 
-        final InputFileInfo ifi = options.getInputFileInfo();
+        final InputDataInfo ifi = options.getInputDataInfo();
         if (ifi.isPlaneIndexSet()) {
             return new int[]{ifi.getPlaneIndex()};
         } else if (ifi.isPlaneRangeSet()) {
-            final int from = ifi.getPlaneRange().getX();
-            final int to = ifi.getPlaneRange().getY();
-            final int count = to - from;
+            final int from = ifi.getPlaneRange().getFrom();
+            final int count = ifi.getPlaneRange().getInclusiveTo() - from;
 
             int[] indices = new int[count + 1];
             for (int i = 0; i <= count; i++) {
@@ -106,7 +104,7 @@ public abstract class CompressorDecompressorBase {
      * @return Index of the middle plane.
      */
     protected int getMiddlePlaneIndex() {
-            return (options.getInputFileInfo().getDimensions().getZ() / 2);
+            return (options.getInputDataInfo().getDimensions().getZ() / 2);
     }
 
     /**

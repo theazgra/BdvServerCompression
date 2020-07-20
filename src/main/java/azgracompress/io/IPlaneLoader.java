@@ -1,6 +1,5 @@
 package azgracompress.io;
 
-import azgracompress.cli.InputFileInfo;
 import azgracompress.data.ImageU16;
 
 import java.io.IOException;
