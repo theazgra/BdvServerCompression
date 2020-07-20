@@ -61,7 +61,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         boolean validFile = true;
 
         QCMPFileHeader header = null;
-        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFilePath());
+        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFileInfo().getFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
             header = readQCMPFileHeader(dataInputStream);
         } catch (IOException ioEx) {
@@ -113,10 +113,9 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             logBuilder.append("Vector size Y:\t\t").append(header.getVectorSizeY()).append('\n');
             logBuilder.append("Vector size Z:\t\t").append(header.getVectorSizeZ()).append('\n');
 
-            final long fileSize = new File(options.getInputFilePath()).length();
             final long headerSize = header.getHeaderSize();
-            final long dataSize = fileSize - headerSize;
-
+            final long fileSize = new File(options.getInputFileInfo().getFilePath()).length();
+            final long dataSize = fileSize - header.getHeaderSize();
 
             final IImageDecompressor decompressor = getImageDecompressor(header);
 
@@ -164,10 +163,9 @@ public class ImageDecompressor extends CompressorDecompressorBase {
     }
 
     public boolean decompress() {
-
         final Stopwatch decompressionStopwatch = Stopwatch.startNew();
         final long decompressedFileSize;
-        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFilePath());
+        try (FileInputStream fileInputStream = new FileInputStream(options.getInputFileInfo().getFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
 
             final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
@@ -187,7 +185,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 return false;
             }
 
-            final long fileSize = new File(options.getInputFilePath()).length();
+            final long fileSize = new File(options.getInputFileInfo().getFilePath()).length();
             final long dataSize = fileSize - header.getHeaderSize();
             final long expectedDataSize = imageDecompressor.getExpectedDataSize(header);
             if (dataSize != expectedDataSize) {

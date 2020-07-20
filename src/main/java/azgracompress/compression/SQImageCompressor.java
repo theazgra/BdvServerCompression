@@ -2,10 +2,13 @@ package azgracompress.compression;
 
 import azgracompress.U16;
 import azgracompress.cache.QuantizationCacheManager;
+import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.ImageU16;
 import azgracompress.huffman.Huffman;
+import azgracompress.io.IPlaneLoader;
+import azgracompress.io.PlaneLoaderFactory;
 import azgracompress.io.RawDataIO;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
 import azgracompress.quantization.scalar.SQCodebook;
@@ -72,7 +75,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     private ScalarQuantizer loadQuantizerFromCache() throws ImageCompressionException {
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
-        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputFilePath(), getCodebookSize());
+        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputFileInfo().getFilePath(),
+                getCodebookSize());
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization values from cache file.");
         }
@@ -86,8 +90,17 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException When compress process fails.
      */
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
+        final InputFileInfo inputFileInfo = options.getInputFileInfo();
         Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.shouldUseMiddlePlane();
+
+        final IPlaneLoader planeLoader;
+        try {
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputFileInfo);
+        } catch (Exception e) {
+            throw new ImageCompressionException("Unable to create SCIFIO reader. " + e.getMessage());
+        }
+
         ScalarQuantizer quantizer = null;
         Huffman huffman = null;
         final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
@@ -104,11 +117,10 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             ImageU16 middlePlane = null;
             final int middlePlaneIndex = getMiddlePlaneIndex();
             try {
-                middlePlane = RawDataIO.loadImageU16(options.getInputFilePath(),
-                        options.getImageDimension(),
-                        getMiddlePlaneIndex());
-            } catch (Exception ex) {
-                throw new ImageCompressionException("Unable to load plane data.", ex);
+
+                middlePlane = planeLoader.loadPlaneU16(middlePlaneIndex);
+            } catch (IOException ex) {
+                throw new ImageCompressionException("Unable to load middle plane data.", ex);
             }
 
             Log(String.format("Training scalar quantizer from middle plane %d.", middlePlaneIndex));
@@ -130,10 +142,9 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             ImageU16 plane = null;
 
             try {
-                plane = RawDataIO.loadImageU16(options.getInputFilePath(),
-                        options.getImageDimension(),
-                        planeIndex);
-            } catch (Exception ex) {
+
+                plane = planeLoader.loadPlaneU16(planeIndex);
+            } catch (IOException ex) {
                 throw new ImageCompressionException("Unable to load plane data.", ex);
             }
 
@@ -162,21 +173,27 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     private int[] loadConfiguredPlanesData() throws ImageCompressionException {
+        final InputFileInfo inputFileInfo = options.getInputFileInfo();
+        final IPlaneLoader planeLoader;
+        try {
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputFileInfo);
+        } catch (Exception e) {
+            throw new ImageCompressionException("Unable to create SCIFIO reader. " + e.getMessage());
+        }
         int[] trainData = null;
-        if (options.isPlaneIndexSet()) {
+
+        if (inputFileInfo.isPlaneIndexSet()) {
             try {
                 Log("Loading single plane data.");
-                trainData = RawDataIO.loadImageU16(options.getInputFilePath(),
-                        options.getImageDimension(),
-                        options.getPlaneIndex()).getData();
+                trainData = planeLoader.loadPlaneU16(inputFileInfo.getPlaneIndex()).getData();
             } catch (IOException e) {
                 throw new ImageCompressionException("Failed to load plane data.", e);
             }
-        } else if (options.isPlaneRangeSet()) {
+        } else if (inputFileInfo.isPlaneRangeSet()) {
             Log("Loading plane range data.");
             final int[] planes = getPlaneIndicesForCompression();
             try {
-                trainData = RawDataIO.loadPlanesData(options.getInputFilePath(), options.getImageDimension(), planes);
+                trainData = planeLoader.loadPlanesU16Data(planes);
             } catch (IOException e) {
                 e.printStackTrace();
                 throw new ImageCompressionException("Failed to load plane range data.", e);
@@ -184,7 +201,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         } else {
             Log("Loading all planes data.");
             try {
-                trainData = RawDataIO.loadAllPlanesData(options.getInputFilePath(), options.getImageDimension());
+                trainData = planeLoader.loadAllPlanesU16Data();
             } catch (IOException e) {
                 throw new ImageCompressionException("Failed to load all planes data.", e);
             }
@@ -202,13 +219,12 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         Log("Starting LloydMax training.");
         lloydMax.train(options.isVerbose());
         final SQCodebook codebook = lloydMax.getCodebook();
-        final int[] qValues = codebook.getCentroids();
         Log("Finished LloydMax training.");
 
         Log(String.format("Saving cache file to %s", options.getOutputFilePath()));
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getOutputFilePath());
         try {
-            cacheManager.saveCodebook(options.getInputFilePath(), codebook);
+            cacheManager.saveCodebook(options.getInputFileInfo().getFilePath(), codebook);
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write cache.", e);
         }

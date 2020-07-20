@@ -1,5 +1,6 @@
 package azgracompress.compression;
 
+import azgracompress.cli.InputFileInfo;
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
@@ -11,7 +12,7 @@ public class CompressionOptions {
     /**
      * Input image or compressed file.
      */
-    private String inputFilePath;
+    private InputFileInfo inputFileInfo;
 
     /**
      * Output image or compressed file.
@@ -91,12 +92,12 @@ public class CompressionOptions {
         return verbose;
     }
 
-    public String getInputFilePath() {
-        return inputFilePath;
+    public InputFileInfo getInputFileInfo() {
+        return inputFileInfo;
     }
 
-    public void setInputFilePath(String inputFilePath) {
-        this.inputFilePath = inputFilePath;
+    public void setInputFileInfo(InputFileInfo ifi) {
+        this.inputFileInfo = ifi;
     }
 
     public String getOutputFilePath() {

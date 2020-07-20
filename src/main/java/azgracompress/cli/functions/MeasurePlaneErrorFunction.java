@@ -1,10 +1,11 @@
 package azgracompress.cli.functions;
 
 import azgracompress.cli.CustomFunctionBase;
+import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
-import azgracompress.io.RawDataIO;
+import azgracompress.io.RawDataLoader;
 import azgracompress.utilities.Utils;
 
 import java.io.FileOutputStream;
@@ -26,13 +27,13 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
 
         boolean result = true;
 
-        result &= runPlaneDifferenceForAllBits(0, "sq", "middle_frame", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(0, "vq3x3", "middle_frame", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(0, "vq9x1", "middle_frame", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(0, "sq", "file_codebook", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(0, "vq3x3", "file_codebook", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(0, "vq9x1", "file_codebook", "D:\\biology\\tiff_data\\quantized");
 
-//        result &= runPlaneDifferenceForAllBits(1, "sq", "middle_frame", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(1, "vq3x3", "middle_frame", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(1, "vq9x1", "middle_frame", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(1, "sq", "file_codebook", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(1, "vq3x3", "file_codebook", "D:\\biology\\tiff_data\\quantized");
+        result &= runPlaneDifferenceForAllBits(1, "vq9x1", "file_codebook", "D:\\biology\\tiff_data\\quantized");
 
         //        result &= reportPlaneDifference(
         //                String.format("%s\\%s\\fused_tp_10_ch_%d_16bit_%s_cb4.raw",
@@ -118,12 +119,19 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
     }
 
     private boolean reportPlaneDifference(final String compressedFile, final String reportFile, final String compFile) {
-        final String referenceFile = compFile;
         final int workerCount = 8;
         final V3i dims = new V3i(1041, 996, 946);
         final int planePixelCount = dims.getX() * dims.getY();
 
         PlaneError[] planeErrors = new PlaneError[dims.getZ()];
+
+        InputFileInfo refFileInfo = new InputFileInfo(compFile);
+        refFileInfo.setDimension(dims);
+        InputFileInfo compFileInfo = new InputFileInfo(compressedFile);
+        compFileInfo.setDimension(dims);
+
+        final RawDataLoader refPlaneloader = new RawDataLoader(refFileInfo);
+        final RawDataLoader compPlaneloader = new RawDataLoader(compFileInfo);
 
         Thread[] workers = new Thread[workerCount];
         final int workSize = dims.getZ() / workerCount;
@@ -137,8 +145,8 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
                 ImageU16 originalPlane, compressedPlane, differencePlane;
                 for (int planeIndex = fromIndex; planeIndex < toIndex; planeIndex++) {
                     try {
-                        originalPlane = RawDataIO.loadImageU16(referenceFile, dims, planeIndex);
-                        compressedPlane = RawDataIO.loadImageU16(compressedFile, dims, planeIndex);
+                        originalPlane = refPlaneloader.loadPlaneU16(planeIndex);
+                        compressedPlane = compPlaneloader.loadPlaneU16(planeIndex);
                     } catch (IOException e) {
                         e.printStackTrace();
                         break;
@@ -183,4 +191,47 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
         System.out.println("Finished reportPlaneDifference");
         return true;
     }
+
+    /*
+    final String[] templates = new String[]{
+                "D:\\biology\\benchmark\\jpeg_comp\\jpeg2000\\ch0_400_cr%d.%s",
+                "D:\\biology\\benchmark\\jpeg_comp\\jpeg2000\\ch1_683_cr%d.%s"
+        };
+        final String[] referenceFiles = new String[]{
+                "D:\\biology\\benchmark\\jpeg_comp\\ch0_400.raw",
+                "D:\\biology\\benchmark\\jpeg_comp\\ch1_683.raw"
+        };
+        final int[] CRS = new int[]{1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30};
+        try {
+
+            for (int i = 0; i < templates.length; i++) {
+                final String refFile = referenceFiles[i];
+                final int[] refData = loadImageData(refFile);
+
+                for (final int cr : CRS) {
+                    final String inputFile = String.format(templates[i], cr, "raw");
+
+                    final int[] imageData = loadImageData(inputFile);
+
+                    final int[] diff = Utils.getDifference(refData, imageData);
+                    final double mse = Utils.calculateMse(diff);
+
+                    final double psnr = Utils.calculatePsnr(mse, U16.Max);
+
+                    final String channel = new File(inputFile).getName().substring(0, 3);
+                    DecimalFormat df = new DecimalFormat("#.####");
+
+                    System.out.println(String.format("%s CR: %d\n\tMSE: %s\n\tPSNR: %s\n",
+                                                     channel, cr, df.format(mse), df.format(psnr)));
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            ScifioWrapper.dispose();
+        }
+    * */
+
+
 }

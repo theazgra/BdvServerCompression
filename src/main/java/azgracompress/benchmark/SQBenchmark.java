@@ -3,6 +3,8 @@ package azgracompress.benchmark;
 import azgracompress.U16;
 import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.io.IPlaneLoader;
+import azgracompress.io.PlaneLoaderFactory;
 import azgracompress.quantization.QTrainIteration;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
 import azgracompress.quantization.scalar.SQCodebook;
@@ -22,12 +24,22 @@ public class SQBenchmark extends BenchmarkBase {
 
     @Override
     public void startBenchmark() {
+        IPlaneLoader planeLoader;
+        try {
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputFileInfo());
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Unable to create SCIFIO reader.");
+            return;
+        }
+
         if (planes.length < 1) {
             return;
         }
         boolean dirCreated = new File(this.outputDirectory).mkdirs();
         System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
         ScalarQuantizer quantizer = null;
+
         if (hasCacheFolder) {
             System.out.println("Loading codebook from cache");
             QuantizationCacheManager cacheManager = new QuantizationCacheManager(cacheFolder);
@@ -42,8 +54,12 @@ public class SQBenchmark extends BenchmarkBase {
             System.out.println("Created quantizer from cache");
         } else if (useMiddlePlane) {
             final int middlePlaneIndex = rawImageDims.getZ() / 2;
-            final int[] middlePlaneData = loadPlaneData(middlePlaneIndex);
-            if (middlePlaneData.length == 0) {
+
+            final int[] middlePlaneData;
+            try {
+                middlePlaneData = planeLoader.loadPlaneU16(middlePlaneIndex).getData();
+            } catch (IOException e) {
+                e.printStackTrace();
                 System.err.println("Failed to load middle plane data.");
                 return;
             }
@@ -54,7 +70,14 @@ public class SQBenchmark extends BenchmarkBase {
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
             // NOTE(Moravec): Actual planeIndex is zero based.
-            final int[] planeData = loadPlaneData(planeIndex);
+            final int[] planeData;
+            try {
+                planeData = planeLoader.loadPlaneU16(planeIndex).getData();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.err.println("Failed to load plane data.");
+                return;
+            }
             if (planeData.length == 0) {
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
                 return;
@@ -63,8 +86,8 @@ public class SQBenchmark extends BenchmarkBase {
             final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
             final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
             final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
-                                                          planeIndex,
-                                                          codebookSize);
+                    planeIndex,
+                    codebookSize);
             final String trainLogFile = String.format(TRAIN_FILE_TEMPLATE, planeIndex, codebookSize);
 
             if (!hasGeneralQuantizer) {

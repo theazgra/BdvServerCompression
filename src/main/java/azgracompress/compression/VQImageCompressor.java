@@ -1,12 +1,14 @@
 package azgracompress.compression;
 
 import azgracompress.cache.QuantizationCacheManager;
+import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Chunk2D;
 import azgracompress.data.ImageU16;
 import azgracompress.huffman.Huffman;
-import azgracompress.io.RawDataIO;
+import azgracompress.io.IPlaneLoader;
+import azgracompress.io.PlaneLoaderFactory;
 import azgracompress.quantization.vector.*;
 import azgracompress.utilities.Stopwatch;
 
@@ -71,11 +73,13 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException when fails to read cached codebook.
      */
     private VectorQuantizer loadQuantizerFromCache() throws ImageCompressionException {
+
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
-        final VQCodebook codebook = cacheManager.loadVQCodebook(options.getInputFilePath(),
-                getCodebookSize(),
-                options.getVectorDimension().toV3i());
+
+        final VQCodebook codebook = cacheManager.loadVQCodebook(options.getInputFileInfo().getFilePath(),
+                                                                getCodebookSize(),
+                                                                options.getVectorDimension().toV3i());
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization vectors from cache.");
         }
@@ -89,12 +93,16 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException When compress process fails.
      */
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
-
+        final InputFileInfo inputFileInfo = options.getInputFileInfo();
         Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.shouldUseMiddlePlane();
-
-
+        final IPlaneLoader planeLoader;
         final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
+        try {
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputFileInfo);
+        } catch (Exception e) {
+            throw new ImageCompressionException("Unable to create SCIFIO reader. " + e.getMessage());
+        }
         VectorQuantizer quantizer = null;
         Huffman huffman = null;
 
@@ -110,11 +118,10 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             final int middlePlaneIndex = getMiddlePlaneIndex();
             ImageU16 middlePlane = null;
             try {
-                middlePlane = RawDataIO.loadImageU16(options.getInputFilePath(),
-                        options.getImageDimension(),
-                        middlePlaneIndex);
-            } catch (Exception ex) {
-                throw new ImageCompressionException("Unable to load plane data.", ex);
+
+                middlePlane = planeLoader.loadPlaneU16(middlePlaneIndex);
+            } catch (IOException ex) {
+                throw new ImageCompressionException("Unable to load reference plane data.", ex);
             }
 
             Log(String.format("Training vector quantizer from middle plane %d.", middlePlaneIndex));
@@ -136,10 +143,9 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             ImageU16 plane = null;
             try {
-                plane = RawDataIO.loadImageU16(options.getInputFilePath(),
-                        options.getImageDimension(),
-                        planeIndex);
-            } catch (Exception ex) {
+
+                plane = planeLoader.loadPlaneU16(planeIndex);
+            } catch (IOException ex) {
                 throw new ImageCompressionException("Unable to load plane data.", ex);
             }
 
@@ -175,33 +181,39 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @return Quantization vectors of configured quantization.
      * @throws IOException When reading fails.
      */
-    private int[][] loadPlaneQuantizationVectors(final int planeIndex) throws IOException {
-        ImageU16 refPlane = RawDataIO.loadImageU16(options.getInputFilePath(),
-                options.getImageDimension(),
-                planeIndex);
 
+    private int[][] loadPlaneQuantizationVectors(final IPlaneLoader planeLoader,
+                                                 final int planeIndex) throws IOException {
+        ImageU16 refPlane = planeLoader.loadPlaneU16(planeIndex);
         return refPlane.toQuantizationVectors(options.getVectorDimension());
     }
 
     private int[][] loadConfiguredPlanesData() throws ImageCompressionException {
         final int vectorSize = options.getVectorDimension().getX() * options.getVectorDimension().getY();
+        final InputFileInfo inputFileInfo = options.getInputFileInfo();
+        final IPlaneLoader planeLoader;
+        try {
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputFileInfo);
+        } catch (Exception e) {
+            throw new ImageCompressionException("Unable to create SCIFIO reader. " + e.getMessage());
+        }
         int[][] trainData = null;
         Stopwatch s = new Stopwatch();
         s.start();
-        if (options.isPlaneIndexSet()) {
+        if (inputFileInfo.isPlaneIndexSet()) {
             Log("VQ: Loading single plane data.");
             try {
-                trainData = loadPlaneQuantizationVectors(options.getPlaneIndex());
+
+                trainData = loadPlaneQuantizationVectors(planeLoader, inputFileInfo.getPlaneIndex());
             } catch (IOException e) {
                 throw new ImageCompressionException("Failed to load plane data.", e);
             }
         } else {
-
-            Log((options.isPlaneRangeSet()) ? "VQ: Loading plane range data." : "VQ: Loading all planes data.");
+            Log(inputFileInfo.isPlaneRangeSet() ? "VQ: Loading plane range data." : "VQ: Loading all planes data.");
             final int[] planeIndices = getPlaneIndicesForCompression();
 
             final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCountPerPlane(
-                    options.getImageDimension().toV2i(),
+                    inputFileInfo.getDimensions().toV2i(),
                     options.getVectorDimension());
             final int totalChunkCount = chunkCountPerPlane * planeIndices.length;
 
@@ -211,14 +223,18 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             int planeCounter = 0;
             for (final int planeIndex : planeIndices) {
                 try {
-                    planeVectors = loadPlaneQuantizationVectors(planeIndex);
+                    planeVectors = loadPlaneQuantizationVectors(planeLoader, planeIndex);
                     assert (planeVectors.length == chunkCountPerPlane) : "Wrong chunk count per plane";
                 } catch (IOException e) {
                     throw new ImageCompressionException(String.format("Failed to load plane %d image data.",
                             planeIndex), e);
                 }
 
-                System.arraycopy(planeVectors, 0, trainData, (planeCounter * chunkCountPerPlane), chunkCountPerPlane);
+                System.arraycopy(planeVectors,
+                                 0,
+                                 trainData,
+                                 (planeCounter * chunkCountPerPlane),
+                                 chunkCountPerPlane);
                 ++planeCounter;
             }
         }
@@ -243,7 +259,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         Log("Saving cache file to %s", options.getOutputFilePath());
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getOutputFilePath());
         try {
-            cacheManager.saveCodebook(options.getInputFilePath(), lbgResult.getCodebook());
+            cacheManager.saveCodebook(options.getInputFileInfo().getFilePath(), lbgResult.getCodebook());
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write VQ cache.", e);
         }

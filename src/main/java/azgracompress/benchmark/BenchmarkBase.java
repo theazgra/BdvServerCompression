@@ -1,5 +1,6 @@
 package azgracompress.benchmark;
 
+import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.Interval;
 import azgracompress.data.ImageU16;
@@ -39,25 +40,29 @@ abstract class BenchmarkBase {
 
     protected BenchmarkBase(final ParsedCliOptions options) {
         this.options = options;
-        this.inputFile = options.getInputFilePath();
+
+        final InputFileInfo ifi = options.getInputFileInfo();
+        this.inputFile = ifi.getFilePath();
         this.outputDirectory = options.getOutputFilePath();
-        this.rawImageDims = options.getImageDimension();
+
+        this.rawImageDims = ifi.getDimensions();
         this.useMiddlePlane = options.shouldUseMiddlePlane();
+
         this.codebookSize = (int) Math.pow(2, options.getBitsPerCodebookIndex());
 
-        if (options.isPlaneIndexSet()) {
-            this.planes = new int[]{options.getPlaneIndex()};
-        } else if (options.isPlaneRangeSet()) {
-            final Interval<Integer> planeRange = options.getPlaneRange();
-            final int from = planeRange.getFrom();
-            final int count = planeRange.getInclusiveTo() - from;
+        if (ifi.isPlaneIndexSet()) {
+            this.planes = new int[]{ifi.getPlaneIndex()};
+        } else if (ifi.isPlaneRangeSet()) {
+            final int from = ifi.getPlaneRange().getX();
+            final int to = ifi.getPlaneRange().getY();
+            final int count = to - from;
 
             this.planes = new int[count + 1];
             for (int i = 0; i <= count; i++) {
                 this.planes[i] = from + i;
             }
         } else {
-            final int planeCount = options.getImageDimension().getZ();
+            final int planeCount = ifi.getDimensions().getZ();
             this.planes = new int[planeCount];
             for (int i = 0; i < planeCount; i++) {
                 this.planes[i] = i;
@@ -81,32 +86,32 @@ abstract class BenchmarkBase {
         return file.getAbsolutePath();
     }
 
-    /**
-     * Load u16 plane from RAW file.
-     *
-     * @param planeIndex Zero based plane index.
-     * @return u16 plane.
-     */
-    protected ImageU16 loadPlane(final int planeIndex) {
-        try {
-            return RawDataIO.loadImageU16(inputFile, rawImageDims, planeIndex);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return null;
-    }
+    //    /**
+    //     * Load u16 plane from RAW file.
+    //     *
+    //     * @param planeIndex Zero based plane index.
+    //     * @return u16 plane.
+    //     */
+    //    protected ImageU16 loadPlane(final int planeIndex) {
+    //        try {
+    //            return RawDataIO.loadImageU16(inputFile, rawImageDims, planeIndex);
+    //        } catch (Exception ex) {
+    //            ex.printStackTrace();
+    //        }
+    //        return null;
+    //    }
 
-    /**
-     * Load U16 plane data from RAW file.
-     *
-     * @param planeIndex Zero based plane index.
-     * @return U16 array of image plane data.
-     */
-    protected int[] loadPlaneData(final int planeIndex) {
-        ImageU16 plane = loadPlane(planeIndex);
-
-        return (plane != null) ? plane.getData() : new int[0];
-    }
+    //    /**
+    //     * Load U16 plane data from RAW file.
+    //     *
+    //     * @param planeIndex Zero based plane index.
+    //     * @return U16 array of image plane data.
+    //     */
+    //    protected int[] loadPlaneData(final int planeIndex) {
+    //        ImageU16 plane = loadPlane(planeIndex);
+    //
+    //        return (plane != null) ? plane.getData() : new int[0];
+    //    }
 
 
     /**

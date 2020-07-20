@@ -8,11 +8,15 @@ public class ImageU16 {
     private final int height;
     private int[] data;
 
-    public ImageU16(int width, int height, int[] data) {
+    public ImageU16(final int width, final int height, final int[] data) {
         assert ((width * height) == data.length) : "Wrong data size in ImageU16 constructor.";
         this.width = width;
         this.height = height;
         this.data = data;
+    }
+
+    public ImageU16(final V2i dims, final int[] data) {
+        this(dims.getX(), dims.getY(), data);
     }
 
     private int index(final int x, final int y) {

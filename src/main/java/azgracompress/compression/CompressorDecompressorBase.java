@@ -1,5 +1,6 @@
 package azgracompress.compression;
 
+import azgracompress.cli.InputFileInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.huffman.Huffman;
@@ -10,6 +11,7 @@ import java.io.DataOutputStream;
 public abstract class CompressorDecompressorBase {
     public static final int LONG_BYTES = 8;
     public static final String EXTENSION = ".QCMP";
+    public static final String RAW_EXTENSION_NO_DOT = "raw";
 
     protected final CompressionOptions options;
     private final int codebookSize;
@@ -48,11 +50,14 @@ public abstract class CompressorDecompressorBase {
     }
 
     protected int[] getPlaneIndicesForCompression() {
-        if (options.isPlaneIndexSet()) {
-            return new int[]{options.getPlaneIndex()};
-        } else if (options.isPlaneRangeSet()) {
-            final int from = options.getPlaneRange().getFrom();
-            final int count = options.getPlaneRange().getInclusiveTo() - from;
+
+        final InputFileInfo ifi = options.getInputFileInfo();
+        if (ifi.isPlaneIndexSet()) {
+            return new int[]{ifi.getPlaneIndex()};
+        } else if (ifi.isPlaneRangeSet()) {
+            final int from = ifi.getPlaneRange().getX();
+            final int to = ifi.getPlaneRange().getY();
+            final int count = to - from;
 
             int[] indices = new int[count + 1];
             for (int i = 0; i <= count; i++) {
@@ -60,7 +65,7 @@ public abstract class CompressorDecompressorBase {
             }
             return indices;
         } else {
-            return generateAllPlaneIndices(options.getImageDimension().getZ());
+            return generateAllPlaneIndices(ifi.getDimensions().getZ());
         }
     }
 
@@ -101,7 +106,7 @@ public abstract class CompressorDecompressorBase {
      * @return Index of the middle plane.
      */
     protected int getMiddlePlaneIndex() {
-        return (options.getImageDimension().getZ() / 2);
+            return (options.getInputFileInfo().getDimensions().getZ() / 2);
     }
 
     /**

@@ -30,8 +30,10 @@ public class DataCompressor {
         }
 
         ParsedCliOptions parsedCliOptions = new ParsedCliOptions(cmd);
+        // NOTE(Moravec): From this point we need to dispose of possible existing SCIFIO context.
         if (parsedCliOptions.parseError()) {
             System.err.println(parsedCliOptions.getParseError());
+            ScifioWrapper.dispose();
             return;
         }
 
@@ -46,26 +48,27 @@ public class DataCompressor {
                 if (!compressor.compress()) {
                     System.err.println("Errors occurred during compression.");
                 }
-                return;
             }
+            break;
             case Decompress: {
                 ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
                 if (!decompressor.decompress()) {
                     System.err.println("Errors occurred during decompression.");
                 }
-                return;
             }
+            break;
+
             case Benchmark: {
                 CompressionBenchmark.runBenchmark(parsedCliOptions);
-                return;
             }
+            break;
             case TrainCodebook: {
                 ImageCompressor compressor = new ImageCompressor(parsedCliOptions);
                 if (!compressor.trainAndSaveCodebook()) {
                     System.err.println("Errors occurred during training/saving of codebook.");
                 }
-                return;
             }
+            break;
             case CustomFunction: {
                 // NOTE(Moravec): Custom function class here |
                 //                                           V
@@ -74,9 +77,8 @@ public class DataCompressor {
                 if (!customFunction.run()) {
                     System.err.println("Errors occurred during custom function.");
                 }
-                return;
-
             }
+            break;
 
             case PrintHelp: {
                 formatter.printHelp(CliConstants.MAIN_HELP, options);
@@ -91,9 +93,9 @@ public class DataCompressor {
                     System.err.println(e.getMessage());
                     e.printStackTrace();
                 }
-                return;
             }
+            break;
         }
-        return;
+        ScifioWrapper.dispose();
     }
 }

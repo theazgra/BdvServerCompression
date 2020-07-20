@@ -4,6 +4,8 @@ import azgracompress.U16;
 import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.*;
+import azgracompress.io.IPlaneLoader;
+import azgracompress.io.PlaneLoaderFactory;
 import azgracompress.quantization.vector.LBGResult;
 import azgracompress.quantization.vector.LBGVectorQuantizer;
 import azgracompress.quantization.vector.VQCodebook;
@@ -11,6 +13,7 @@ import azgracompress.quantization.vector.VectorQuantizer;
 import azgracompress.utilities.Utils;
 
 import java.io.File;
+import java.io.IOException;
 
 public class VQBenchmark extends BenchmarkBase {
 
@@ -46,6 +49,14 @@ public class VQBenchmark extends BenchmarkBase {
         if (planes.length < 1) {
             return;
         }
+        IPlaneLoader planeLoader;
+        try {
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputFileInfo());
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Unable to create SCIFIO reader.");
+            return;
+        }
         if (qVector.getY() > 1) {
             System.out.println("2D qVector");
         } else {
@@ -65,20 +76,23 @@ public class VQBenchmark extends BenchmarkBase {
             }
             quantizer = new VectorQuantizer(codebook);
             System.out.println("Created quantizer from cache");
+
         } else if (useMiddlePlane) {
             final int middlePlaneIndex = rawImageDims.getZ() / 2;
-            final ImageU16 middlePlane = loadPlane(middlePlaneIndex);
-
-            if (middlePlane == null) {
+            final ImageU16 middlePlane;
+            try {
+                middlePlane = planeLoader.loadPlaneU16(middlePlaneIndex);
+            } catch (IOException e) {
+                e.printStackTrace();
                 System.err.println("Failed to load middle plane data.");
                 return;
             }
 
             final int[][] refPlaneData = getPlaneVectors(middlePlane, qVector);
             LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData,
-                                                                      codebookSize,
-                                                                      workerCount,
-                                                                      qVector.toV3i());
+                    codebookSize,
+                    workerCount,
+                    qVector.toV3i());
             final LBGResult vqResult = vqInitializer.findOptimalCodebook();
             quantizer = new VectorQuantizer(vqResult.getCodebook());
             System.out.println("Created quantizer from middle plane.");
@@ -86,9 +100,12 @@ public class VQBenchmark extends BenchmarkBase {
 
         for (final int planeIndex : planes) {
             System.out.println(String.format("Loading plane %d ...", planeIndex));
-            final ImageU16 plane = loadPlane(planeIndex);
 
-            if (plane == null) {
+            final ImageU16 plane;
+            try {
+                plane = planeLoader.loadPlaneU16(planeIndex);
+            } catch (IOException e) {
+                e.printStackTrace();
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
                 return;
             }
@@ -98,9 +115,9 @@ public class VQBenchmark extends BenchmarkBase {
 
             if (!hasGeneralQuantizer) {
                 LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData,
-                                                                          codebookSize,
-                                                                          workerCount,
-                                                                          qVector.toV3i());
+                        codebookSize,
+                        workerCount,
+                        qVector.toV3i());
                 LBGResult vqResult = vqInitializer.findOptimalCodebook();
                 quantizer = new VectorQuantizer(vqResult.getCodebook());
                 System.out.println("Created plane quantizer.");
@@ -109,8 +126,8 @@ public class VQBenchmark extends BenchmarkBase {
             final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
             final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
             final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
-                                                          planeIndex,
-                                                          codebookSize);
+                    planeIndex,
+                    codebookSize);
 
             final int[][] quantizedData = quantizer.quantize(planeData, workerCount);
 

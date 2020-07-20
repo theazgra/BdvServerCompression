@@ -145,9 +145,9 @@ public class ImageCompressor extends CompressorDecompressorBase {
         final boolean oneCodebook = options.shouldUseMiddlePlane() || options.hasCodebookCacheFolder();
         header.setCodebookPerPlane(!oneCodebook);
 
-        header.setImageSizeX(options.getImageDimension().getX());
-        header.setImageSizeY(options.getImageDimension().getY());
-        header.setImageSizeZ(getNumberOfPlanes());
+        header.setImageSizeX(options.getInputFileInfo().getDimensions().getX());
+        header.setImageSizeY(options.getInputFileInfo().getDimensions().getY());
+        header.setImageSizeZ(options.getInputFileInfo().getNumberOfPlanes());
 
         header.setVectorDimension(options.getVectorDimension());
 
