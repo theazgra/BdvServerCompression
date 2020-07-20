@@ -5,7 +5,7 @@ import azgracompress.io.InputDataInfo;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
-import azgracompress.io.RawDataLoader;
+import azgracompress.io.loader.RawDataLoader;
 import azgracompress.utilities.Utils;
 
 import java.io.FileOutputStream;

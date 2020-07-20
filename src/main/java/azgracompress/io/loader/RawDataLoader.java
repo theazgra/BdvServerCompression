@@ -1,7 +1,8 @@
-package azgracompress.io;
+package azgracompress.io.loader;
 
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
+import azgracompress.io.InputDataInfo;
 import azgracompress.utilities.TypeConverter;
 
 import java.io.*;

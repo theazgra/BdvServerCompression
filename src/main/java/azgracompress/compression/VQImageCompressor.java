@@ -6,8 +6,8 @@ import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Chunk2D;
 import azgracompress.data.ImageU16;
 import azgracompress.huffman.Huffman;
-import azgracompress.io.IPlaneLoader;
-import azgracompress.io.PlaneLoaderFactory;
+import azgracompress.io.loader.IPlaneLoader;
+import azgracompress.io.loader.PlaneLoaderFactory;
 import azgracompress.quantization.vector.*;
 import azgracompress.utilities.Stopwatch;
 

@@ -1,4 +1,4 @@
-package azgracompress.io;
+package azgracompress.io.loader;
 
 import azgracompress.data.ImageU16;
 

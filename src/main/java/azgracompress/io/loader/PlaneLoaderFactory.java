@@ -1,4 +1,6 @@
-package azgracompress.io;
+package azgracompress.io.loader;
+
+import azgracompress.io.InputDataInfo;
 
 public final class PlaneLoaderFactory {
 
