@@ -1,7 +1,11 @@
 package azgracompress.fileformat;
 
 public enum QuantizationType {
-    Scalar(0), Vector1D(1), Vector2D(2), Vector3D(3), Invalid(255);
+    Scalar(0),
+    Vector1D(1),
+    Vector2D(2),
+    Vector3D(3),
+    Invalid(255);
 
     private final int value;
 
