@@ -58,7 +58,7 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
                                                 final String folder) {
         System.out.println(
                 String.format("runPlaneDifferenceForAllBits\n\tChannel: %d\n\tMethod: %s\n\tType: %s",
-                              channel, type, folder));
+                        channel, type, folder));
         //        final int channel = 0;
         assert (channel == 0 || channel == 1);
         final String comp_file = channel == 0 ? COMP_FILE_ch0 : COMP_FILE_ch1;
@@ -126,12 +126,12 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
 
         PlaneError[] planeErrors = new PlaneError[dims.getZ()];
 
-        InputData refFileInfo = new FileInputData(compFile);
+        FileInputData refFileInfo = new FileInputData(compFile);
         refFileInfo.setDimension(dims);
-        InputData compFileInfo = new FileInputData(compressedFile);
+        FileInputData compFileInfo = new FileInputData(compressedFile);
         compFileInfo.setDimension(dims);
 
-        final RawDataLoader refPlaneloader = new RawDataLoader(refFileInfo);
+        final RawDataLoader refPlaneloader = new RawDataLoader( refFileInfo);
         final RawDataLoader compPlaneloader = new RawDataLoader(compFileInfo);
 
         Thread[] workers = new Thread[workerCount];
@@ -181,9 +181,9 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
 
             for (final PlaneError planeError : planeErrors) {
                 writer.write(String.format("%d\t%.4f\t%.4f\n",
-                                           planeError.getPlaneIndex(),
-                                           planeError.getAbsoluteError(),
-                                           planeError.getMeanAbsoluteError()));
+                        planeError.getPlaneIndex(),
+                        planeError.getAbsoluteError(),
+                        planeError.getMeanAbsoluteError()));
             }
 
         } catch (IOException e) {
