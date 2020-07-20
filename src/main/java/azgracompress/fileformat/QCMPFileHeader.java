@@ -14,7 +14,7 @@ public class QCMPFileHeader {
 
     private String magicValue = QCMP_MAGIC_VALUE;
     private QuantizationType quantizationType;
-    private byte bitsPerPixel;
+    private byte bitsPerCodebookIndex;
     private boolean codebookPerPlane;
 
     private int imageSizeX;
@@ -37,7 +37,7 @@ public class QCMPFileHeader {
         if (!magicValue.equals(QCMP_MAGIC_VALUE))
             return false;
 
-        if (bitsPerPixel == 0)
+        if (bitsPerCodebookIndex == 0)
             return false;
 
         if (!U16.isInRange(imageSizeX))
@@ -61,7 +61,7 @@ public class QCMPFileHeader {
         outputStream.writeBytes(QCMP_MAGIC_VALUE);
 
         outputStream.writeByte(quantizationType.getValue());
-        outputStream.writeByte(bitsPerPixel);
+        outputStream.writeByte(bitsPerCodebookIndex);
         outputStream.writeBoolean(codebookPerPlane);
 
         outputStream.writeShort(imageSizeX);
@@ -98,7 +98,7 @@ public class QCMPFileHeader {
         }
 
         quantizationType = QuantizationType.fromByte(inputStream.readByte());
-        bitsPerPixel = inputStream.readByte();
+        bitsPerCodebookIndex = inputStream.readByte();
         codebookPerPlane = inputStream.readBoolean();
 
         imageSizeX = inputStream.readUnsignedShort();
@@ -126,12 +126,12 @@ public class QCMPFileHeader {
         this.quantizationType = quantizationType;
     }
 
-    public byte getBitsPerPixel() {
-        return bitsPerPixel;
+    public byte getBitsPerCodebookIndex() {
+        return bitsPerCodebookIndex;
     }
 
-    public void setBitsPerPixel(byte bitsPerPixel) {
-        this.bitsPerPixel = bitsPerPixel;
+    public void setBitsPerCodebookIndex(byte bitsPerCodebookIndex) {
+        this.bitsPerCodebookIndex = bitsPerCodebookIndex;
     }
 
     public boolean isCodebookPerPlane() {
