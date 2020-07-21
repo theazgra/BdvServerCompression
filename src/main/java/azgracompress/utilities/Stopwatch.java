@@ -61,12 +61,13 @@ public class Stopwatch {
         if (elapsed == null) {
             return "No time measured yet.";
         }
-        return String.format("%dH %dmin %dsec %dms %dns",
-                             elapsed.toHoursPart(),
-                             elapsed.toMinutesPart(),
-                             elapsed.toSecondsPart(),
-                             elapsed.toMillisPart(),
-                             elapsed.toNanosPart());
+        return null;
+//        return String.format("%dH %dmin %dsec %dms %dns",
+//                             elapsed.toHoursPart(),
+//                             elapsed.toMinutesPart(),
+//                             elapsed.toSecondsPart(),
+//                             elapsed.toMillisPart(),
+//                             elapsed.toNanosPart());
 
     }
 

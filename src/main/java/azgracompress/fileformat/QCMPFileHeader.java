@@ -86,7 +86,7 @@ public class QCMPFileHeader {
         }
 
         byte[] magicBuffer = new byte[QCMP_MAGIC_VALUE.length()];
-        final int readFromMagic = inputStream.readNBytes(magicBuffer, 0, QCMP_MAGIC_VALUE.length());
+        final int readFromMagic = inputStream.read(magicBuffer, 0, QCMP_MAGIC_VALUE.length());
         if (readFromMagic != QCMP_MAGIC_VALUE.length()) {
             // Invalid magic value.
             return false;

@@ -18,7 +18,8 @@ public class Utils {
     public static byte[] readFileBytes(final String path) throws FileNotFoundException {
         FileInputStream fileStream = new FileInputStream(path);
         try {
-            return fileStream.readAllBytes();
+            throw new FileNotFoundException("Implement this actually!");
+//            return fileStream.readAllBytes();
         } catch (IOException e) {
             e.printStackTrace();
         }

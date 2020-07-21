@@ -110,7 +110,8 @@ public class CacheFileHeader {
         }
 
         byte[] magicBuffer = new byte[QCMP_CACHE_MAGIC_VALUE.length()];
-        final int readFromMagic = inputStream.readNBytes(magicBuffer, 0, QCMP_CACHE_MAGIC_VALUE.length());
+
+        final int readFromMagic = inputStream.read(magicBuffer,0,QCMP_CACHE_MAGIC_VALUE.length());
         if (readFromMagic != QCMP_CACHE_MAGIC_VALUE.length()) {
             throw new IOException("Invalid file type. Unable to read magic value");
         }
@@ -123,7 +124,8 @@ public class CacheFileHeader {
 
         trainFileNameSize = inputStream.readUnsignedShort();
         byte[] fileNameBuffer = new byte[trainFileNameSize];
-        inputStream.readNBytes(fileNameBuffer, 0, trainFileNameSize);
+        inputStream.read(fileNameBuffer,0, trainFileNameSize);
+//        inputStream.readNBytes(fileNameBuffer, 0, trainFileNameSize);
         trainFileName = new String(fileNameBuffer);
 
         vectorSizeX = inputStream.readUnsignedShort();
