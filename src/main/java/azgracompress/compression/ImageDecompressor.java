@@ -10,10 +10,9 @@ import java.io.*;
 
 public class ImageDecompressor extends CompressorDecompressorBase {
 
-    public ImageDecompressor(ParsedCliOptions options) {
+    public ImageDecompressor(CompressionOptions options) {
         super(options);
     }
-
 
     /**
      * Read compressed QCMP file header.
