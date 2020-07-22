@@ -62,6 +62,10 @@ public class CompressionOptions {
      */
     private boolean verbose;
 
+    public CompressionOptions() {
+        int cores = Runtime.getRuntime().availableProcessors();
+        this.workerCount = (cores / 2);
+    }
 
     protected void setVerbose(boolean verbose) {
         this.verbose = verbose;
