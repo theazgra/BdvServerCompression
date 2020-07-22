@@ -2,12 +2,14 @@ package azgracompress.compression;
 
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageDecompressionException;
+import azgracompress.data.ImageU16;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.utilities.Stopwatch;
 
 import java.io.*;
 
 
+@SuppressWarnings("DuplicatedCode")
 public class ImageDecompressor extends CompressorDecompressorBase {
 
     public ImageDecompressor(CompressionOptions options) {
@@ -161,8 +163,61 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         return logBuilder.toString();
     }
 
-    public boolean decompress() {
+    public boolean decompressToFile() {
         final Stopwatch decompressionStopwatch = Stopwatch.startNew();
+        final long decompressedFileSize;
+        try (FileInputStream fileInputStream = new FileInputStream(options.getInputDataInfo().getFilePath());
+             DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
+
+            final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
+            if (header == null) {
+                System.err.println("Failed to read QCMPFile header");
+                return false;
+            }
+            if (!header.validateHeader()) {
+                System.err.println("QCMPFile header is invalid");
+                return false;
+            }
+            decompressedFileSize = 2 * header.getImageDims().multiplyTogether();
+
+            IImageDecompressor imageDecompressor = getImageDecompressor(header);
+            if (imageDecompressor == null) {
+                System.err.println("Unable to create correct decompressor.");
+                return false;
+            }
+
+            final long fileSize = new File(options.getInputDataInfo().getFilePath()).length();
+            final long dataSize = fileSize - header.getHeaderSize();
+            final long expectedDataSize = imageDecompressor.getExpectedDataSize(header);
+            if (dataSize != expectedDataSize) {
+                System.err.println("Invalid file size.");
+                return false;
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(options.getOutputFilePath(), false);
+                 DataOutputStream decompressStream = new DataOutputStream(fos)) {
+
+                imageDecompressor.decompress(dataInputStream, decompressStream, header);
+
+            } catch (ImageDecompressionException ex) {
+                System.err.println(ex.getMessage());
+                return false;
+            }
+
+        } catch (IOException ioEx) {
+            ioEx.printStackTrace();
+            return false;
+        }
+        decompressionStopwatch.stop();
+        final double seconds = decompressionStopwatch.totalElapsedSeconds();
+        final double MBSize = ((double) decompressedFileSize / 1000.0) / 1000.0;
+        final double MBPerSec = MBSize / seconds;
+        Log("Decompression speed: %.4f MB/s", MBPerSec);
+
+        return true;
+    }
+
+    public ImageU16 decompressInMemory(final String compressedFilePath) {
         final long decompressedFileSize;
         try (FileInputStream fileInputStream = new FileInputStream(options.getInputDataInfo().getFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
