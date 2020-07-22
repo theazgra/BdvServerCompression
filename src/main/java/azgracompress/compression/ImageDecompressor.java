@@ -1,10 +1,10 @@
 package azgracompress.compression;
 
-import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageDecompressionException;
-import azgracompress.data.ImageU16;
+import azgracompress.data.ImageU16Dataset;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.utilities.Stopwatch;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 
@@ -169,15 +169,10 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         try (FileInputStream fileInputStream = new FileInputStream(options.getInputDataInfo().getFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
 
-            final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
-            if (header == null) {
-                System.err.println("Failed to read QCMPFile header");
+            final QCMPFileHeader header = decompressQcmpHeader(dataInputStream);
+            if (header == null)
                 return false;
-            }
-            if (!header.validateHeader()) {
-                System.err.println("QCMPFile header is invalid");
-                return false;
-            }
+
             decompressedFileSize = 2 * header.getImageDims().multiplyTogether();
 
             IImageDecompressor imageDecompressor = getImageDecompressor(header);
@@ -186,11 +181,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 return false;
             }
 
-            final long fileSize = new File(options.getInputDataInfo().getFilePath()).length();
-            final long dataSize = fileSize - header.getHeaderSize();
-            final long expectedDataSize = imageDecompressor.getExpectedDataSize(header);
-            if (dataSize != expectedDataSize) {
-                System.err.println("Invalid file size.");
+            if (!checkInputFileSize(header, imageDecompressor)) {
                 return false;
             }
 
@@ -217,56 +208,65 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         return true;
     }
 
-    public ImageU16 decompressInMemory(final String compressedFilePath) {
-        final long decompressedFileSize;
+    private boolean checkInputFileSize(QCMPFileHeader header, IImageDecompressor imageDecompressor) {
+        final long fileSize = new File(options.getInputDataInfo().getFilePath()).length();
+        final long dataSize = fileSize - header.getHeaderSize();
+        final long expectedDataSize = imageDecompressor.getExpectedDataSize(header);
+        if (dataSize != expectedDataSize) {
+            LogError("Invalid file size.");
+            return false;
+        }
+        return true;
+    }
+
+    public ImageU16Dataset decompressInMemory() {
         try (FileInputStream fileInputStream = new FileInputStream(options.getInputDataInfo().getFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
 
-            final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
-            if (header == null) {
-                System.err.println("Failed to read QCMPFile header");
-                return false;
-            }
-            if (!header.validateHeader()) {
-                System.err.println("QCMPFile header is invalid");
-                return false;
-            }
-            decompressedFileSize = header.getImageDims().multiplyTogether();
+            final QCMPFileHeader header = decompressQcmpHeader(dataInputStream);
+            if (header == null)
+                return null;
 
             IImageDecompressor imageDecompressor = getImageDecompressor(header);
             if (imageDecompressor == null) {
                 System.err.println("Unable to create correct decompressor.");
-                return false;
+                return null;
             }
 
-            final long fileSize = new File(options.getInputDataInfo().getFilePath()).length();
-            final long dataSize = fileSize - header.getHeaderSize();
-            final long expectedDataSize = imageDecompressor.getExpectedDataSize(header);
-            if (dataSize != expectedDataSize) {
-                System.err.println("Invalid file size.");
-                return false;
+            if (!checkInputFileSize(header, imageDecompressor)) {
+                return null;
             }
 
-            try (FileOutputStream fos = new FileOutputStream(options.getOutputFilePath(), false);
-                 DataOutputStream decompressStream = new DataOutputStream(fos)) {
+            final int totalPixelCount = (int) header.getImageDims().multiplyTogether();
+            final short[] decompressedData = new short[totalPixelCount];
 
-                imageDecompressor.decompress(dataInputStream, decompressStream, header);
 
+            try {
+                imageDecompressor.decompressToBuffer(dataInputStream, decompressedData, header);
             } catch (ImageDecompressionException ex) {
                 System.err.println(ex.getMessage());
-                return false;
+                return null;
             }
+
+            return new ImageU16Dataset(header.getImageDims().toV2i(), header.getImageSizeZ(), decompressedData);
 
         } catch (IOException ioEx) {
             ioEx.printStackTrace();
-            return false;
+            return null;
         }
-        decompressionStopwatch.stop();
-        final double seconds = decompressionStopwatch.totalElapsedSeconds();
-        final double MBSize = ((double) decompressedFileSize / 1000.0) / 1000.0;
-        final double MBPerSec = MBSize / seconds;
-        Log("Decompression speed: %.4f MB/s", MBPerSec);
+    }
 
-        return true;
+    @Nullable
+    private QCMPFileHeader decompressQcmpHeader(DataInputStream dataInputStream) throws IOException {
+        final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
+        if (header == null) {
+            System.err.println("Failed to read QCMPFile header");
+            return null;
+        }
+        if (!header.validateHeader()) {
+            System.err.println("QCMPFile header is invalid");
+            return null;
+        }
+        return header;
     }
 }

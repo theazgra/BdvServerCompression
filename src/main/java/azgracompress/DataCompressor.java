@@ -52,7 +52,7 @@ public class DataCompressor {
             break;
             case Decompress: {
                 ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
-                if (!decompressor.decompress()) {
+                if (!decompressor.decompressToFile()) {
                     System.err.println("Errors occurred during decompression.");
                 }
             }

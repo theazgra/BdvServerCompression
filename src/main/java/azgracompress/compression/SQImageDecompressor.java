@@ -65,7 +65,6 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         final int planeCountForDecompression = header.getImageSizeZ();
 
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
-        final int planeIndicesDataSize = (int) Math.ceil((planePixelCount * header.getBitsPerCodebookIndex()) / 8.0);
 
         SQCodebook codebook = null;
         Huffman huffman = null;
@@ -90,8 +89,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             byte[] decompressedPlaneData = null;
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (InBitStream inBitStream = new InBitStream(compressedStream,
-                                                           header.getBitsPerCodebookIndex(),
-                                                           planeDataSize)) {
+                    header.getBitsPerCodebookIndex(),
+                    planeDataSize)) {
                 inBitStream.readToBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
@@ -123,6 +122,54 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             stopwatch.stop();
             Log(String.format("Decompressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString()));
         }
+    }
 
+    @Override
+    public void decompressToBuffer(DataInputStream compressedStream, short[] buffer, QCMPFileHeader header) throws ImageDecompressionException {
+        final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
+        final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
+        final int planeCountForDecompression = header.getImageSizeZ();
+
+        final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
+        int bufferOffset = 0;
+
+        SQCodebook codebook = null;
+        Huffman huffman = null;
+        if (!header.isCodebookPerPlane()) {
+            // There is only one codebook.
+            codebook = readScalarQuantizationValues(compressedStream, codebookSize);
+            huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
+        }
+
+        for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
+            if (header.isCodebookPerPlane()) {
+                codebook = readScalarQuantizationValues(compressedStream, codebookSize);
+                huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
+            }
+            assert (codebook != null && huffman != null);
+
+            final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
+            try (InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerCodebookIndex(), planeDataSize)) {
+                inBitStream.readToBuffer();
+                inBitStream.setAllowReadFromUnderlyingStream(false);
+
+                int[] decompressedValues = new int[planePixelCount];
+                final int[] quantizationValues = codebook.getCentroids();
+                for (int pixel = 0; pixel < planePixelCount; pixel++) {
+                    HuffmanNode currentHuffmanNode = huffman.getRoot();
+                    boolean bit;
+                    while (!currentHuffmanNode.isLeaf()) {
+                        bit = inBitStream.readBit();
+                        currentHuffmanNode = currentHuffmanNode.traverse(bit);
+                    }
+                    decompressedValues[pixel] = quantizationValues[currentHuffmanNode.getSymbol()];
+                }
+
+                copyIntArrayToShortArray(decompressedValues, buffer, bufferOffset, planePixelCount);
+                bufferOffset += planePixelCount;
+            } catch (Exception ex) {
+                throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
+            }
+        }
     }
 }

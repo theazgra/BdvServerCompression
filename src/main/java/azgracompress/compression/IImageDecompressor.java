@@ -16,7 +16,7 @@ public interface IImageDecompressor {
     long getExpectedDataSize(final QCMPFileHeader header);
 
     /**
-     * Decompress the image planes.
+     * Decompress the image planes to decompress stream.
      *
      * @param compressedStream Input stream of compressed data.
      * @param decompressStream Output stream for decompressed data.
@@ -26,5 +26,17 @@ public interface IImageDecompressor {
     void decompress(DataInputStream compressedStream,
                     DataOutputStream decompressStream,
                     final QCMPFileHeader header) throws ImageDecompressionException;
+
+    /**
+     * Decompress the image planes to memory buffer.
+     *
+     * @param compressedStream Input stream of compressed data.
+     * @param buffer           Buffer to store decompressed pixels.
+     * @param header           QCMPFile information.
+     * @throws ImageDecompressionException when decompression fails.
+     */
+    void decompressToBuffer(DataInputStream compressedStream,
+                            short[] buffer,
+                            final QCMPFileHeader header) throws ImageDecompressionException;
 
 }
