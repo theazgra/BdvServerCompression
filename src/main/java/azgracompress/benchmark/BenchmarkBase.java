@@ -1,5 +1,6 @@
 package azgracompress.benchmark;
 
+import azgracompress.compression.CompressionOptions;
 import azgracompress.io.InputData;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.data.ImageU16;
@@ -27,11 +28,10 @@ abstract class BenchmarkBase {
     protected final int[] planes;
     protected final V3i rawImageDims;
 
-    protected final boolean useMiddlePlane;
     protected final int codebookSize;
-    protected final boolean hasCacheFolder;
     protected final String cacheFolder;
-    protected final boolean hasGeneralQuantizer;
+
+    protected CompressionOptions.CodebookType codebookType;
 
     protected final int workerCount;
 
@@ -45,7 +45,7 @@ abstract class BenchmarkBase {
         this.outputDirectory = options.getOutputFilePath();
 
         this.rawImageDims = ifi.getDimensions();
-        this.useMiddlePlane = options.shouldUseMiddlePlane();
+        this.codebookType = options.getCodebookType();
 
         this.codebookSize = (int) Math.pow(2, options.getBitsPerCodebookIndex());
 
@@ -67,9 +67,7 @@ abstract class BenchmarkBase {
             }
         }
 
-        hasCacheFolder = options.hasCodebookCacheFolder();
         cacheFolder = options.getCodebookCacheFolder();
-        hasGeneralQuantizer = useMiddlePlane || hasCacheFolder;
         workerCount = options.getWorkerCount();
     }
 

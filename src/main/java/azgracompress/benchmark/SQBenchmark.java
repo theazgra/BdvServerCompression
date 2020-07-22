@@ -3,6 +3,7 @@ package azgracompress.benchmark;
 import azgracompress.U16;
 import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.compression.CompressionOptions;
 import azgracompress.io.loader.IPlaneLoader;
 import azgracompress.io.loader.PlaneLoaderFactory;
 import azgracompress.quantization.QTrainIteration;
@@ -40,7 +41,7 @@ public class SQBenchmark extends BenchmarkBase {
         System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
         ScalarQuantizer quantizer = null;
 
-        if (hasCacheFolder) {
+        if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
             System.out.println("Loading codebook from cache");
             QuantizationCacheManager cacheManager = new QuantizationCacheManager(cacheFolder);
             final SQCodebook codebook = cacheManager.loadSQCodebook(inputFile, codebookSize);
@@ -52,7 +53,7 @@ public class SQBenchmark extends BenchmarkBase {
 
             quantizer = new ScalarQuantizer(codebook);
             System.out.println("Created quantizer from cache");
-        } else if (useMiddlePlane) {
+        } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
             final int middlePlaneIndex = rawImageDims.getZ() / 2;
 
             final int[] middlePlaneData;
@@ -90,7 +91,7 @@ public class SQBenchmark extends BenchmarkBase {
                     codebookSize);
             final String trainLogFile = String.format(TRAIN_FILE_TEMPLATE, planeIndex, codebookSize);
 
-            if (!hasGeneralQuantizer) {
+            if (options.getCodebookType() == CompressionOptions.CodebookType.Individual) {
                 quantizer = trainLloydMaxQuantizer(planeData, codebookSize, trainLogFile);
                 System.out.println("Created plane quantizer");
             }

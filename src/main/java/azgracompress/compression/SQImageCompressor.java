@@ -90,7 +90,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
         final InputData inputDataInfo = options.getInputDataInfo();
         Stopwatch stopwatch = new Stopwatch();
-        final boolean hasGeneralQuantizer = options.hasCodebookCacheFolder() || options.shouldUseMiddlePlane();
+        final boolean hasGeneralQuantizer = options.getCodebookType() != CompressionOptions.CodebookType.Individual;
 
         final IPlaneLoader planeLoader;
         try {
@@ -102,7 +102,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         ScalarQuantizer quantizer = null;
         Huffman huffman = null;
         final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
-        if (options.hasCodebookCacheFolder()) {
+        if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
             Log("Loading codebook from cache file.");
 
             quantizer = loadQuantizerFromCache();
@@ -110,7 +110,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
 
             Log("Cached quantizer with huffman coder created.");
             writeCodebookToOutputStream(quantizer, compressStream);
-        } else if (options.shouldUseMiddlePlane()) {
+        } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
             stopwatch.restart();
             ImageU16 middlePlane = null;
             final int middlePlaneIndex = getMiddlePlaneIndex();

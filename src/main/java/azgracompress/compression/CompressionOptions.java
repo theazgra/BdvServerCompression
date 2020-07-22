@@ -8,6 +8,14 @@ import azgracompress.fileformat.QuantizationType;
  * Options for the compressor/decompressor.
  */
 public class CompressionOptions {
+
+    public enum CodebookType {
+        Individual,
+        MiddlePlane,
+        Global,
+        Invalid
+    }
+
     /**
      * Input image or compressed file.
      */
@@ -22,6 +30,11 @@ public class CompressionOptions {
      * Type of quantization.
      */
     private QuantizationType quantizationType;
+
+    /**
+     * Type of the codebook.
+     */
+    private CodebookType codebookType = CodebookType.Individual;
 
     /**
      * Directory which contains codebook caches.
@@ -40,11 +53,6 @@ public class CompressionOptions {
     private V2i vectorDimension = new V2i(0);
 
     /**
-     * Flag, whether to use middle plane as reference plane for codebook creation.
-     */
-    private boolean useMiddlePlane = false;
-
-    /**
      * Number of workers to be used for different operations.
      */
     private int workerCount = 1;
@@ -54,10 +62,6 @@ public class CompressionOptions {
      */
     private boolean verbose;
 
-
-    public boolean hasCodebookCacheFolder() {
-        return codebookCacheFolder != null;
-    }
 
     protected void setVerbose(boolean verbose) {
         this.verbose = verbose;
@@ -117,19 +121,19 @@ public class CompressionOptions {
         this.vectorDimension = vectorDimension;
     }
 
-    public boolean shouldUseMiddlePlane() {
-        return useMiddlePlane;
-    }
-
-    public void setUseMiddlePlane(boolean useMiddlePlane) {
-        this.useMiddlePlane = useMiddlePlane;
-    }
-
     public int getWorkerCount() {
         return workerCount;
     }
 
     public void setWorkerCount(int workerCount) {
         this.workerCount = workerCount;
+    }
+
+    public CodebookType getCodebookType() {
+        return codebookType;
+    }
+
+    public void setCodebookType(CodebookType codebookType) {
+        this.codebookType = codebookType;
     }
 }

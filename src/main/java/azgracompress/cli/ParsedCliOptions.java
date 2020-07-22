@@ -120,7 +120,17 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
 
         parseBitsPerPixel(cmd, errorBuilder);
 
-        setUseMiddlePlane(cmd.hasOption(CliConstants.USE_MIDDLE_PLANE_LONG));
+        if (cmd.hasOption(CliConstants.USE_MIDDLE_PLANE_LONG))
+            setCodebookType(CodebookType.MiddlePlane);
+        else if (cmd.hasOption(CliConstants.CODEBOOK_CACHE_FOLDER_LONG)) {
+            final String cbc = cmd.getOptionValue(CliConstants.CODEBOOK_CACHE_FOLDER_LONG, null);
+            assert (cbc != null);
+            setCodebookType(CodebookType.Global);
+            setCodebookCacheFolder(cbc);
+        } else {
+            setCodebookType(CodebookType.Individual);
+        }
+
 
         final String[] fileInfo = cmd.getArgs();
         parseInputFilePart(errorBuilder, fileInfo);
@@ -137,7 +147,6 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
                 errorBuilder.append("Unable to parse worker count. Expected int got: ").append(wcString).append('\n');
             }
         }
-        setCodebookCacheFolder(cmd.getOptionValue(CliConstants.CODEBOOK_CACHE_FOLDER_LONG, null));
 
         if (!parseErrorOccurred) {
             setOutputFilePath(cmd.getOptionValue(CliConstants.OUTPUT_LONG, getDefaultOutputFilePath(((FileInputData) getInputDataInfo()).getFilePath())));
@@ -192,7 +201,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.SCIFIOLoader);
         Reader reader;
         try {
-            reader = ScifioWrapper.getReader(((FileInputData)getInputDataInfo()).getFilePath());
+            reader = ScifioWrapper.getReader(((FileInputData) getInputDataInfo()).getFilePath());
         } catch (IOException | FormatException e) {
             parseErrorOccurred = true;
             errorBuilder.append("Failed to get SCIFIO reader for file.\n");
@@ -544,11 +553,17 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         }
 
 
-        sb.append("InputFile: ").append(((FileInputData)getInputDataInfo()).getFilePath()).append('\n');
+        sb.append("InputFile: ").append(((FileInputData) getInputDataInfo()).getFilePath()).append('\n');
         sb.append("Output: ").append(getOutputFilePath()).append('\n');
         sb.append("BitsPerCodebookIndex: ").append(getBitsPerCodebookIndex()).append('\n');
-        if (hasCodebookCacheFolder()) {
-            sb.append("CodebookCacheFolder: ").append(getCodebookCacheFolder()).append('\n');
+
+        switch (getCodebookType()) {
+            case MiddlePlane:
+                sb.append("Use middle plane for codebook training\n");
+                break;
+            case Global:
+                sb.append("CodebookCacheFolder: ").append(getCodebookCacheFolder()).append('\n');
+                break;
         }
 
         if (hasQuantizationType(method)) {
@@ -559,9 +574,6 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
             sb.append("PlaneIndex: ").append(getInputDataInfo().getPlaneIndex()).append('\n');
         }
 
-        if (shouldUseMiddlePlane()) {
-            sb.append("Use middle plane for codebook training\n");
-        }
 
         if (getInputDataInfo().isPlaneRangeSet()) {
             sb.append("FromPlaneIndex: ").append(getInputDataInfo().getPlaneRange().getFrom()).append('\n');

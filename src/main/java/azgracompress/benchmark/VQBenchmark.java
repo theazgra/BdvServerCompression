@@ -3,6 +3,7 @@ package azgracompress.benchmark;
 import azgracompress.U16;
 import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.compression.CompressionOptions;
 import azgracompress.data.*;
 import azgracompress.io.loader.IPlaneLoader;
 import azgracompress.io.loader.PlaneLoaderFactory;
@@ -66,7 +67,7 @@ public class VQBenchmark extends BenchmarkBase {
         System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
         VectorQuantizer quantizer = null;
 
-        if (hasCacheFolder) {
+        if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
             System.out.println("Loading codebook from cache");
             QuantizationCacheManager cacheManager = new QuantizationCacheManager(cacheFolder);
             final VQCodebook codebook = cacheManager.loadVQCodebook(inputFile, codebookSize, qVector.toV3i());
@@ -77,7 +78,7 @@ public class VQBenchmark extends BenchmarkBase {
             quantizer = new VectorQuantizer(codebook);
             System.out.println("Created quantizer from cache");
 
-        } else if (useMiddlePlane) {
+        } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
             final int middlePlaneIndex = rawImageDims.getZ() / 2;
             final ImageU16 middlePlane;
             try {
@@ -113,7 +114,7 @@ public class VQBenchmark extends BenchmarkBase {
             final int[][] planeData = getPlaneVectors(plane, qVector);
 
 
-            if (!hasGeneralQuantizer) {
+            if (options.getCodebookType() == CompressionOptions.CodebookType.Individual) {
                 LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData,
                         codebookSize,
                         workerCount,
