@@ -9,7 +9,7 @@ import java.io.*;
 public class ImageCompressor extends CompressorDecompressorBase {
     final int PLANE_DATA_SIZES_OFFSET = 23;
 
-    public ImageCompressor(ParsedCliOptions options) {
+    public ImageCompressor(CompressionOptions options) {
         super(options);
     }
 
