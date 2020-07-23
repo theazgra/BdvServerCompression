@@ -5,6 +5,7 @@ import azgracompress.data.V3i;
 import azgracompress.io.BufferInputData;
 import azgracompress.io.InputData;
 import azgracompress.utilities.TypeConverter;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -16,30 +17,30 @@ public class ImageJBufferLoader implements IPlaneLoader {
         assert (this.bufferInputData.getPixelType() == InputData.PixelType.Gray16);
     }
 
-    private int[] copyShortArray(short[] srcArray, int srcOffset, int copyLen) {
+    private int[] copyShortArray(short[] srcArray, int copyLen) {
         int[] destArray = new int[copyLen];
         for (int i = 0; i < copyLen; i++) {
-            destArray[i] = TypeConverter.shortToInt(srcArray[srcOffset + i]);
+            destArray[i] = TypeConverter.shortToInt(srcArray[i]);
         }
         return destArray;
     }
 
-    private void copyShortArray(short[] srcArray, int srcOffset, int[] destArray, int destOffset, int copyLen) {
+    private void copyShortArrayIntoBuffer(short[] srcArray, int[] destBuffer, int destOffset, int copyLen) {
         for (int i = 0; i < copyLen; i++) {
-            destArray[destOffset + i] = TypeConverter.shortToInt(srcArray[srcOffset + i]);
+            destBuffer[destOffset + i] = TypeConverter.shortToInt(srcArray[i]);
         }
     }
 
     @Override
     public ImageU16 loadPlaneU16(int plane) throws IOException {
+        assert (plane >= 0);
         switch (bufferInputData.getPixelType()) {
             case Gray16: {
                 final int planePixelCount = bufferInputData.getDimensions().getX() * bufferInputData.getDimensions().getY();
-                final int offset = plane * planePixelCount;
-                final short[] srcBuffer = (short[]) bufferInputData.getBuffer();
+                final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(plane);
                 return new ImageU16(bufferInputData.getDimensions().getX(),
                         bufferInputData.getDimensions().getY(),
-                        copyShortArray(srcBuffer, offset, planePixelCount));
+                        copyShortArray(srcBuffer, planePixelCount));
             }
             default:
                 throw new IOException("Unable to load unsupported pixel type.");
@@ -58,7 +59,6 @@ public class ImageJBufferLoader implements IPlaneLoader {
         switch (bufferInputData.getPixelType()) {
             case Gray16: {
                 final int planePixelCount = bufferInputData.getDimensions().getX() * bufferInputData.getDimensions().getY();
-
                 final long totalValueCount = (long) planePixelCount * (long) planes.length;
 
                 if (totalValueCount > (long) Integer.MAX_VALUE) {
@@ -66,14 +66,13 @@ public class ImageJBufferLoader implements IPlaneLoader {
                 }
 
                 Arrays.sort(planes);
-                final short[] srcBuffer = (short[]) bufferInputData.getBuffer();
+
                 int[] destBuffer = new int[(int) totalValueCount];
-
-                for (int index = 0; index < planes.length; index++) {
-                    final int srcOffset = planes[index] * planePixelCount;
-                    final int destOffset = index * planePixelCount;
-
-                    copyShortArray(srcBuffer, srcOffset, destBuffer, destOffset, planePixelCount);
+                int destOffset = 0;
+                for (final int planeIndex : planes) {
+                    final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(planeIndex);
+                    copyShortArrayIntoBuffer(srcBuffer, destBuffer, destOffset, planePixelCount);
+                    destOffset += planePixelCount;
                 }
                 return destBuffer;
             }
@@ -87,14 +86,21 @@ public class ImageJBufferLoader implements IPlaneLoader {
         switch (bufferInputData.getPixelType()) {
             case Gray16: {
                 final V3i imageDims = bufferInputData.getDimensions();
-                final long dataSize = (long) imageDims.getX() * (long) imageDims.getY() * (long) imageDims.getZ();
+                final long totalValueCount = imageDims.multiplyTogether();
+                final int planePixelCount = imageDims.getX() * imageDims.getY();
 
-                if (dataSize > (long) Integer.MAX_VALUE) {
+                if (totalValueCount > (long) Integer.MAX_VALUE) {
                     throw new IOException("Unable to load all image data, file size is too big.");
                 }
 
-                final short[] srcBuffer = (short[]) bufferInputData.getBuffer();
-                return copyShortArray(srcBuffer, 0, (int) dataSize);
+                int[] destBuffer = new int[(int) totalValueCount];
+                int destOffset = 0;
+                for (int planeIndex = 0; planeIndex < imageDims.getZ(); planeIndex++) {
+                    final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(planeIndex);
+                    copyShortArrayIntoBuffer(srcBuffer, destBuffer, destOffset, planePixelCount);
+                    destOffset += planePixelCount;
+                }
+                return destBuffer;
             }
             default:
                 throw new IOException("Unable to load unsupported pixel type.");

@@ -10,29 +10,32 @@ public class BufferInputData extends InputData {
     /**
      * Reference to the buffer.
      */
-    private final Object buffer;
+    private final Object[] imageBuffers;
 
 
     /**
      * Create input data backed by buffer object.
      *
-     * @param buffer          Buffer object reference.
+     * @param imageBuffers    Image buffer references.
      * @param imageDimensions Image dimensions.
      * @param pixelType       Image pixel type.
      */
-    public BufferInputData(final Object buffer, final V3i imageDimensions, final PixelType pixelType) {
-        this.buffer = buffer;
+    public BufferInputData(final Object[] imageBuffers, final V3i imageDimensions, final PixelType pixelType) {
+        this.imageBuffers = imageBuffers;
         setDataLoaderType(DataLoaderType.ImageJBufferLoader);
         setDimension(imageDimensions);
         setPixelType(pixelType);
     }
 
     /**
-     * Get buffer with the data.
+     * Get buffer with the image plane data.
      *
-     * @return Pointer to array of corresponding pixel values.
+     * @param planeIndex Plane index.
+     * @return Pointer to array of corresponding plane pixel values.
      */
-    public Object getBuffer() {
-        return buffer;
+    public Object getPixelBuffer(final int planeIndex) {
+        assert (planeIndex >= 0);
+        assert (planeIndex < imageBuffers.length);
+        return imageBuffers[planeIndex];
     }
 }
