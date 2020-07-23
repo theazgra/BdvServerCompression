@@ -73,8 +73,11 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     private ScalarQuantizer loadQuantizerFromCache() throws ImageCompressionException {
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
-        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputDataInfo().getFilePath(),
-                getCodebookSize());
+        if (!cacheManager.doesSQCacheExists(options.getInputDataInfo().getCacheFileName(), getCodebookSize())) {
+            trainAndSaveCodebook();
+        }
+
+        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputDataInfo().getCacheFileName(), getCodebookSize());
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization values from cache file.");
         }
@@ -220,9 +223,9 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         Log("Finished LloydMax training.");
 
         Log(String.format("Saving cache file to %s", options.getOutputFilePath()));
-        QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getOutputFilePath());
+        QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
         try {
-            cacheManager.saveCodebook(options.getInputDataInfo().getFilePath(), codebook);
+            cacheManager.saveCodebook(options.getInputDataInfo().getCacheFileName(), codebook);
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write cache.", e);
         }

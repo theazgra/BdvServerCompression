@@ -2,6 +2,7 @@ package azgracompress.cache;
 
 import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
+import azgracompress.quantization.QTrainIteration;
 import azgracompress.quantization.scalar.SQCodebook;
 import azgracompress.quantization.vector.VQCodebook;
 
@@ -36,7 +37,7 @@ public class QuantizationCacheManager {
     private File getCacheFilePathForSQ(final String trainFile, final int codebookSize) {
         final File inputFile = new File(trainFile);
         return new File(cacheFolder, String.format("%s_%d_bits.qvc",
-                                                   inputFile.getName(), codebookSize));
+                inputFile.getName(), codebookSize));
     }
 
     /**
@@ -52,7 +53,7 @@ public class QuantizationCacheManager {
                                        final V3i vDim) {
         final File inputFile = new File(trainFile);
         return new File(cacheFolder, String.format("%s_%d_%dx%d.qvc", inputFile.getName(), codebookSize,
-                                                   vDim.getX(), vDim.getY()));
+                vDim.getX(), vDim.getY()));
     }
 
 
@@ -140,8 +141,8 @@ public class QuantizationCacheManager {
      */
     public void saveCodebook(final String trainFile, final VQCodebook codebook) throws IOException {
         final String fileName = getCacheFilePathForVQ(trainFile,
-                                                      codebook.getCodebookSize(),
-                                                      codebook.getVectorDims()).getAbsolutePath();
+                codebook.getCodebookSize(),
+                codebook.getVectorDims()).getAbsolutePath();
 
         final CacheFileHeader header = createHeaderForVQ(new File(trainFile).getName(), codebook);
         final VQCacheFile cacheFile = new VQCacheFile(header, codebook);
@@ -173,14 +174,37 @@ public class QuantizationCacheManager {
     }
 
     /**
+     * Check if the SQ cache file for given image file exists.
+     *
+     * @param imageFile    Image file.
+     * @param codebookSize Scalar quantization codebook size.
+     * @return True if cache file exists and and can be loaded.
+     */
+    public boolean doesSQCacheExists(final String imageFile, final int codebookSize) {
+        return getCacheFilePathForSQ(imageFile, codebookSize).exists();
+    }
+
+    /**
+     * Check if the VQ cache file for given image file exists.
+     *
+     * @param imageFile    Image file.
+     * @param codebookSize Scalar quantization codebook size.
+     * @param vDim         Quantization vector dimensions.
+     * @return True if cache file exists and and can be loaded.
+     */
+    public boolean doesVQCacheExists(final String imageFile, final int codebookSize, final V3i vDim) {
+        return getCacheFilePathForVQ(imageFile, codebookSize, vDim).exists();
+    }
+
+    /**
      * Load SQ cache file from disk.
      *
-     * @param trainFile    Input image file.
+     * @param imageFile    Input image file.
      * @param codebookSize Codebook size.
      * @return SQ cache file.
      */
-    private SQCacheFile loadSQCacheFile(final String trainFile, final int codebookSize) {
-        final File path = getCacheFilePathForSQ(trainFile, codebookSize);
+    private SQCacheFile loadSQCacheFile(final String imageFile, final int codebookSize) {
+        final File path = getCacheFilePathForSQ(imageFile, codebookSize);
         try {
             return (SQCacheFile) readCacheFile(path, new SQCacheFile());
         } catch (IOException e) {
@@ -293,4 +317,6 @@ public class QuantizationCacheManager {
         sb.append('\n');
         System.out.println(sb.toString());
     }
+
+
 }

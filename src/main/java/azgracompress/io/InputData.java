@@ -97,9 +97,17 @@ public abstract class InputData {
 
     /**
      * Override in FileInputData!!!
+     *
      * @return null!
      */
     public String getFilePath() {
         return null;
     }
+
+    /**
+     * Get name used in creation of qcmp cache file.
+     *
+     * @return Name used for cache file.
+     */
+    public abstract String getCacheFileName();
 }

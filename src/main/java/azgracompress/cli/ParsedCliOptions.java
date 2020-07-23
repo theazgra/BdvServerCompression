@@ -149,8 +149,12 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         }
 
         if (!parseErrorOccurred) {
-            setOutputFilePath(cmd.getOptionValue(CliConstants.OUTPUT_LONG, getDefaultOutputFilePath(((FileInputData) getInputDataInfo()).getFilePath())));
+            setOutputFilePath(cmd.getOptionValue(CliConstants.OUTPUT_LONG, getDefaultOutputFilePath(getInputDataInfo().getFilePath())));
             setCodebookCacheFolder(cmd.getOptionValue(CliConstants.CODEBOOK_CACHE_FOLDER_LONG, null));
+        }
+
+        if (getMethod() == ProgramMethod.TrainCodebook) {
+            setCodebookCacheFolder(getOutputFilePath());
         }
 
         parseError = errorBuilder.toString();

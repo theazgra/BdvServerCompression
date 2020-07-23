@@ -12,6 +12,7 @@ public class BufferInputData extends InputData {
      */
     private final Object[] imageBuffers;
 
+    private final String cacheHint;
 
     /**
      * Create input data backed by buffer object.
@@ -19,12 +20,17 @@ public class BufferInputData extends InputData {
      * @param imageBuffers    Image buffer references.
      * @param imageDimensions Image dimensions.
      * @param pixelType       Image pixel type.
+     * @param cacheHint       Name of the image used in caching.
      */
-    public BufferInputData(final Object[] imageBuffers, final V3i imageDimensions, final PixelType pixelType) {
+    public BufferInputData(final Object[] imageBuffers,
+                           final V3i imageDimensions,
+                           final PixelType pixelType,
+                           final String cacheHint) {
         this.imageBuffers = imageBuffers;
         setDataLoaderType(DataLoaderType.ImageJBufferLoader);
         setDimension(imageDimensions);
         setPixelType(pixelType);
+        this.cacheHint = cacheHint;
     }
 
     /**
@@ -37,5 +43,10 @@ public class BufferInputData extends InputData {
         assert (planeIndex >= 0);
         assert (planeIndex < imageBuffers.length);
         return imageBuffers[planeIndex];
+    }
+
+    @Override
+    public String getCacheFileName() {
+        return cacheHint;
     }
 }

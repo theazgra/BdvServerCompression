@@ -75,10 +75,16 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
+        if (!cacheManager.doesVQCacheExists(options.getInputDataInfo().getCacheFileName(),
+                getCodebookSize(),
+                options.getVectorDimension().toV3i())) {
+            trainAndSaveCodebook();
+        }
 
-        final VQCodebook codebook = cacheManager.loadVQCodebook(options.getInputDataInfo().getFilePath(),
-                                                                getCodebookSize(),
-                                                                options.getVectorDimension().toV3i());
+        final VQCodebook codebook = cacheManager.loadVQCodebook(options.getInputDataInfo().getCacheFileName(),
+                getCodebookSize(),
+                options.getVectorDimension().toV3i());
+
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization vectors from cache.");
         }
@@ -230,10 +236,10 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 }
 
                 System.arraycopy(planeVectors,
-                                 0,
-                                 trainData,
-                                 (planeCounter * chunkCountPerPlane),
-                                 chunkCountPerPlane);
+                        0,
+                        trainData,
+                        (planeCounter * chunkCountPerPlane),
+                        chunkCountPerPlane);
                 ++planeCounter;
             }
         }
@@ -256,9 +262,9 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
 
         Log("Saving cache file to %s", options.getOutputFilePath());
-        QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getOutputFilePath());
+        QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
         try {
-            cacheManager.saveCodebook(options.getInputDataInfo().getFilePath(), lbgResult.getCodebook());
+            cacheManager.saveCodebook(options.getInputDataInfo().getCacheFileName(), lbgResult.getCodebook());
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write VQ cache.", e);
         }

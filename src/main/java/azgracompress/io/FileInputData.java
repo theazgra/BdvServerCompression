@@ -12,6 +12,7 @@ public class FileInputData extends InputData {
 
     /**
      * Create input data backed by data file.
+     *
      * @param filePath
      */
     public FileInputData(String filePath) {
@@ -20,10 +21,16 @@ public class FileInputData extends InputData {
 
     /**
      * Get path to the data file.
+     *
      * @return
      */
     @Override
     public String getFilePath() {
+        return filePath;
+    }
+
+    @Override
+    public String getCacheFileName() {
         return filePath;
     }
 }
