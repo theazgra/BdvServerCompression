@@ -69,6 +69,6 @@ public class V3i {
     }
 
     public long multiplyTogether() {
-        return (x * y * z);
+        return ((long) x * (long) y * (long) z);
     }
 }
