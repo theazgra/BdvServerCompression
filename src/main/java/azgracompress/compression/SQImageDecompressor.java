@@ -125,13 +125,12 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
     }
 
     @Override
-    public void decompressToBuffer(DataInputStream compressedStream, short[] buffer, QCMPFileHeader header) throws ImageDecompressionException {
+    public void decompressToBuffer(DataInputStream compressedStream, short[][] buffer, QCMPFileHeader header) throws ImageDecompressionException {
         final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
         final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
         final int planeCountForDecompression = header.getImageSizeZ();
 
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
-        int bufferOffset = 0;
 
         SQCodebook codebook = null;
         Huffman huffman = null;
@@ -165,8 +164,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
                     decompressedValues[pixel] = quantizationValues[currentHuffmanNode.getSymbol()];
                 }
 
-                copyIntArrayToShortArray(decompressedValues, buffer, bufferOffset, planePixelCount);
-                bufferOffset += planePixelCount;
+                buffer[planeIndex] = TypeConverter.intArrayToShortArray(decompressedValues);
             } catch (Exception ex) {
                 throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
             }

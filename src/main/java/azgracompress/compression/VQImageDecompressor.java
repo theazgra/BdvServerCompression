@@ -15,6 +15,7 @@ import azgracompress.utilities.TypeConverter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Type;
 
 // TODO(Moravec): Handle huffman decoding.
 
@@ -180,16 +181,13 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
     }
 
     @Override
-    public void decompressToBuffer(DataInputStream compressedStream, short[] buffer, QCMPFileHeader header) throws ImageDecompressionException {
+    public void decompressToBuffer(DataInputStream compressedStream, short[][] buffer, QCMPFileHeader header) throws ImageDecompressionException {
         // TODO: Think how to remove the duplicate code.
-        final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
-        int bufferOffset = 0;
         final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
         assert (header.getVectorSizeZ() == 1);
         final int vectorSize = header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
         final int planeCountForDecompression = header.getImageSizeZ();
         final long planeVectorCount = calculatePlaneVectorCount(header);
-        //final long planeDataSize = calculatePlaneDataSize(planeVectorCount, header.getBitsPerPixel());
         final V2i qVector = new V2i(header.getVectorSizeX(), header.getVectorSizeY());
         final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
 
@@ -238,9 +236,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                         qVector,
                         header.getImageDims());
 
-                copyIntArrayToShortArray(decompressedPlane.getData(), buffer, bufferOffset, planePixelCount);
-                bufferOffset += planePixelCount;
-
+                buffer[planeIndex] = TypeConverter.intArrayToShortArray(decompressedPlane.getData());
             } catch (Exception ex) {
                 throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
             }

@@ -237,8 +237,8 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 return null;
             }
 
-            final int totalPixelCount = (int) header.getImageDims().multiplyTogether();
-            final short[] decompressedData = new short[totalPixelCount];
+            final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
+            final short[][] decompressedData = new short[header.getImageSizeZ()][planePixelCount];
 
 
             try {

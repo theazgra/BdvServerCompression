@@ -132,10 +132,4 @@ public abstract class CompressorDecompressorBase {
     protected int getCodebookSize() {
         return codebookSize;
     }
-
-    protected void copyIntArrayToShortArray(final int[] srcBuffer, final short[] destBuffer, final int destOffset, final int copyLen) {
-        for (int i = 0; i < copyLen; i++) {
-            destBuffer[destOffset + i] = (short) srcBuffer[i];
-        }
-    }
 }

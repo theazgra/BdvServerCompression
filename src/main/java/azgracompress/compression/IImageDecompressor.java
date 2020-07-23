@@ -36,7 +36,7 @@ public interface IImageDecompressor {
      * @throws ImageDecompressionException when decompression fails.
      */
     void decompressToBuffer(DataInputStream compressedStream,
-                            short[] buffer,
+                            short[][] buffer,
                             final QCMPFileHeader header) throws ImageDecompressionException;
 
 }
