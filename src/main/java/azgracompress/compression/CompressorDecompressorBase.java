@@ -24,6 +24,7 @@ public abstract class CompressorDecompressorBase {
         this.options = options;
         this.codebookSize = (int) Math.pow(2, this.options.getBitsPerCodebookIndex());
         // Default status listener, which can be override by setStatusListener.
+        statusListener = this::defaultLog;
     }
 
     public void setStatusListener(IStatusListener listener) {
