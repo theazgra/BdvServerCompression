@@ -2,6 +2,8 @@ package azgracompress.compression;
 
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
+import azgracompress.compression.listeners.IProgressListener;
+import azgracompress.compression.listeners.IStatusListener;
 import azgracompress.fileformat.QCMPFileHeader;
 
 import java.io.*;
@@ -19,19 +21,32 @@ public class ImageCompressor extends CompressorDecompressorBase {
      * @return Correct implementation of image compressor or null if configuration is not valid.
      */
     private IImageCompressor getImageCompressor() {
+        IImageCompressor compressor = null;
         switch (options.getQuantizationType()) {
-            case Scalar: {
-                return new SQImageCompressor(options);
-            }
+            case Scalar:
+                compressor = new SQImageCompressor(options);
+                break;
             case Vector1D:
-            case Vector2D: {
-                return new VQImageCompressor(options);
-            }
+            case Vector2D:
+
+                compressor = new VQImageCompressor(options);
+                break;
             case Vector3D:
             case Invalid:
             default:
                 return null;
         }
+
+        // Forward listeners to image compressor.
+        final IStatusListener parentStatusListener = getStatusListener();
+        if (parentStatusListener != null)
+            compressor.setStatusListener(parentStatusListener);
+
+        final IProgressListener parentProgressListener = getProgressListener();
+        if (parentProgressListener != null)
+            compressor.setProgressListener(parentProgressListener);
+
+        return compressor;
     }
 
     private void reportCompressionRatio(final QCMPFileHeader header, final int written) {
@@ -41,7 +56,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
     }
 
     public boolean trainAndSaveCodebook() {
-        Log("=== Training codebook ===");
+        reportStatusToListeners("=== Training codebook ===");
         IImageCompressor imageCompressor = getImageCompressor();
         if (imageCompressor == null) {
             return false;

@@ -117,7 +117,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         Huffman huffman = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
-            Log("Loading codebook from cache...");
+            reportStatusToListeners("Loading codebook from cache...");
             codebook = readCodebook(compressedStream, codebookSize, vectorSize);
             huffman = createHuffmanCoder(huffmanSymbols, codebook.getVectorFrequencies());
         }
@@ -126,13 +126,13 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
             stopwatch.restart();
             if (header.isCodebookPerPlane()) {
-                Log("Loading plane codebook...");
+                reportStatusToListeners("Loading plane codebook...");
                 codebook = readCodebook(compressedStream, codebookSize, vectorSize);
                 huffman = createHuffmanCoder(huffmanSymbols, codebook.getVectorFrequencies());
             }
             assert (codebook != null && huffman != null);
 
-            Log(String.format("Decompressing plane %d...", planeIndex));
+            reportStatusToListeners(String.format("Decompressing plane %d...", planeIndex));
 
             byte[] decompressedPlaneData = null;
 
@@ -176,7 +176,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             }
 
             stopwatch.stop();
-            Log(String.format("Decompressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString()));
+            reportStatusToListeners(String.format("Decompressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString()));
         }
     }
 

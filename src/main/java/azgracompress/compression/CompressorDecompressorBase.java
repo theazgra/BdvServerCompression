@@ -1,5 +1,7 @@
 package azgracompress.compression;
 
+import azgracompress.compression.listeners.IProgressListener;
+import azgracompress.compression.listeners.IStatusListener;
 import azgracompress.io.InputData;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.huffman.Huffman;
@@ -15,9 +17,52 @@ public abstract class CompressorDecompressorBase {
     protected final CompressionOptions options;
     private final int codebookSize;
 
+    private IStatusListener statusListener = null;
+    private IProgressListener progressListener = null;
+
     public CompressorDecompressorBase(CompressionOptions options) {
         this.options = options;
         this.codebookSize = (int) Math.pow(2, this.options.getBitsPerCodebookIndex());
+        // Default status listener, which can be override by setStatusListener.
+    }
+
+    public void setStatusListener(IStatusListener listener) {
+        this.statusListener = listener;
+    }
+
+    public void setProgressListener(IProgressListener listener) {
+        this.progressListener = listener;
+    }
+
+    protected IProgressListener getProgressListener() {
+        return progressListener;
+    }
+
+    protected IStatusListener getStatusListener() {
+        return statusListener;
+    }
+
+    protected void reportStatusToListeners(final String status) {
+        if (this.statusListener != null) {
+            this.statusListener.sendMessage(status);
+        }
+    }
+
+    protected void reportStatusToListeners(final String format, final Object... args) {
+        reportStatusToListeners(String.format(format, args));
+    }
+
+    protected void reportProgressListeners(final int index, final int finalIndex, final String message) {
+        if (this.progressListener != null) {
+            this.progressListener.sendProgress(message, index, finalIndex);
+        }
+    }
+
+    protected void reportProgressListeners(final int index,
+                                           final int finalIndex,
+                                           final String message,
+                                           final Object... args) {
+        reportProgressListeners(index, finalIndex, String.format(message, args));
     }
 
     protected int[] createHuffmanSymbols(final int codebookSize) {
@@ -76,25 +121,9 @@ public abstract class CompressorDecompressorBase {
     }
 
 
-    protected void Log(final String message) {
+    private void defaultLog(final String message) {
         if (options.isVerbose()) {
             System.out.println(message);
-        }
-    }
-
-    protected void Log(final String format, final Object... args) {
-        if (options.isVerbose()) {
-            System.out.println(String.format(format, args));
-        }
-    }
-
-    protected void DebugLog(final String message) {
-        System.out.println(message);
-    }
-
-    protected void LogError(final String message) {
-        if (options.isVerbose()) {
-            System.err.println(message);
         }
     }
 

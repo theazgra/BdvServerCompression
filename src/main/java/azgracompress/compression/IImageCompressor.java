@@ -4,7 +4,7 @@ import azgracompress.compression.exception.ImageCompressionException;
 
 import java.io.DataOutputStream;
 
-public interface IImageCompressor {
+public interface IImageCompressor extends IListenable {
 
     /**
      * Compress the image planes.

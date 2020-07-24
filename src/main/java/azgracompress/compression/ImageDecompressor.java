@@ -1,6 +1,8 @@
 package azgracompress.compression;
 
 import azgracompress.compression.exception.ImageDecompressionException;
+import azgracompress.compression.listeners.IProgressListener;
+import azgracompress.compression.listeners.IStatusListener;
 import azgracompress.data.ImageU16Dataset;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.utilities.Stopwatch;
@@ -38,17 +40,31 @@ public class ImageDecompressor extends CompressorDecompressorBase {
      * @return Correct implementation of image decompressor.
      */
     private IImageDecompressor getImageDecompressor(final QCMPFileHeader header) {
+        IImageDecompressor decompressor = null;
         switch (header.getQuantizationType()) {
             case Scalar:
-                return new SQImageDecompressor(options);
+                decompressor = new SQImageDecompressor(options);
+                break;
             case Vector1D:
             case Vector2D:
-                return new VQImageDecompressor(options);
+                decompressor = new VQImageDecompressor(options);
+                break;
             case Vector3D:
             case Invalid:
             default:
                 return null;
         }
+
+        // Forward listeners to image decompressor.
+        final IStatusListener parentStatusListener = getStatusListener();
+        if (parentStatusListener != null)
+            decompressor.setStatusListener(parentStatusListener);
+
+        final IProgressListener parentProgressListener = getProgressListener();
+        if (parentProgressListener != null)
+            decompressor.setProgressListener(parentProgressListener);
+
+        return decompressor;
     }
 
     /**
@@ -203,7 +219,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         final double seconds = decompressionStopwatch.totalElapsedSeconds();
         final double MBSize = ((double) decompressedFileSize / 1000.0) / 1000.0;
         final double MBPerSec = MBSize / seconds;
-        Log("Decompression speed: %.4f MB/s", MBPerSec);
+        reportStatusToListeners("Decompression speed: %.4f MB/s", MBPerSec);
 
         return true;
     }
@@ -213,7 +229,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         final long dataSize = fileSize - header.getHeaderSize();
         final long expectedDataSize = imageDecompressor.getExpectedDataSize(header);
         if (dataSize != expectedDataSize) {
-            LogError("Invalid file size.");
+            reportStatusToListeners("Invalid file size.");
             return false;
         }
         return true;

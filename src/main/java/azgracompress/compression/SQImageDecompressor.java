@@ -70,7 +70,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         Huffman huffman = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
-            Log("Loading single codebook and huffman coder.");
+            reportStatusToListeners("Loading single codebook and huffman coder.");
             codebook = readScalarQuantizationValues(compressedStream, codebookSize);
             huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
         }
@@ -79,13 +79,13 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
             stopwatch.restart();
             if (header.isCodebookPerPlane()) {
-                Log("Loading plane codebook...");
+                reportStatusToListeners("Loading plane codebook...");
                 codebook = readScalarQuantizationValues(compressedStream, codebookSize);
                 huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
             }
             assert (codebook != null && huffman != null);
 
-            Log(String.format("Decompressing plane %d...", planeIndex));
+            reportStatusToListeners(String.format("Decompressing plane %d...", planeIndex));
             byte[] decompressedPlaneData = null;
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (InBitStream inBitStream = new InBitStream(compressedStream,
@@ -120,7 +120,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             }
 
             stopwatch.stop();
-            Log(String.format("Decompressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString()));
+            reportStatusToListeners(String.format("Decompressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString()));
         }
     }
 
@@ -141,6 +141,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         }
 
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
+            reportProgressListeners(planeIndex, planeCountForDecompression, "Decompressing plane %d", planeIndex);
             if (header.isCodebookPerPlane()) {
                 codebook = readScalarQuantizationValues(compressedStream, codebookSize);
                 huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());

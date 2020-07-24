@@ -61,7 +61,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             throw new ImageCompressionException("Unable to write codebook to compress stream.", ioEx);
         }
         if (options.isVerbose()) {
-            Log("Wrote quantization vectors to compressed stream.");
+            reportStatusToListeners("Wrote quantization vectors to compressed stream.");
         }
     }
 
@@ -112,10 +112,10 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         Huffman huffman = null;
 
         if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
-            Log("Loading codebook from cache file.");
+            reportStatusToListeners("Loading codebook from cache file.");
             quantizer = loadQuantizerFromCache();
             huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
-            Log("Cached quantizer with huffman coder created.");
+            reportStatusToListeners("Cached quantizer with huffman coder created.");
             writeQuantizerToCompressStream(quantizer, compressStream);
         } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
             stopwatch.restart();
@@ -129,13 +129,13 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 throw new ImageCompressionException("Unable to load reference plane data.", ex);
             }
 
-            Log(String.format("Training vector quantizer from middle plane %d.", middlePlaneIndex));
+            reportStatusToListeners(String.format("Training vector quantizer from middle plane %d.", middlePlaneIndex));
             final int[][] refPlaneVectors = middlePlane.toQuantizationVectors(options.getVectorDimension());
             quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
             huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
             writeQuantizerToCompressStream(quantizer, compressStream);
             stopwatch.stop();
-            Log("Middle plane codebook created in: " + stopwatch.getElapsedTimeString());
+            reportStatusToListeners("Middle plane codebook created in: " + stopwatch.getElapsedTimeString());
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression();
@@ -144,7 +144,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
         for (final int planeIndex : planeIndices) {
             stopwatch.restart();
-            Log(String.format("Loading plane %d.", planeIndex));
+            reportStatusToListeners(String.format("Loading plane %d.", planeIndex));
 
             ImageU16 plane = null;
             try {
@@ -157,23 +157,23 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             final int[][] planeVectors = plane.toQuantizationVectors(options.getVectorDimension());
 
             if (!hasGeneralQuantizer) {
-                Log(String.format("Training vector quantizer from plane %d.", planeIndex));
+                reportStatusToListeners(String.format("Training vector quantizer from plane %d.", planeIndex));
                 quantizer = trainVectorQuantizerFromPlaneVectors(planeVectors);
                 huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
                 writeQuantizerToCompressStream(quantizer, compressStream);
-                Log("Wrote plane codebook.");
+                reportStatusToListeners("Wrote plane codebook.");
             }
 
             assert (quantizer != null);
 
-            Log("Compressing plane...");
+            reportStatusToListeners("Compressing plane...");
             final int[] indices = quantizer.quantizeIntoIndices(planeVectors, options.getWorkerCount());
 
             planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
 
             stopwatch.stop();
-            Log("Plane time: " + stopwatch.getElapsedTimeString());
-            Log(String.format("Finished processing of plane %d.", planeIndex));
+            reportStatusToListeners("Plane time: " + stopwatch.getElapsedTimeString());
+            reportStatusToListeners(String.format("Finished processing of plane %d.", planeIndex));
         }
         return planeDataSizes;
     }
@@ -206,7 +206,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         Stopwatch s = new Stopwatch();
         s.start();
         if (inputDataInfo.isPlaneIndexSet()) {
-            Log("VQ: Loading single plane data.");
+            reportStatusToListeners("VQ: Loading single plane data.");
             try {
 
                 trainData = loadPlaneQuantizationVectors(planeLoader, inputDataInfo.getPlaneIndex());
@@ -214,7 +214,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 throw new ImageCompressionException("Failed to load plane data.", e);
             }
         } else {
-            Log(inputDataInfo.isPlaneRangeSet() ? "VQ: Loading plane range data." : "VQ: Loading all planes data.");
+            reportStatusToListeners(inputDataInfo.isPlaneRangeSet() ? "VQ: Loading plane range data." : "VQ: Loading all planes data.");
             final int[] planeIndices = getPlaneIndicesForCompression();
 
             final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCountPerPlane(
@@ -244,7 +244,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             }
         }
         s.stop();
-        Log("Quantization vector load took: " + s.getElapsedTimeString());
+        reportStatusToListeners("Quantization vector load took: " + s.getElapsedTimeString());
         return trainData;
     }
 
@@ -256,19 +256,19 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 getCodebookSize(),
                 options.getWorkerCount(),
                 options.getVectorDimension().toV3i());
-        Log("Starting LBG optimization.");
+        reportStatusToListeners("Starting LBG optimization.");
         LBGResult lbgResult = vqInitializer.findOptimalCodebook(options.isVerbose());
-        Log("Learned the optimal codebook.");
+        reportStatusToListeners("Learned the optimal codebook.");
 
 
-        Log("Saving cache file to %s", options.getOutputFilePath());
+        reportStatusToListeners("Saving cache file to %s", options.getOutputFilePath());
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
         try {
             cacheManager.saveCodebook(options.getInputDataInfo().getCacheFileName(), lbgResult.getCodebook());
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write VQ cache.", e);
         }
-        Log("Operation completed.");
+        reportStatusToListeners("Operation completed.");
     }
 
 

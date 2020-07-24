@@ -6,7 +6,7 @@ import azgracompress.fileformat.QCMPFileHeader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
-public interface IImageDecompressor {
+public interface IImageDecompressor extends IListenable {
     /**
      * Get correct size of data block.
      *
@@ -38,5 +38,4 @@ public interface IImageDecompressor {
     void decompressToBuffer(DataInputStream compressedStream,
                             short[][] buffer,
                             final QCMPFileHeader header) throws ImageDecompressionException;
-
 }
