@@ -1,12 +1,14 @@
 package azgracompress;
 
 import azgracompress.benchmark.CompressionBenchmark;
+import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cli.CliConstants;
 import azgracompress.cli.CustomFunctionBase;
 import azgracompress.cli.ParsedCliOptions;
 import azgracompress.cli.functions.EntropyCalculation;
 import azgracompress.compression.ImageCompressor;
 import azgracompress.compression.ImageDecompressor;
+import azgracompress.fileformat.FileExtensions;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
@@ -42,7 +44,6 @@ public class DataCompressor {
         }
 
         switch (parsedCliOptions.getMethod()) {
-
             case Compress: {
                 ImageCompressor compressor = new ImageCompressor(parsedCliOptions);
                 if (!compressor.compress()) {
@@ -85,13 +86,17 @@ public class DataCompressor {
             }
             break;
             case InspectFile: {
-                ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
-                try {
-                    System.out.println(decompressor.inspectCompressedFile());
-                } catch (IOException e) {
-                    System.err.println("Errors occurred during inspecting file.");
-                    System.err.println(e.getMessage());
-                    e.printStackTrace();
+                if (parsedCliOptions.getInputDataInfo().getFilePath().endsWith(FileExtensions.CACHE_FILE_EXT)) {
+                    QuantizationCacheManager.inspectCacheFile(parsedCliOptions.getInputDataInfo().getFilePath());
+                } else {
+                    ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
+                    try {
+                        System.out.println(decompressor.inspectCompressedFile());
+                    } catch (IOException e) {
+                        System.err.println("Errors occurred during inspecting file.");
+                        System.err.println(e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
             break;

@@ -2,7 +2,6 @@ package azgracompress.cache;
 
 import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
-import azgracompress.quantization.QTrainIteration;
 import azgracompress.quantization.scalar.SQCodebook;
 import azgracompress.quantization.vector.VQCodebook;
 
@@ -270,53 +269,34 @@ public class QuantizationCacheManager {
     }
 
     /**
-     * Log information about SQ cache file.
+     * Inspect cache file specified by the path.
      *
-     * @param trainFile    Input image file.
-     * @param codebookSize Codebook size.
+     * @param path Path to cache file.
      */
-    public void validateAndReport(final String trainFile, final int codebookSize) {
-
-        final SQCacheFile cacheFile = loadSQCacheFile(trainFile, codebookSize);
-        if (cacheFile == null) {
-            System.err.println("Invalid SQ cache file.");
+    public static void inspectCacheFile(final String path) {
+        CacheFileHeader header = null;
+        long fileSize;
+        try (FileInputStream fis = new FileInputStream(path);
+             DataInputStream dis = new DataInputStream(fis)) {
+            fileSize = fis.getChannel().size();
+            header = new CacheFileHeader();
+            header.readFromStream(dis);
+        } catch (IOException e) {
+            e.printStackTrace();
             return;
         }
-        StringBuilder sb = new StringBuilder();
-        cacheFile.getHeader().report(sb);
-
-        sb.append("Frequencies: ");
-        for (final long fV : cacheFile.getCodebook().getSymbolFrequencies())
-            sb.append(fV).append(", ");
-        sb.append('\n');
-        System.out.println(sb.toString());
-    }
-
-    /**
-     * Log information about VQ cache file.
-     *
-     * @param trainFile    Input image file.
-     * @param codebookSize Codebook size.
-     * @param vDim         Quantization vector dimension.
-     */
-    public void validateAndReport(final String trainFile,
-                                  final int codebookSize,
-                                  final V3i vDim) {
-
-        final VQCacheFile cacheFile = loadVQCacheFile(trainFile, codebookSize, vDim);
-        if (cacheFile == null) {
-            System.err.println("Invalid VQ cache file.");
-            return;
+        StringBuilder reportBuilder = new StringBuilder();
+        final long expectedFileSize = header.getExpectedFileSize();
+        if (expectedFileSize == fileSize) {
+            reportBuilder.append("\u001B[32mCache file is VALID. ").append(fileSize).append(" bytes\u001B[0m\n ");
+        } else {
+            reportBuilder.append("\u001B[31mCache file is INVALID.\u001B[0m\n\t")
+                    .append(fileSize).append(" bytes instead of expected ")
+                    .append(expectedFileSize).append(" bytes.\n");
         }
-        StringBuilder sb = new StringBuilder();
-        cacheFile.getHeader().report(sb);
 
-        sb.append("Frequencies: ");
-        for (final long fV : cacheFile.getCodebook().getVectorFrequencies())
-            sb.append(fV).append(", ");
-        sb.append('\n');
-        System.out.println(sb.toString());
+        header.report(reportBuilder);
+
+        System.out.println(reportBuilder);
     }
-
-
 }

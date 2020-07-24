@@ -98,6 +98,24 @@ public class CacheFileHeader {
         outputStream.writeShort(vectorSizeZ);
     }
 
+    public long getExpectedFileSize() {
+        long expectedFileSize = 20 + trainFileNameSize; // Base header size
+        expectedFileSize += (codebookSize * 8);         // Frequency values
+        switch (quantizationType) {
+            case Scalar:
+                expectedFileSize += (codebookSize * 2); // Scalar quantization values
+                break;
+            case Vector1D:
+            case Vector2D:
+            case Vector3D:
+                expectedFileSize += ((vectorSizeX * vectorSizeY * vectorSizeZ) * codebookSize * 2); // Quantization vectors
+                break;
+            case Invalid:
+                return -1;
+        }
+        return expectedFileSize;
+    }
+
     /**
      * Read header from the stream.
      *
@@ -111,7 +129,7 @@ public class CacheFileHeader {
 
         byte[] magicBuffer = new byte[QCMP_CACHE_MAGIC_VALUE.length()];
 
-        final int readFromMagic = inputStream.read(magicBuffer,0,QCMP_CACHE_MAGIC_VALUE.length());
+        final int readFromMagic = inputStream.read(magicBuffer, 0, QCMP_CACHE_MAGIC_VALUE.length());
         if (readFromMagic != QCMP_CACHE_MAGIC_VALUE.length()) {
             throw new IOException("Invalid file type. Unable to read magic value");
         }
@@ -124,8 +142,7 @@ public class CacheFileHeader {
 
         trainFileNameSize = inputStream.readUnsignedShort();
         byte[] fileNameBuffer = new byte[trainFileNameSize];
-        inputStream.read(fileNameBuffer,0, trainFileNameSize);
-//        inputStream.readNBytes(fileNameBuffer, 0, trainFileNameSize);
+        final int readBytes = inputStream.read(fileNameBuffer, 0, trainFileNameSize);
         trainFileName = new String(fileNameBuffer);
 
         vectorSizeX = inputStream.readUnsignedShort();
@@ -148,7 +165,7 @@ public class CacheFileHeader {
                 sb.append("Scalar\n");
                 break;
             case Vector1D:
-                sb.append(String.format("Vector1D %s\n", vectorSizeX));
+                sb.append(String.format("Vector1D [%sx1]\n", vectorSizeX));
                 break;
             case Vector2D:
                 sb.append(String.format("Vector2D %s\n", new V3i(vectorSizeX, vectorSizeY, vectorSizeZ).toString()));
