@@ -166,7 +166,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             assert (quantizer != null);
 
-            reportStatusToListeners("Compressing plane...");
+            reportProgressListeners(planeCounter, planeIndices.length, "Compressing plane %d", planeIndex);
             final int[] indices = quantizer.quantizeIntoIndices(planeVectors, options.getWorkerCount());
 
             planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
