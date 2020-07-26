@@ -9,7 +9,6 @@ public class Stopwatch {
 
     private final String name;
     private Instant start;
-    private Instant end;
     Duration elapsed;
 
     @NotNull
@@ -37,7 +36,7 @@ public class Stopwatch {
     }
 
     public void stop() {
-        end = Instant.now();
+        final Instant end = Instant.now();
         elapsed = Duration.between(start, end);
     }
 
@@ -61,14 +60,34 @@ public class Stopwatch {
         if (elapsed == null) {
             return "No time measured yet.";
         }
-        return null;
-//        return String.format("%dH %dmin %dsec %dms %dns",
-//                             elapsed.toHoursPart(),
-//                             elapsed.toMinutesPart(),
-//                             elapsed.toSecondsPart(),
-//                             elapsed.toMillisPart(),
-//                             elapsed.toNanosPart());
+        double MS = (double) elapsed.toMillis();
+        double M = 0;
+        double S = 0;
+        double H = 0;
 
+        S = MS / 1000.0;
+        double fS = Math.floor(S);
+        MS = (S - fS) * 1000.0;
+
+        M = fS / 60.0;
+        double fM = Math.floor(M);
+        S = (M - fM) * 60.0;
+
+        H = fM / 60.0;
+        double fH = Math.floor(H);
+        M = (H - fH) * 60.0;
+
+        H = fH;
+
+        if (H > 0) {
+            return String.format("%dH %dmin %dsec %dms", (long) H, (long) M, (long) S, (long) MS);
+        } else if (M > 0) {
+            return String.format("%dmin %dsec %dms", (long) M, (long) S, (long) MS);
+        } else if (S > 0) {
+            return String.format("%dsec %dms", (long) S, (long) MS);
+        } else {
+            return String.format("%dms", (long) MS);
+        }
     }
 
     @Override
