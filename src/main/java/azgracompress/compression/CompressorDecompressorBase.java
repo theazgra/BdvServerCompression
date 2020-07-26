@@ -8,6 +8,7 @@ import azgracompress.huffman.Huffman;
 import azgracompress.io.OutBitStream;
 
 import java.io.DataOutputStream;
+import java.util.ArrayList;
 
 public abstract class CompressorDecompressorBase {
     public static final int LONG_BYTES = 8;
@@ -17,35 +18,52 @@ public abstract class CompressorDecompressorBase {
     protected final CompressionOptions options;
     private final int codebookSize;
 
-    private IStatusListener statusListener = null;
-    private IProgressListener progressListener = null;
+    private ArrayList<IStatusListener> statusListeners;
+    private ArrayList<IProgressListener> progressListeners;
 
     public CompressorDecompressorBase(CompressionOptions options) {
         this.options = options;
         this.codebookSize = (int) Math.pow(2, this.options.getBitsPerCodebookIndex());
         // Default status listener, which can be override by setStatusListener.
-        statusListener = this::defaultLog;
+        addStatusListener(this::defaultLog);
     }
 
-    public void setStatusListener(IStatusListener listener) {
-        this.statusListener = listener;
+    public void addStatusListener(final IStatusListener listener) {
+
+        if (statusListeners == null) {
+            statusListeners = new ArrayList<>(1);
+        }
+        statusListeners.add(listener);
     }
 
-    public void setProgressListener(IProgressListener listener) {
-        this.progressListener = listener;
+    public void addProgressListener(final IProgressListener listener) {
+        if (this.progressListeners == null) {
+            this.progressListeners = new ArrayList<>(1);
+        }
+        this.progressListeners.add(listener);
     }
 
-    protected IProgressListener getProgressListener() {
-        return progressListener;
-    }
+    protected void duplicateAllListeners(IListenable other) {
+        if (other == this)
+            return;
 
-    protected IStatusListener getStatusListener() {
-        return statusListener;
+        if (this.statusListeners != null) {
+            for (final IStatusListener statusListener : this.statusListeners) {
+                other.addStatusListener(statusListener);
+            }
+        }
+        if (this.progressListeners != null) {
+            for (final IProgressListener progressListener : this.progressListeners) {
+                other.addProgressListener(progressListener);
+            }
+        }
     }
 
     protected void reportStatusToListeners(final String status) {
-        if (this.statusListener != null) {
-            this.statusListener.sendMessage(status);
+        if (this.statusListeners != null) {
+            for (final IStatusListener listener : this.statusListeners) {
+                listener.sendMessage(status);
+            }
         }
     }
 
@@ -54,8 +72,10 @@ public abstract class CompressorDecompressorBase {
     }
 
     protected void reportProgressListeners(final int index, final int finalIndex, final String message) {
-        if (this.progressListener != null) {
-            this.progressListener.sendProgress(message, index, finalIndex);
+        if (this.progressListeners != null) {
+            for (final IProgressListener listener : this.progressListeners) {
+                listener.sendProgress(message, index, finalIndex);
+            }
         }
     }
 

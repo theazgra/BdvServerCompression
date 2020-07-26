@@ -1,6 +1,5 @@
 package azgracompress.compression;
 
-import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.compression.listeners.IProgressListener;
 import azgracompress.compression.listeners.IStatusListener;
@@ -21,7 +20,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
      * @return Correct implementation of image compressor or null if configuration is not valid.
      */
     private IImageCompressor getImageCompressor() {
-        IImageCompressor compressor = null;
+        IImageCompressor compressor;
         switch (options.getQuantizationType()) {
             case Scalar:
                 compressor = new SQImageCompressor(options);
@@ -38,14 +37,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
         }
 
         // Forward listeners to image compressor.
-        final IStatusListener parentStatusListener = getStatusListener();
-        if (parentStatusListener != null)
-            compressor.setStatusListener(parentStatusListener);
-
-        final IProgressListener parentProgressListener = getProgressListener();
-        if (parentProgressListener != null)
-            compressor.setProgressListener(parentProgressListener);
-
+        duplicateAllListeners(compressor);
         return compressor;
     }
 

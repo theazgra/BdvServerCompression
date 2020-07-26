@@ -40,7 +40,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
      * @return Correct implementation of image decompressor.
      */
     private IImageDecompressor getImageDecompressor(final QCMPFileHeader header) {
-        IImageDecompressor decompressor = null;
+        IImageDecompressor decompressor;
         switch (header.getQuantizationType()) {
             case Scalar:
                 decompressor = new SQImageDecompressor(options);
@@ -56,14 +56,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         }
 
         // Forward listeners to image decompressor.
-        final IStatusListener parentStatusListener = getStatusListener();
-        if (parentStatusListener != null)
-            decompressor.setStatusListener(parentStatusListener);
-
-        final IProgressListener parentProgressListener = getProgressListener();
-        if (parentProgressListener != null)
-            decompressor.setProgressListener(parentProgressListener);
-
+        duplicateAllListeners(decompressor);
         return decompressor;
     }
 

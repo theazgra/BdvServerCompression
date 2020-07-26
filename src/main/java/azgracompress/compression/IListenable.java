@@ -5,16 +5,16 @@ import azgracompress.compression.listeners.IStatusListener;
 
 public interface IListenable {
     /**
-     * Set status listener. Status messages are reported to this listener.
+     * Add status listener. Status messages are reported to this listener.
      *
      * @param listener Status listener.
      */
-    void setStatusListener(IStatusListener listener);
+    void addStatusListener(IStatusListener listener);
 
     /**
-     * Set progress listener. Status messages with progress information are reported to this listener.
+     * Add progress listener. Status messages with progress information are reported to this listener.
      *
      * @param listener Progress listener.
      */
-    void setProgressListener(IProgressListener listener);
+    void addProgressListener(IProgressListener listener);
 }
