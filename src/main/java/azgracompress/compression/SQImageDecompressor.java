@@ -1,6 +1,5 @@
 package azgracompress.compression;
 
-import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.huffman.Huffman;
@@ -141,7 +140,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         }
 
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
-            reportProgressListeners(planeIndex, planeCountForDecompression, "Decompressing plane %d", planeIndex);
+            reportProgressToListeners(planeIndex, planeCountForDecompression, "Decompressing plane %d", planeIndex);
             if (header.isCodebookPerPlane()) {
                 codebook = readScalarQuantizationValues(compressedStream, codebookSize);
                 huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());

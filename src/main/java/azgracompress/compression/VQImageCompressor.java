@@ -170,7 +170,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
 
             stopwatch.stop();
-            reportProgressListeners(planeIndex, planeIndices.length,
+            reportProgressToListeners(planeIndex, planeIndices.length,
                     "Finished compression of plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
         }
         return planeDataSizes;

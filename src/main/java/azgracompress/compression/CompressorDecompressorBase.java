@@ -71,7 +71,7 @@ public abstract class CompressorDecompressorBase {
         reportStatusToListeners(String.format(format, args));
     }
 
-    protected void reportProgressListeners(final int index, final int finalIndex, final String message) {
+    protected void reportProgressToListeners(final int index, final int finalIndex, final String message) {
         if (this.progressListeners != null) {
             for (final IProgressListener listener : this.progressListeners) {
                 listener.sendProgress(message, index, finalIndex);
@@ -79,11 +79,11 @@ public abstract class CompressorDecompressorBase {
         }
     }
 
-    protected void reportProgressListeners(final int index,
-                                           final int finalIndex,
-                                           final String message,
-                                           final Object... args) {
-        reportProgressListeners(index, finalIndex, String.format(message, args));
+    protected void reportProgressToListeners(final int index,
+                                             final int finalIndex,
+                                             final String message,
+                                             final Object... args) {
+        reportProgressToListeners(index, finalIndex, String.format(message, args));
     }
 
     protected int[] createHuffmanSymbols(final int codebookSize) {

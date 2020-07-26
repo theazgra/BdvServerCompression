@@ -165,7 +165,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
 
             stopwatch.stop();
-            reportProgressListeners(planeIndex, planeIndices.length,
+            reportProgressToListeners(planeIndex, planeIndices.length,
                     "Compressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
         }
         return planeDataSizes;

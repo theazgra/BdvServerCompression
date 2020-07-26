@@ -1,6 +1,5 @@
 package azgracompress.compression;
 
-import azgracompress.cli.ParsedCliOptions;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.data.*;
 import azgracompress.fileformat.QCMPFileHeader;
@@ -15,7 +14,6 @@ import azgracompress.utilities.TypeConverter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Type;
 
 // TODO(Moravec): Handle huffman decoding.
 
@@ -174,7 +172,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             }
 
             stopwatch.stop();
-            reportProgressListeners(planeIndex, planeCountForDecompression,
+            reportProgressToListeners(planeIndex, planeCountForDecompression,
                     "Decompressed plane %d in %s", planeIndex, stopwatch.getElapsedTimeString());
         }
     }
@@ -239,7 +237,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             } catch (Exception ex) {
                 throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
             }
-            reportProgressListeners(planeIndex, planeCountForDecompression,
+            reportProgressToListeners(planeIndex, planeCountForDecompression,
                     "Decompressed plane %d.", planeIndex);
         }
     }
