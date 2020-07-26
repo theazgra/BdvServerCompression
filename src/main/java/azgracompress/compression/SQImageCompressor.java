@@ -138,7 +138,6 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         int planeCounter = 0;
         for (final int planeIndex : planeIndices) {
             stopwatch.restart();
-            reportStatusToListeners(String.format("Loading plane %d.", planeIndex));
 
             ImageU16 plane = null;
 
@@ -161,14 +160,13 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             assert (quantizer != null) : "Scalar Quantizer wasn't initialized.";
             assert (huffman != null) : "Huffman wasn't initialized.";
 
-            reportStatusToListeners("Compressing plane...");
             final int[] indices = quantizer.quantizeIntoIndices(plane.getData(), 1);
 
             planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
 
             stopwatch.stop();
-            reportStatusToListeners("Plane time: " + stopwatch.getElapsedTimeString());
-            reportStatusToListeners(String.format("Finished processing of plane %d", planeIndex));
+            reportProgressListeners(planeIndex, planeIndices.length,
+                    "Compressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
         }
         return planeDataSizes;
     }

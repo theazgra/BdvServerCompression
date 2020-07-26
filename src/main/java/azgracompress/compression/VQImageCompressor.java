@@ -161,19 +161,17 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 quantizer = trainVectorQuantizerFromPlaneVectors(planeVectors);
                 huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
                 writeQuantizerToCompressStream(quantizer, compressStream);
-                reportStatusToListeners("Wrote plane codebook.");
             }
 
             assert (quantizer != null);
 
-            reportProgressListeners(planeCounter, planeIndices.length, "Compressing plane %d", planeIndex);
             final int[] indices = quantizer.quantizeIntoIndices(planeVectors, options.getWorkerCount());
 
             planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
 
             stopwatch.stop();
-            reportStatusToListeners("Plane time: " + stopwatch.getElapsedTimeString());
-            reportStatusToListeners(String.format("Finished processing of plane %d.", planeIndex));
+            reportProgressListeners(planeIndex, planeIndices.length,
+                    "Finished compression of plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
         }
         return planeDataSizes;
     }

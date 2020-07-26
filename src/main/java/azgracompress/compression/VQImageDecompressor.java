@@ -132,8 +132,6 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             }
             assert (codebook != null && huffman != null);
 
-            reportStatusToListeners(String.format("Decompressing plane %d...", planeIndex));
-
             byte[] decompressedPlaneData = null;
 
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
@@ -176,7 +174,8 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             }
 
             stopwatch.stop();
-            reportStatusToListeners(String.format("Decompressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString()));
+            reportProgressListeners(planeIndex, planeCountForDecompression,
+                    "Decompressed plane %d in %s", planeIndex, stopwatch.getElapsedTimeString());
         }
     }
 
@@ -240,6 +239,8 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             } catch (Exception ex) {
                 throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
             }
+            reportProgressListeners(planeIndex, planeCountForDecompression,
+                    "Decompressed plane %d.", planeIndex);
         }
     }
 }
