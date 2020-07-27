@@ -64,7 +64,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                                                           final V2i qVector,
                                                           final V3i imageDims) {
 
-        Chunk2D reconstructedChunk = new Chunk2D(new V2i(imageDims.getX(), imageDims.getY()), new V2l(0, 0));
+        Chunk2D reconstructedChunk = new Chunk2D(new V2i(imageDims.getX(), imageDims.getY()));
         if (qVector.getY() > 1) {
             reconstructedChunk.reconstructFrom2DVectors(vectors, qVector);
         } else {
@@ -203,7 +203,6 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                 huffman = createHuffmanCoder(huffmanSymbols, codebook.getVectorFrequencies());
             }
             assert (codebook != null && huffman != null);
-
 
 
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];

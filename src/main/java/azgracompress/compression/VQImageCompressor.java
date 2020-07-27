@@ -215,7 +215,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             reportStatusToListeners(inputDataInfo.isPlaneRangeSet() ? "VQ: Loading plane range data." : "VQ: Loading all planes data.");
             final int[] planeIndices = getPlaneIndicesForCompression();
 
-            final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCountPerPlane(
+            final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCount(
                     inputDataInfo.getDimensions().toV2i(),
                     options.getVectorDimension());
             final int totalChunkCount = chunkCountPerPlane * planeIndices.length;

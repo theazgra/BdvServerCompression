@@ -5,30 +5,26 @@ public class Chunk2D {
     private int[] data;
 
     private final V2i dims;
-    private final V2l offset;
 
     /**
      * Create the Chunk2D of given dimensions, offset and initialize it with data.
      *
-     * @param dims   Dimensions of the chunk.
-     * @param offset Offset of the chunk.
-     * @param data   Chunk data.
+     * @param dims Dimensions of the chunk.
+     * @param data Chunk data.
      */
-    public Chunk2D(final V2i dims, final V2l offset, final int[] data) {
+    public Chunk2D(final V2i dims, final int[] data) {
         this.dims = dims;
         this.data = data;
-        this.offset = offset;
         assert (data.length == (dims.getX() * dims.getY())) : "Wrong box data.";
     }
 
     /**
      * Create Chunk2D of given dimensions and offset. Allocates the data.
      *
-     * @param dims   Dimensions of the chunk.
-     * @param offset Offset of the chunk.
+     * @param dims Dimensions of the chunk.
      */
-    public Chunk2D(final V2i dims, final V2l offset) {
-        this(dims, offset, new int[dims.getX() * dims.getY()]);
+    public Chunk2D(final V2i dims) {
+        this(dims, new int[dims.getX() * dims.getY()]);
     }
 
     /**
@@ -67,10 +63,6 @@ public class Chunk2D {
 
     public V2i getDims() {
         return dims;
-    }
-
-    public V2l getOffset() {
-        return offset;
     }
 
     @Override
@@ -272,8 +264,6 @@ public class Chunk2D {
         if (obj instanceof Chunk2D) {
             final Chunk2D otherChunk = (Chunk2D) obj;
             if (data.length != otherChunk.data.length) {
-                return false;
-            } else if (!(offset.equals(otherChunk.offset))) {
                 return false;
             } else {
                 for (int i = 0; i < data.length; i++) {

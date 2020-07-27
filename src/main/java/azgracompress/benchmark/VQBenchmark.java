@@ -32,7 +32,7 @@ public class VQBenchmark extends BenchmarkBase {
     private ImageU16 reconstructImageFromQuantizedVectors(final ImageU16 plane,
                                                           final int[][] vectors,
                                                           final V2i qVector) {
-        Chunk2D reconstructedChunk = new Chunk2D(new V2i(rawImageDims.getX(), rawImageDims.getY()), new V2l(0, 0));
+        Chunk2D reconstructedChunk = new Chunk2D(new V2i(rawImageDims.getX(), rawImageDims.getY()));
         if (qVector.getY() > 1) {
             reconstructedChunk.reconstructFrom2DVectors(vectors, qVector);
         } else {
