@@ -39,10 +39,7 @@ public class Chunk2D {
      * @return Index inside data array.
      */
     private int index(final int x, final int y) {
-        assert (x >= 0 && x < dims.getX()) : "Index X out of bounds.";
-        assert (y >= 0 && y < dims.getY()) : "Index Y out of bounds.";
-
-        return (y * dims.getX()) + x;
+        return index(x, y, dims);
     }
 
     /**
@@ -54,10 +51,8 @@ public class Chunk2D {
      * @return Index inside chunk dimension data array.
      */
     private int index(final int x, final int y, final V2i chunkDims) {
-        if (((x < 0) || (x >= chunkDims.getX())) || (y < 0) || (y >= chunkDims.getY())) {
-            throw new IndexOutOfBoundsException("One of index x,y is out of bounds of the 2D shape");
-        }
-
+        assert (x >= 0 && x < dims.getX()) : "Index X out of bounds.";
+        assert (y >= 0 && y < dims.getY()) : "Index Y out of bounds.";
         return (y * chunkDims.getX()) + x;
     }
 
