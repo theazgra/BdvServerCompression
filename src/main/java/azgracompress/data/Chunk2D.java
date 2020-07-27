@@ -228,11 +228,9 @@ public class Chunk2D {
      */
     private void copyDataToVector(int[] vector, final V2i qVectorDims, final int chunkXOffset, final int chunkYOffset) {
         int srcX, srcY;
-        final int qVecYSize = qVectorDims.getY();
-        final int qVecXSize = qVectorDims.getX();
-        for (int y = 0; y < qVecYSize; y++) {
+        for (int y = 0; y < qVectorDims.getY(); y++) {
             srcY = chunkYOffset + y;
-            for (int x = 0; x < qVecXSize; x++) {
+            for (int x = 0; x < qVectorDims.getX(); x++) {
                 srcX = chunkXOffset + x;
                 final int dstIndex = index(x, y, qVectorDims);
                 vector[dstIndex] = isInside(srcX, srcY) ? data[index(srcX, srcY)] : FILL_VALUE;
