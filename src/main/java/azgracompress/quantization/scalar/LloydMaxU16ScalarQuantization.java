@@ -1,6 +1,7 @@
 package azgracompress.quantization.scalar;
 
 import azgracompress.U16;
+import azgracompress.compression.listeners.IStatusListener;
 import azgracompress.quantization.QTrainIteration;
 import azgracompress.utilities.MinMaxResult;
 import azgracompress.utilities.Stopwatch;
@@ -25,7 +26,7 @@ public class LloydMaxU16ScalarQuantization {
 
     private final int workerCount;
 
-    private boolean verbose = false;
+    private IStatusListener statusListener = null;
 
     public LloydMaxU16ScalarQuantization(final int[] trainData, final int codebookSize, final int workerCount) {
         trainingData = trainData;
@@ -35,6 +36,10 @@ public class LloydMaxU16ScalarQuantization {
 
     public LloydMaxU16ScalarQuantization(final int[] trainData, final int codebookSize) {
         this(trainData, codebookSize, 1);
+    }
+
+    public void setStatusListener(final IStatusListener listener) {
+        this.statusListener = listener;
     }
 
     private void initialize() {
@@ -57,19 +62,19 @@ public class LloydMaxU16ScalarQuantization {
         }
     }
 
+    private void reportStatus(final String message) {
+        if (statusListener != null)
+            statusListener.sendMessage(message);
+    }
+
+    private void reportStatus(final String format, final Object... arg) {
+        reportStatus(String.format(format, arg));
+    }
+
     private void initializeProbabilityDensityFunction() {
         pdf = new double[U16.Max + 1];
-        // Speedup - for now it is fast enough
-        Stopwatch s = new Stopwatch();
-        s.start();
-
         for (final int trainingDatum : trainingData) {
             pdf[trainingDatum] += 1.0;
-        }
-
-        s.stop();
-        if (verbose) {
-            System.out.println("Init_PDF: " + s.getElapsedTimeString());
         }
     }
 
@@ -142,8 +147,6 @@ public class LloydMaxU16ScalarQuantization {
         double mse = 0.0;
         resetFrequencies();
 
-        Stopwatch s = new Stopwatch();
-        s.start();
         if (workerCount > 1) {
             final int workSize = trainingData.length / workerCount;
 
@@ -178,11 +181,6 @@ public class LloydMaxU16ScalarQuantization {
                 mse += Math.pow((double) trainingDatum - (double) quantizedValue, 2);
             }
         }
-        s.stop();
-        if (verbose) {
-            System.out.println("\nLloydMax: getCurrentMse time: " + s.getElapsedTimeString());
-        }
-
         mse /= (double) trainingData.length;
 
         return mse;
@@ -195,14 +193,14 @@ public class LloydMaxU16ScalarQuantization {
         }
     }
 
-    public QTrainIteration[] train(final boolean shouldBeVerbose) {
-        this.verbose = shouldBeVerbose;
+    public QTrainIteration[] train() {
+
         final int RECALCULATE_N_TIMES = 10;
         final int PATIENCE = 1;
         int noImprovementCounter = 0;
-        if (verbose) {
-            System.out.println("Training data count: " + trainingData.length);
-        }
+
+        reportStatus("LloydMax::train() - Worker count: %d", workerCount);
+        reportStatus("LloydMax::train() - Training data count: %d", trainingData.length);
 
         initialize();
         initializeProbabilityDensityFunction();
@@ -221,15 +219,15 @@ public class LloydMaxU16ScalarQuantization {
         currentMse = getCurrentMse();
         psnr = Utils.calculatePsnr(currentMse, U16.Max);
 
-        if (verbose) {
-            System.out.println(String.format("Initial MSE: %f", currentMse));
-        }
+        reportStatus("LloydMax::train() - Initial MSE: %f", currentMse);
 
         solutionHistory.add(new QTrainIteration(0, currentMse, psnr));
 
         double mseImprovement = 1;
         int iteration = 0;
+        Stopwatch stopwatch = new Stopwatch();
         do {
+            stopwatch.restart();
             for (int i = 0; i < RECALCULATE_N_TIMES; i++) {
                 recalculateBoundaryPoints();
                 recalculateCentroids();
@@ -242,11 +240,10 @@ public class LloydMaxU16ScalarQuantization {
             psnr = Utils.calculatePsnr(currentMse, U16.Max);
             solutionHistory.add(new QTrainIteration(++iteration, currentMse, psnr));
 
-            if (verbose) {
-                System.out.println(String.format("Current MSE: %.4f PSNR: %.4f dB",
-                                                 currentMse,
-                                                 psnr));
-            }
+            stopwatch.stop();
+            reportStatus("LloydMax::train() - Iteration: %d  MSE: %f  PSNR: %f  Time: %s",
+                         iteration, currentMse,
+                         psnr, stopwatch.getElapsedTimeString());
 
             if (mseImprovement < 1.0) {
                 if ((++noImprovementCounter) >= PATIENCE) {
@@ -256,9 +253,7 @@ public class LloydMaxU16ScalarQuantization {
 
 
         } while (true);
-        if (verbose) {
-            System.out.println("\nFinished training.");
-        }
+        reportStatus("LloydMax::train() - Optimization is finished.");
         return solutionHistory.toArray(new QTrainIteration[0]);
     }
 

@@ -147,7 +147,7 @@ public class SQBenchmark extends BenchmarkBase {
                                                    final int codebookSize,
                                                    final String trainLogFile) {
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(data, codebookSize, workerCount);
-        QTrainIteration[] trainingReport = lloydMax.train(false);
+        QTrainIteration[] trainingReport = lloydMax.train();
         if (trainLogFile != null) {
             saveQTrainLog(trainLogFile, trainingReport);
             System.out.println("Saved the train log file to: " + trainLogFile);

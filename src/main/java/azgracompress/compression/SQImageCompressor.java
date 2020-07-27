@@ -31,9 +31,9 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     private ScalarQuantizer trainScalarQuantizerFromData(final int[] planeData) {
 
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(planeData,
-                getCodebookSize(),
-                options.getWorkerCount());
-        lloydMax.train(false);
+                                                                                   getCodebookSize(),
+                                                                                   options.getWorkerCount());
+        lloydMax.train();
         return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCodebook());
     }
 
@@ -77,7 +77,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             trainAndSaveCodebook();
         }
 
-        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputDataInfo().getCacheFileName(), getCodebookSize());
+        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputDataInfo().getCacheFileName(),
+                                                                getCodebookSize());
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization values from cache file.");
         }
@@ -166,7 +167,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
 
             stopwatch.stop();
             reportProgressToListeners(planeIndex, planeIndices.length,
-                    "Compressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
+                                      "Compressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
         }
         return planeDataSizes;
     }
@@ -212,11 +213,14 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     public void trainAndSaveCodebook() throws ImageCompressionException {
         int[] trainData = loadConfiguredPlanesData();
 
+
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(trainData,
-                getCodebookSize(),
-                options.getWorkerCount());
+                                                                                   getCodebookSize(),
+                                                                                   options.getWorkerCount());
         reportStatusToListeners("Starting LloydMax training.");
-        lloydMax.train(options.isVerbose());
+
+        lloydMax.setStatusListener(this::reportStatusToListeners);
+        lloydMax.train();
         final SQCodebook codebook = lloydMax.getCodebook();
         reportStatusToListeners("Finished LloydMax training.");
 
