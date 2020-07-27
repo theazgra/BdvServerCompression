@@ -145,20 +145,14 @@ public class Chunk2D {
      * @return Array of matrix data.
      */
     public int[][] divideInto2DVectors(final V2i qVectorDims) {
-        final int xSize = dims.getX();
-        final int ySize = dims.getY();
-
-        final int chunkXSize = qVectorDims.getX();
-        final int chunkYSize = qVectorDims.getY();
-        final int chunkSize = chunkXSize * chunkYSize;
-
+        final int chunkSize = qVectorDims.getX() * qVectorDims.getY();
         final int chunkCount = calculateRequiredChunkCountPerPlane(qVectorDims);
 
         int[][] vectors = new int[chunkCount][chunkSize];
         int vecIndex = 0;
 
-        for (int chunkYOffset = 0; chunkYOffset < ySize; chunkYOffset += chunkYSize) {
-            for (int chunkXOffset = 0; chunkXOffset < xSize; chunkXOffset += chunkXSize) {
+        for (int chunkYOffset = 0; chunkYOffset < dims.getY(); chunkYOffset += qVectorDims.getY()) {
+            for (int chunkXOffset = 0; chunkXOffset < dims.getX(); chunkXOffset += qVectorDims.getX()) {
                 copyDataToVector(vectors[vecIndex++], qVectorDims, chunkXOffset, chunkYOffset);
             }
         }
