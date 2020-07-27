@@ -67,7 +67,7 @@ public class CompressionOptions {
         this.workerCount = (cores / 2);
     }
 
-    protected void setVerbose(boolean verbose) {
+    public void setVerbose(boolean verbose) {
         this.verbose = verbose;
     }
 

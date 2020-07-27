@@ -1,6 +1,7 @@
 package azgracompress.quantization.vector;
 
 import azgracompress.U16;
+import azgracompress.compression.listeners.IStatusListener;
 import azgracompress.data.V3i;
 import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.Utils;
@@ -24,7 +25,7 @@ public class LBGVectorQuantizer {
 
     private long[] frequencies;
 
-    boolean verbose = false;
+    private IStatusListener statusListener = null;
     private double _mse = 0.0;
 
     public LBGVectorQuantizer(final int[][] vectors,
@@ -47,6 +48,19 @@ public class LBGVectorQuantizer {
 
         frequencies = new long[this.codebookSize];
         findUniqueVectors();
+    }
+
+    public void setStatusListener(final IStatusListener statusListener) {
+        this.statusListener = statusListener;
+    }
+
+    private void reportStatus(final String message) {
+        if (statusListener != null)
+            statusListener.sendMessage(message);
+    }
+
+    private void reportStatus(final String format, final Object... arg) {
+        reportStatus(String.format(format, arg));
     }
 
     private void findUniqueVectors() {
@@ -74,10 +88,10 @@ public class LBGVectorQuantizer {
     }
 
     private LBGResult createCodebookFromUniqueVectors() {
+
         assert (uniqueTrainingVectors != null) : "uniqueTrainingVectors aren't initialized.";
-        if (verbose) {
-            System.out.println("Creating codebook from unique vectors.");
-        }
+        reportStatus("There is only %d unique vectors. Creating codebook from unique vectors...",
+                     uniqueTrainingVectors.size());
         CodebookEntry[] codebook = new CodebookEntry[codebookSize];
         int[] zeros = new int[vectorSize];
         Arrays.fill(zeros, 0);
@@ -91,9 +105,7 @@ public class LBGVectorQuantizer {
         }
         final double mse = averageMse(codebook);
         final double psnr = Utils.calculatePsnr(mse, U16.Max);
-        if (verbose) {
-            System.out.println(String.format("Final MSE: %.4f\nFinal PSNR: %.4f (dB)", mse, psnr));
-        }
+        reportStatus("Unique vector codebook, MSE: %f  PSNR: %f(dB)", mse, psnr);
         return new LBGResult(vectorDimensions, codebook, frequencies, mse, psnr);
     }
 
@@ -103,40 +115,23 @@ public class LBGVectorQuantizer {
      * @return Result of the search.
      */
     public LBGResult findOptimalCodebook() {
-        return findOptimalCodebook(false);
-    }
-
-
-    /**
-     * Find the optimal codebook of vectors, used for vector quantization.
-     *
-     * @param isVerbose True if program algorithm should be verbose.
-     * @return Result of the search.
-     */
-    public LBGResult findOptimalCodebook(boolean isVerbose) {
-        Stopwatch stopwatch = Stopwatch.startNew("findOptimalCodebook");
-        this.verbose = isVerbose;
+        Stopwatch stopwatch = Stopwatch.startNew("LBG::findOptimalCodebook()");
 
         if (uniqueVectorCount < codebookSize) {
             return createCodebookFromUniqueVectors();
         }
 
         LearningCodebookEntry[] codebook = initializeCodebook();
-        if (verbose) {
-            System.out.println("Got initial codebook. Improving codebook...");
-        }
+        reportStatus("LBG::findOptimalCodebook() - Got initial codebook. Improving it...");
+
         LBG(codebook, EPSILON * 0.1);
         final double finalMse = averageMse(codebook);
         final double psnr = Utils.calculatePsnr(finalMse, U16.Max);
-        if (verbose) {
-            System.out.println(String.format("Improved codebook, final average MSE: %.4f PSNR: %.4f (dB)",
-                                             finalMse,
-                                             psnr));
-        }
+        reportStatus("LBG::findOptimalCodebook() - Improved the codebook. Final MSE: %f  PSNR: %f (dB)",
+                     finalMse,
+                     psnr);
         stopwatch.stop();
-        if (verbose) {
-            System.out.println(stopwatch);
-        }
+        reportStatus(stopwatch.toString());
         return new LBGResult(vectorDimensions, learningCodebookToCodebook(codebook), frequencies, finalMse, psnr);
     }
 
@@ -384,22 +379,17 @@ public class LBGVectorQuantizer {
             }
             codebook = newCodebook;
             assert (codebook.length == (currentCodebookSize * 2));
-            if (verbose) {
-                System.out.println(String.format("Split from %d -> %d", currentCodebookSize, currentCodebookSize * 2));
-            }
+            reportStatus("LBG::initializeCodebook() - Dividing codebook from %d --> %d",
+                         currentCodebookSize,
+                         2 * currentCodebookSize);
             currentCodebookSize *= 2;
 
             // Execute LBG Algorithm on current codebook to improve it.
-            if (verbose) {
-                System.out.println("Improving current codebook...");
-            }
             LBG(codebook);
 
 
             final double avgMse = averageMse(codebook);
-            if (verbose) {
-                System.out.println(String.format("Average MSE: %.4f", avgMse));
-            }
+            reportStatus("MSE of improved divided codebook: %f", avgMse);
         }
         return codebook;
     }
@@ -463,32 +453,26 @@ public class LBGVectorQuantizer {
             avgDistortion /= codebook.length;
 
             // Calculate distortion
-            double dist = (previousDistortion - avgDistortion) / avgDistortion;
-            if (verbose) {
-                System.out.println(String.format("---- It: %d Distortion: %.5f", iteration++, dist));
-                System.out.println(String.format("Last Dist: %.5f Current dist: %.5f", lastDist, dist));
-            }
+            double distortion = (previousDistortion - avgDistortion) / avgDistortion;
+            reportStatus("LBG::LBG() - Iteration: %d  Distortion: %.5f", iteration++, distortion);
 
-            if (Double.isNaN(dist)) {
-                if (verbose) {
-                    System.out.println("Distortion is NaN.");
-                }
+
+            if (Double.isNaN(distortion)) {
+                reportStatus("Distortion is NaN. Stopping LBG::LBG().");
                 break;
             }
 
-            if (dist > lastDist) {
-                if (verbose) {
-                    System.out.println("Previous distortion was better. Ending LBG...");
-                }
+            if (distortion > lastDist) {
+                reportStatus("Previous distortion was better. Stopping LBG::LBG().");
                 break;
             }
 
             // Check distortion against epsilon
-            if (dist < epsilon) {
+            if (distortion < epsilon) {
                 break;
             } else {
                 previousDistortion = avgDistortion;
-                lastDist = dist;
+                lastDist = distortion;
             }
         }
     }
@@ -665,7 +649,6 @@ public class LBGVectorQuantizer {
      */
     private void calculateEntryProperties(LearningCodebookEntry[] codebook) {
 
-        Stopwatch stopwatch = Stopwatch.startNew("calculateEntryProperties");
         int value;
         EntryInfo[] entryInfos = new EntryInfo[codebook.length];
         for (int i = 0; i < entryInfos.length; i++) {
@@ -694,10 +677,6 @@ public class LBGVectorQuantizer {
         }
         for (int i = 0; i < codebook.length; i++) {
             codebook[i].setInfo(entryInfos[i]);
-        }
-        stopwatch.stop();
-        if (this.verbose) {
-            System.out.println(stopwatch);
         }
     }
 

@@ -32,7 +32,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 getCodebookSize(),
                 options.getWorkerCount(),
                 options.getVectorDimension().toV3i());
-        LBGResult vqResult = vqInitializer.findOptimalCodebook(false);
+        LBGResult vqResult = vqInitializer.findOptimalCodebook();
         return new VectorQuantizer(vqResult.getCodebook());
     }
 
@@ -255,7 +255,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 options.getWorkerCount(),
                 options.getVectorDimension().toV3i());
         reportStatusToListeners("Starting LBG optimization.");
-        LBGResult lbgResult = vqInitializer.findOptimalCodebook(options.isVerbose());
+        vqInitializer.setStatusListener(this::reportStatusToListeners);
+        LBGResult lbgResult = vqInitializer.findOptimalCodebook();
         reportStatusToListeners("Learned the optimal codebook.");
 
 
