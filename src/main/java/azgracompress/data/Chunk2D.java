@@ -146,7 +146,7 @@ public class Chunk2D {
      */
     public int[][] divideInto2DVectors(final V2i qVectorDims) {
         final int chunkSize = qVectorDims.getX() * qVectorDims.getY();
-        final int chunkCount = calculateRequiredChunkCountPerPlane(qVectorDims);
+        final int chunkCount = calculateRequiredChunkCount(qVectorDims);
 
         int[][] vectors = new int[chunkCount][chunkSize];
         int vecIndex = 0;
@@ -189,8 +189,8 @@ public class Chunk2D {
      * @param chunkDims Matrix dimension.
      * @return Number of required chunks.
      */
-    private int calculateRequiredChunkCountPerPlane(final V2i chunkDims) {
-        return calculateRequiredChunkCountPerPlane(dims, chunkDims);
+    private int calculateRequiredChunkCount(final V2i chunkDims) {
+        return calculateRequiredChunkCount(dims, chunkDims);
     }
 
     /**
@@ -200,9 +200,9 @@ public class Chunk2D {
      * @param chunkDims Matrix dimension.
      * @return Number of required chunks.
      */
-    public static int calculateRequiredChunkCountPerPlane(final V2i imageDims, final V2i chunkDims) {
-        final int xChunkCount = (int) Math.ceil(imageDims.getX() / (double) chunkDims.getX());
-        final int yChunkCount = (int) Math.ceil(imageDims.getY() / (double) chunkDims.getY());
+    public static int calculateRequiredChunkCount(final V2i imageDims, final V2i chunkDims) {
+        final int xChunkCount = (int) Math.ceil((double) imageDims.getX() / (double) chunkDims.getX());
+        final int yChunkCount = (int) Math.ceil((double) imageDims.getY() / (double) chunkDims.getY());
 
         return (xChunkCount * yChunkCount);
     }
