@@ -59,7 +59,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
      * Creates default output file path depending on the chosen program method.
      *
      * @param inputPath Input file path.
-     * @return Default ouput file path.
+     * @return Default output file path.
      */
     private String getDefaultOutputFilePath(final String inputPath) {
         // No default output file for custom function.
@@ -207,7 +207,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.SCIFIOLoader);
         Reader reader;
         try {
-            reader = ScifioWrapper.getReader(((FileInputData) getInputDataInfo()).getFilePath());
+            reader = ScifioWrapper.getReader(getInputDataInfo().getFilePath());
         } catch (IOException | FormatException e) {
             parseErrorOccurred = true;
             errorBuilder.append("Failed to get SCIFIO reader for file.\n");
@@ -491,7 +491,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         }
 
 
-        sb.append("InputFile: ").append(((FileInputData) getInputDataInfo()).getFilePath()).append('\n');
+        sb.append("InputFile: ").append(getInputDataInfo().getFilePath()).append('\n');
         sb.append("Output: ").append(getOutputFilePath()).append('\n');
         sb.append("BitsPerCodebookIndex: ").append(getBitsPerCodebookIndex()).append('\n');
 
