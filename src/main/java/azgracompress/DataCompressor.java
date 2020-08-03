@@ -12,6 +12,7 @@ import azgracompress.fileformat.FileExtensions;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public class DataCompressor {
     public static void main(String[] args) {
@@ -27,8 +28,12 @@ public class DataCompressor {
                 formatter.printHelp(CliConstants.MAIN_HELP, options);
                 return;
             }
-            System.err.println("Error: Missing required option, see usage below. :^)");
-            formatter.printHelp(CliConstants.MAIN_HELP, options);
+            if (e.getMessage().startsWith("Missing required option:")) {
+                System.err.println("Error: Missing required option, see usage below. :^)");
+                formatter.printHelp(CliConstants.MAIN_HELP, options);
+            } else {
+                System.err.println("Error: " + e.getMessage());
+            }
             return;
         }
 
