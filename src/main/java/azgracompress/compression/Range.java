@@ -1,6 +1,6 @@
 package azgracompress.compression;
 
-public class Interval<T extends Comparable<T>> {
+public class Range<T extends Comparable<T>> {
     /**
      * Start of the interval.
      */
@@ -16,7 +16,7 @@ public class Interval<T extends Comparable<T>> {
      * @param from Start of the interval,
      * @param to Inclusive end of the interval.
      */
-    public Interval(T from, T to) {
+    public Range(T from, T to) {
         this.from = from;
         this.to = to;
     }

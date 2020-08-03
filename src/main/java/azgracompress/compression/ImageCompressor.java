@@ -1,8 +1,6 @@
 package azgracompress.compression;
 
 import azgracompress.compression.exception.ImageCompressionException;
-import azgracompress.compression.listeners.IProgressListener;
-import azgracompress.compression.listeners.IStatusListener;
 import azgracompress.fileformat.QCMPFileHeader;
 
 import java.io.*;
@@ -129,7 +127,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
         if (options.getInputDataInfo().isPlaneIndexSet()) {
             return 1;
         } else if (options.getInputDataInfo().isPlaneRangeSet()) {
-            final Interval<Integer> planeRange = options.getInputDataInfo().getPlaneRange();
+            final Range<Integer> planeRange = options.getInputDataInfo().getPlaneRange();
             return ((planeRange.getInclusiveTo() + 1) - planeRange.getFrom());
         } else {
             return options.getInputDataInfo().getDimensions().getZ();

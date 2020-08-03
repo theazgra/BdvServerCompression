@@ -1,6 +1,6 @@
 package azgracompress.io;
 
-import azgracompress.compression.Interval;
+import azgracompress.compression.Range;
 import azgracompress.data.V3i;
 
 /**
@@ -42,7 +42,7 @@ public abstract class InputData {
     /**
      * Range of the planes to compress.
      */
-    Interval<Integer> planeRange = null;
+    Range<Integer> planeRange = null;
 
 
     public boolean isPlaneIndexSet() {
@@ -70,11 +70,11 @@ public abstract class InputData {
         this.planeIndex = planeIndex;
     }
 
-    public Interval<Integer> getPlaneRange() {
+    public Range<Integer> getPlaneRange() {
         return planeRange;
     }
 
-    public void setPlaneRange(Interval<Integer> planeRange) {
+    public void setPlaneRange(Range<Integer> planeRange) {
         this.planeRange = planeRange;
     }
 

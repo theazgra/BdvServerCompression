@@ -3,7 +3,7 @@ package azgracompress.cli;
 import azgracompress.ScifioWrapper;
 import azgracompress.compression.CompressionOptions;
 import azgracompress.compression.CompressorDecompressorBase;
-import azgracompress.compression.Interval;
+import azgracompress.compression.Range;
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.FileExtensions;
@@ -308,7 +308,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
             final Optional<Integer> indexToResult = ParseUtils.tryParseInt(toIndexString);
 
             if (indexFromResult.isPresent() && indexToResult.isPresent()) {
-                getInputDataInfo().setPlaneRange(new Interval<>(indexFromResult.get(), indexToResult.get()));
+                getInputDataInfo().setPlaneRange(new Range<>(indexFromResult.get(), indexToResult.get()));
             } else {
                 parseErrorOccurred = true;
                 errorBuilder.append("Plane range index is wrong. Expected format D-D, got: ").append(
