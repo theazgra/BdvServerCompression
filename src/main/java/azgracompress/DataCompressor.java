@@ -27,7 +27,8 @@ public class DataCompressor {
                 formatter.printHelp(CliConstants.MAIN_HELP, options);
                 return;
             }
-            System.err.println("Error: " + e.getMessage());
+            System.err.println("Error: Missing required option, see usage below. :^)");
+            formatter.printHelp(CliConstants.MAIN_HELP, options);
             return;
         }
 
