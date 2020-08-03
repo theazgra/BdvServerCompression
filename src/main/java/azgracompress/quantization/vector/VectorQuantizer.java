@@ -3,13 +3,11 @@ package azgracompress.quantization.vector;
 public class VectorQuantizer {
 
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
-    private final VQCodebook codebook;
     private final CodebookEntry[] codebookVectors;
     private final int vectorSize;
     private final long[] frequencies;
 
     public VectorQuantizer(final VQCodebook codebook) {
-        this.codebook = codebook;
         this.codebookVectors = codebook.getVectors();
         vectorSize = codebookVectors[0].getVector().length;
         this.frequencies = codebook.getVectorFrequencies();

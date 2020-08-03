@@ -3,10 +3,12 @@ package azgracompress.io.loader;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.io.FileInputData;
-import azgracompress.io.InputData;
 import azgracompress.utilities.TypeConverter;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
 public class RawDataLoader implements IPlaneLoader {
