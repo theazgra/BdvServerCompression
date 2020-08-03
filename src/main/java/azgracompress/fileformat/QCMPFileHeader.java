@@ -1,7 +1,6 @@
 package azgracompress.fileformat;
 
 import azgracompress.U16;
-import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 
 import java.io.DataInputStream;
@@ -204,10 +203,10 @@ public class QCMPFileHeader {
         imageSizeZ = imageDims.getZ();
     }
 
-    public void setVectorDimension(final V2i vectorDims) {
+    public void setVectorDimension(final V3i vectorDims) {
         vectorSizeX = vectorDims.getX();
         vectorSizeY = vectorDims.getY();
-        vectorSizeZ = 1;
+        vectorSizeZ = vectorDims.getZ();
     }
 
     public long[] getPlaneDataSizes() {
