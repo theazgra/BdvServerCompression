@@ -1,7 +1,5 @@
 package azgracompress.data;
 
-import java.util.Arrays;
-
 public class Chunk3D {
     private final int FILL_VALUE = 0;
     private final int[] data;
@@ -40,9 +38,9 @@ public class Chunk3D {
      * @return Index inside chunk dimension data array.
      */
     private int index(final int x, final int y, final int z, final V3i chunkDims) {
-        assert (x >= 0 && x < dims.getX()) : "Index X out of bounds.";
-        assert (y >= 0 && y < dims.getY()) : "Index Y out of bounds.";
-        assert (z >= 0 && z < dims.getZ()) : "Index Z out of bounds.";
+        assert (x >= 0 && x < chunkDims.getX()) : "Index X out of bounds.";
+        assert (y >= 0 && y < chunkDims.getY()) : "Index Y out of bounds.";
+        assert (z >= 0 && z < chunkDims.getZ()) : "Index Z out of bounds.";
 
         // NOTE(Moravec): Description of the following calculation
         //               plane index      *        plane pixel count
@@ -60,7 +58,7 @@ public class Chunk3D {
         //             V
         // colOffset = x;
 
-        return (chunkDims.getZ() * (chunkDims.getX() * chunkDims.getY())) + (y * chunkDims.getX()) + x;
+        return (z * (chunkDims.getX() * chunkDims.getY())) + (y * chunkDims.getX()) + x;
     }
 
 
@@ -162,9 +160,5 @@ public class Chunk3D {
 
     public int[] getData() {
         return data;
-    }
-
-    public void zeroData() {
-        Arrays.fill(data, 0);
     }
 }

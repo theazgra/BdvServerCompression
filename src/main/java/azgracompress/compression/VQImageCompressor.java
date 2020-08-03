@@ -1,6 +1,7 @@
 package azgracompress.compression;
 
 import azgracompress.cache.QuantizationCacheManager;
+import azgracompress.data.Chunk3D;
 import azgracompress.fileformat.QuantizationType;
 import azgracompress.io.InputData;
 import azgracompress.compression.exception.ImageCompressionException;
@@ -236,11 +237,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                                                                       planeIndex), e);
                 }
 
-                System.arraycopy(planeVectors,
-                                 0,
-                                 trainData,
-                                 (planeCounter * chunkCountPerPlane),
-                                 chunkCountPerPlane);
+                System.arraycopy(planeVectors, 0, trainData, (planeCounter * chunkCountPerPlane), chunkCountPerPlane);
                 ++planeCounter;
             }
         }
@@ -273,8 +270,19 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         reportStatusToListeners("Operation completed.");
     }
 
+
     public long[] compressVoxels(DataOutputStream compressStream) throws ImageCompressionException {
-        
+        int[][] voxels;
+        try {
+            IPlaneLoader loader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
+            final int[] data = loader.loadAllPlanesU16Data();
+            Chunk3D bigVoxel = new Chunk3D(options.getInputDataInfo().getDimensions(), data);
+            voxels = bigVoxel.divideInto3DVectors(options.getQuantizationVector());
+        } catch (Exception e) {
+            throw new ImageCompressionException("Unable to create data loader or load image data.", e);
+        }
+        return null;
+
     }
 
 }

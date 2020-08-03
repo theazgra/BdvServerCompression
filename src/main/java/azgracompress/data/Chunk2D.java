@@ -47,8 +47,8 @@ public class Chunk2D {
      * @return Index inside chunk dimension data array.
      */
     private int index(final int x, final int y, final V2i chunkDims) {
-        assert (x >= 0 && x < dims.getX()) : "Index X out of bounds.";
-        assert (y >= 0 && y < dims.getY()) : "Index Y out of bounds.";
+        assert (x >= 0 && x < chunkDims.getX()) : "Index X out of bounds.";
+        assert (y >= 0 && y < chunkDims.getY()) : "Index Y out of bounds.";
         return (y * chunkDims.getX()) + x;
     }
 
