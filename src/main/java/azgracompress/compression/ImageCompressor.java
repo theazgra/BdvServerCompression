@@ -153,7 +153,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
         header.setImageSizeY(options.getInputDataInfo().getDimensions().getY());
         header.setImageSizeZ(getNumberOfPlanes());
 
-        header.setVectorDimension(options.getVectorDimension());
+        header.setVectorDimension(options.getQuantizationVector());
 
         return header;
     }

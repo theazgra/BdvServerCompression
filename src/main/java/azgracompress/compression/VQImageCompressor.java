@@ -31,7 +31,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeVectors,
                 getCodebookSize(),
                 options.getWorkerCount(),
-                options.getVectorDimension().toV3i());
+                options.getQuantizationVector().toV3i());
         LBGResult vqResult = vqInitializer.findOptimalCodebook();
         return new VectorQuantizer(vqResult.getCodebook());
     }
@@ -77,13 +77,13 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
         if (!cacheManager.doesVQCacheExists(options.getInputDataInfo().getCacheFileName(),
                 getCodebookSize(),
-                options.getVectorDimension().toV3i())) {
+                options.getQuantizationVector().toV3i())) {
             trainAndSaveCodebook();
         }
 
         final VQCodebook codebook = cacheManager.loadVQCodebook(options.getInputDataInfo().getCacheFileName(),
                 getCodebookSize(),
-                options.getVectorDimension().toV3i());
+                options.getQuantizationVector().toV3i());
 
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization vectors from cache.");
@@ -130,7 +130,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             }
 
             reportStatusToListeners(String.format("Training vector quantizer from middle plane %d.", middlePlaneIndex));
-            final int[][] refPlaneVectors = middlePlane.toQuantizationVectors(options.getVectorDimension());
+            final int[][] refPlaneVectors = middlePlane.toQuantizationVectors(options.getQuantizationVector());
             quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
             huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
             writeQuantizerToCompressStream(quantizer, compressStream);
@@ -154,7 +154,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 throw new ImageCompressionException("Unable to load plane data.", ex);
             }
 
-            final int[][] planeVectors = plane.toQuantizationVectors(options.getVectorDimension());
+            final int[][] planeVectors = plane.toQuantizationVectors(options.getQuantizationVector());
 
             if (!hasGeneralQuantizer) {
                 reportStatusToListeners(String.format("Training vector quantizer from plane %d.", planeIndex));
@@ -188,11 +188,11 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     private int[][] loadPlaneQuantizationVectors(final IPlaneLoader planeLoader,
                                                  final int planeIndex) throws IOException {
         ImageU16 refPlane = planeLoader.loadPlaneU16(planeIndex);
-        return refPlane.toQuantizationVectors(options.getVectorDimension());
+        return refPlane.toQuantizationVectors(options.getQuantizationVector());
     }
 
     private int[][] loadConfiguredPlanesData() throws ImageCompressionException {
-        final int vectorSize = options.getVectorDimension().getX() * options.getVectorDimension().getY();
+        final int vectorSize = options.getQuantizationVector().getX() * options.getQuantizationVector().getY();
         final InputData inputDataInfo = options.getInputDataInfo();
         final IPlaneLoader planeLoader;
         try {
@@ -217,7 +217,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCount(
                     inputDataInfo.getDimensions().toV2i(),
-                    options.getVectorDimension());
+                    options.getQuantizationVector());
             final int totalChunkCount = chunkCountPerPlane * planeIndices.length;
 
             trainData = new int[totalChunkCount][vectorSize];
@@ -253,7 +253,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData,
                 getCodebookSize(),
                 options.getWorkerCount(),
-                options.getVectorDimension().toV3i());
+                options.getQuantizationVector().toV3i());
         reportStatusToListeners("Starting LBG optimization.");
         vqInitializer.setStatusListener(this::reportStatusToListeners);
         LBGResult lbgResult = vqInitializer.findOptimalCodebook();
