@@ -1,6 +1,7 @@
 package azgracompress.cli;
 
 import azgracompress.compression.Range;
+import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 
 import java.util.Optional;
@@ -33,23 +34,35 @@ public abstract class ParseUtils {
      * @return Optional parsed range.
      */
     public static Optional<Range<Integer>> tryParseRange(final String rangeString, final char delimiter) {
-        final String string = removeSpacesInString(rangeString);
+        return tryParseV2i(rangeString, delimiter).map(v2i -> new Range<>(v2i.getX(), v2i.getY()));
+    }
+
+
+    /**
+     * Try to parse two dimensional vector from string.
+     *
+     * @param v2iString Vector string.
+     * @param delimiter Delimiter between numbers.
+     * @return Optional parsed vector.
+     */
+    public static Optional<V2i> tryParseV2i(final String v2iString, final char delimiter) {
+        final String string = removeSpacesInString(v2iString);
         final int delimiterIndex = string.indexOf(delimiter);
         if (delimiterIndex == -1) {
             return Optional.empty();
         }
 
-        final Optional<Integer> maybeFrom = tryParseInt(string.substring(0, delimiterIndex));
-        final Optional<Integer> maybeTo = tryParseInt(string.substring(delimiterIndex + 1));
+        final Optional<Integer> maybeN1 = tryParseInt(string.substring(0, delimiterIndex));
+        final Optional<Integer> maybeN2 = tryParseInt(string.substring(delimiterIndex + 1));
 
-        if (maybeFrom.isPresent() && maybeTo.isPresent()) {
-            return Optional.of(new Range<>(maybeFrom.get(), maybeTo.get()));
+        if (maybeN1.isPresent() && maybeN2.isPresent()) {
+            return Optional.of(new V2i(maybeN1.get(), maybeN2.get()));
         }
         return Optional.empty();
     }
 
     /**
-     * Try to parse 3 dimensional vector from string.
+     * Try to parse three dimensional vector from string.
      *
      * @param v3iString Vector string.
      * @param delimiter Delimiter between numbers.
