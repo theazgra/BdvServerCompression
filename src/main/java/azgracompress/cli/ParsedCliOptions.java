@@ -363,56 +363,45 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
      * @param errorBuilder String error builder.
      */
     private void parseCompressionType(CommandLine cmd, StringBuilder errorBuilder) {
-        // TODO(Moravec): Parse 3d vector dimension
         if (hasQuantizationType(method)) {
-
             if (cmd.hasOption(CliConstants.SCALAR_QUANTIZATION_LONG)) {
                 setQuantizationType(QuantizationType.Scalar);
             } else if (cmd.hasOption(CliConstants.VECTOR_QUANTIZATION_LONG)) {
                 final String vectorDefinition = cmd.getOptionValue(CliConstants.VECTOR_QUANTIZATION_LONG);
 
-                final int delimiterIndex = vectorDefinition.indexOf('x');
-                if (delimiterIndex == -1) {
-                    final Optional<Integer> parseResult = ParseUtils.tryParseInt(vectorDefinition);
-                    if (parseResult.isPresent()) {
-                        setQuantizationType(QuantizationType.Vector1D);
-                        setVectorDimension(new V2i(parseResult.get(), 1));
-                    } else {
-                        parseErrorOccurred = true;
-                        errorBuilder.append("1D vector quantization requires vector size").append('\n').append('\n');
-                    }
-                } else {
-                    final String firstNumberString = vectorDefinition.substring(0, delimiterIndex);
-                    final String secondNumberString = vectorDefinition.substring(delimiterIndex + 1);
+                final Optional<V3i> maybe3DVectorSize = ParseUtils.tryParseV3i(vectorDefinition, 'x');
+                final Optional<V2i> maybe2DVectorSize = ParseUtils.tryParseV2i(vectorDefinition, 'x');
+                final Optional<Integer> maybe1DVectorSize = ParseUtils.tryParseInt(vectorDefinition);
 
-                    final Optional<Integer> firstNumberOptional = ParseUtils.tryParseInt(firstNumberString);
-                    final Optional<Integer> secondNumberOptional = ParseUtils.tryParseInt(secondNumberString);
-                    if (firstNumberOptional.isPresent() && secondNumberOptional.isPresent()) {
-                        setVectorDimension(new V2i(firstNumberOptional.get(),
-                                                   secondNumberOptional.get()));
-
-                        if ((getVectorDimension().getX() <= 0) || (getVectorDimension().getY() <= 0)) {
-                            parseErrorOccurred = true;
-                            errorBuilder.append("Wrong quantization vector: ").append(getVectorDimension().toString());
-                        } else {
-                            if ((getVectorDimension().getX() > 1) && (getVectorDimension().getY() == 1)) {
-                                setQuantizationType(QuantizationType.Vector1D);
-                            } else if ((getVectorDimension().getX() == 1) && (getVectorDimension().getY() > 1)) {
-                                // This is actually Vector1D, but Vector2D implementation works here just fine.
-                                setQuantizationType(QuantizationType.Vector2D);
-                            } else {
-                                setQuantizationType(QuantizationType.Vector2D);
-                            }
+                if (maybe3DVectorSize.isPresent()) {
+                    // Process 3D box dims.
+                    setQuantizationType(QuantizationType.Vector1D);
+                    if (maybe3DVectorSize.get().getY() > 1) {
+                        setQuantizationType(QuantizationType.Vector2D);
+                        if (maybe3DVectorSize.get().getZ() > 1) {
+                            setQuantizationType(QuantizationType.Vector3D);
                         }
-                    } else {
-                        parseErrorOccurred = true;
-                        errorBuilder.append("Failed to parse vector dimension. Expected DxD, got: ").append(
-                                vectorDefinition).append('\n');
                     }
+
+                    setQuantizationVector(maybe3DVectorSize.map(v3 -> new V3i(v3.getX(), v3.getY(), v3.getZ())).get());
+                } else if (maybe2DVectorSize.isPresent()) {
+                    // Process 2D matrix dims.
+                    setQuantizationType(QuantizationType.Vector1D);
+                    if (maybe2DVectorSize.get().getY() > 1) {
+                        setQuantizationType(QuantizationType.Vector2D);
+                    }
+
+                    setQuantizationVector(maybe2DVectorSize.map(v2 -> new V3i(v2.getX(), v2.getY(), 1)).get());
+                } else if (maybe1DVectorSize.isPresent()) {
+                    // Process 1D row dims.
+                    setQuantizationType(QuantizationType.Vector1D);
+                    setQuantizationVector(maybe1DVectorSize.map(xDim -> new V3i(xDim, 1, 1)).get());
+                } else {
+                    parseErrorOccurred = true;
+                    errorBuilder.append("Unable to determine vector dimensions from string: ")
+                            .append(vectorDefinition)
+                            .append(". Expected D, DxD or DxDxD.\n");
                 }
-            } else {
-                parseErrorOccurred = true;
-                errorBuilder.append("Quantization type wasn't set for compression").append('\n');
             }
         }
     }
@@ -493,10 +482,10 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
                     sb.append("Scalar\n");
                     break;
                 case Vector1D:
-                    sb.append(String.format("Vector1D %s\n", getVectorDimension().toString()));
+                    sb.append(String.format("Vector1D %s\n", getQuantizationVector().toString()));
                     break;
                 case Vector2D:
-                    sb.append(String.format("Vector2D %s\n", getVectorDimension().toString()));
+                    sb.append(String.format("Vector2D %s\n", getQuantizationVector().toString()));
                     break;
             }
         }
