@@ -1,10 +1,16 @@
 package azgracompress.cli;
 
+import azgracompress.compression.Range;
 import azgracompress.data.V3i;
 
 import java.util.Optional;
 
 public abstract class ParseUtils {
+
+    private static String removeSpacesInString(final String string) {
+        return string.replaceAll("\\s", "");
+    }
+
     /**
      * Try to parse int from string.
      *
@@ -20,13 +26,37 @@ public abstract class ParseUtils {
     }
 
     /**
+     * Try to parse integer range from string.
+     *
+     * @param rangeString Range string.
+     * @param delimiter   Delimiter between numbers.
+     * @return Optional parsed range.
+     */
+    public static Optional<Range<Integer>> tryParseRange(final String rangeString, final char delimiter) {
+        final String string = removeSpacesInString(rangeString);
+        final int delimiterIndex = string.indexOf(delimiter);
+        if (delimiterIndex == -1) {
+            return Optional.empty();
+        }
+
+        final Optional<Integer> maybeFrom = tryParseInt(string.substring(0, delimiterIndex));
+        final Optional<Integer> maybeTo = tryParseInt(string.substring(delimiterIndex + 1));
+
+        if (maybeFrom.isPresent() && maybeTo.isPresent()) {
+            return Optional.of(new Range<>(maybeFrom.get(), maybeTo.get()));
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Try to parse 3 dimensional vector from string.
      *
-     * @param string    Vector string.
+     * @param v3iString Vector string.
      * @param delimiter Delimiter between numbers.
-     * @return Optional parse result.
+     * @return Optional parsed vector.
      */
-    public static Optional<V3i> tryParseV3i(final String string, final char delimiter) {
+    public static Optional<V3i> tryParseV3i(final String v3iString, final char delimiter) {
+        final String string = removeSpacesInString(v3iString);
         final int firstDelimiterIndex = string.indexOf(delimiter);
         if (firstDelimiterIndex == -1) {
             return Optional.empty();

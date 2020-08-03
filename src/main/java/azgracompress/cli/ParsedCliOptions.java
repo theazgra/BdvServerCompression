@@ -298,21 +298,16 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
                                             final int inputFileArgumentsOffset) {
         int rangeSeparatorIndex = inputFileArguments[inputFileArgumentsOffset].indexOf("-");
         if (rangeSeparatorIndex != -1) {
-            // Here we parse the plane range option.
-            final String fromIndexString =
-                    inputFileArguments[inputFileArgumentsOffset].substring(0, rangeSeparatorIndex);
-            final String toIndexString =
-                    inputFileArguments[inputFileArgumentsOffset].substring(rangeSeparatorIndex + 1);
 
-            final Optional<Integer> indexFromResult = ParseUtils.tryParseInt(fromIndexString);
-            final Optional<Integer> indexToResult = ParseUtils.tryParseInt(toIndexString);
+            Optional<Range<Integer>> parsedRange =
+                    ParseUtils.tryParseRange(inputFileArguments[inputFileArgumentsOffset], '-');
 
-            if (indexFromResult.isPresent() && indexToResult.isPresent()) {
-                getInputDataInfo().setPlaneRange(new Range<>(indexFromResult.get(), indexToResult.get()));
-            } else {
+            if (!parsedRange.isPresent()) {
                 parseErrorOccurred = true;
-                errorBuilder.append("Plane range index is wrong. Expected format D-D, got: ").append(
-                        inputFileArguments[inputFileArgumentsOffset]).append('\n');
+                errorBuilder.append("Plane range index is wrong. Expected format D-D, got: ")
+                        .append(inputFileArguments[inputFileArgumentsOffset]).append('\n');
+            } else {
+                getInputDataInfo().setPlaneRange(parsedRange.get());
             }
         } else {
             // Here we parse single plane index option.
@@ -327,53 +322,6 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
             }
         }
     }
-
-    //    /**
-    //     * Parse image dimensions from the command line.
-    //     *
-    //     * @param dimsString   Dimensions string.
-    //     * @param errorBuilder String error builder.
-    //     */
-    //    private V3i parseV3i(final String dimsString, StringBuilder errorBuilder) {
-    //        // We thing of 3x3x1 and 3x3 as the same thing
-    //
-    //        final int firstDelimiterIndex = dimsString.indexOf('x');
-    //        if (firstDelimiterIndex == -1) {
-    //            parseErrorOccurred = true;
-    //            errorBuilder.append("Error parsing image dimensions. We require DxDxD or DxD [=DxDx1]\n");
-    //            return;
-    //        }
-    //        final String num1String = dimsString.substring(0, firstDelimiterIndex);
-    //        final String secondPart = dimsString.substring(firstDelimiterIndex + 1);
-    //
-    //        final int secondDelimiterIndex = secondPart.indexOf('x');
-    //        if (secondDelimiterIndex == -1) {
-    //            final Optional<Integer> n1Result = ParseUtils.tryParseInt(num1String);
-    //            final Optional<Integer> n2Result = ParseUtils.tryParseInt(secondPart);
-    //            if (n1Result.isPresent() && n2Result.isPresent()) {
-    //                getInputDataInfo().setDimension(new V3i(n1Result.get(), n2Result.get(), 1));
-    //            } else {
-    //                parseErrorOccurred = true;
-
-    //                errorBuilder.append(String.format("%sx%s\n", num1String, secondPart));
-    //            }
-    //        } else {
-    //            final String num2String = secondPart.substring(0, secondDelimiterIndex);
-    //            final String num3String = secondPart.substring(secondDelimiterIndex + 1);
-    //
-    //            final Optional<Integer> n1Result = ParseUtils.tryParseInt(num1String);
-    //            final Optional<Integer> n2Result = ParseUtils.tryParseInt(num2String);
-    //            final Optional<Integer> n3Result = ParseUtils.tryParseInt(num3String);
-    //
-    //            if (n1Result.isPresent() && n2Result.isPresent() && n3Result.isPresent()) {
-    //                getInputDataInfo().setDimension(new V3i(n1Result.get(), n2Result.get(), n3Result.get()));
-    //            } else {
-    //                parseErrorOccurred = true;
-    //                errorBuilder.append("Failed to parse image dimensions of format DxDxD, got: ");
-    //                errorBuilder.append(String.format("%sx%sx%s\n", num1String, num2String, num3String));
-    //            }
-    //        }
-    //    }
 
     /**
      * Parse bits per codebook index.
