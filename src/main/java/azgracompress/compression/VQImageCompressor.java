@@ -31,7 +31,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeVectors,
                 getCodebookSize(),
                 options.getWorkerCount(),
-                options.getQuantizationVector().toV3i());
+                options.getQuantizationVector());
         LBGResult vqResult = vqInitializer.findOptimalCodebook();
         return new VectorQuantizer(vqResult.getCodebook());
     }
@@ -77,13 +77,13 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
         if (!cacheManager.doesVQCacheExists(options.getInputDataInfo().getCacheFileName(),
                 getCodebookSize(),
-                options.getQuantizationVector().toV3i())) {
+                options.getQuantizationVector())) {
             trainAndSaveCodebook();
         }
 
         final VQCodebook codebook = cacheManager.loadVQCodebook(options.getInputDataInfo().getCacheFileName(),
                 getCodebookSize(),
-                options.getQuantizationVector().toV3i());
+                options.getQuantizationVector());
 
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization vectors from cache.");
@@ -253,7 +253,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData,
                 getCodebookSize(),
                 options.getWorkerCount(),
-                options.getQuantizationVector().toV3i());
+                options.getQuantizationVector());
         reportStatusToListeners("Starting LBG optimization.");
         vqInitializer.setStatusListener(this::reportStatusToListeners);
         LBGResult lbgResult = vqInitializer.findOptimalCodebook();
