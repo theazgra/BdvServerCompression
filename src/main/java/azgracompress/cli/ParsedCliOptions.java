@@ -1,7 +1,7 @@
 package azgracompress.cli;
 
-import azgracompress.compression.CompressionOptions;
 import azgracompress.ScifioWrapper;
+import azgracompress.compression.CompressionOptions;
 import azgracompress.compression.CompressorDecompressorBase;
 import azgracompress.compression.Interval;
 import azgracompress.data.V2i;
@@ -19,6 +19,7 @@ import org.apache.commons.io.FilenameUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 public class ParsedCliOptions extends CompressionOptions implements Cloneable {
     private static final int DEFAULT_BITS_PER_PIXEL = 8;
@@ -83,7 +84,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
                 defaultValue = removeQCMPFileExtension(defaultValue);
                 // Remove the old extension and add RAW extension
                 defaultValue = defaultValue.replace(FilenameUtils.getExtension(defaultValue),
-                        CompressorDecompressorBase.RAW_EXTENSION_NO_DOT);
+                                                    CompressorDecompressorBase.RAW_EXTENSION_NO_DOT);
 
             }
             break;
@@ -139,9 +140,9 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
 
         if (cmd.hasOption(CliConstants.WORKER_COUNT_LONG)) {
             final String wcString = cmd.getOptionValue(CliConstants.WORKER_COUNT_LONG);
-            ParseResult<Integer> pr = tryParseInt(wcString);
-            if (pr.isSuccess()) {
-                setWorkerCount(pr.getValue());
+            Optional<Integer> pr = ParseUtils.tryParseInt(wcString);
+            if (pr.isPresent()) {
+                setWorkerCount(pr.get());
             } else {
                 parseErrorOccurred = true;
                 errorBuilder.append("Unable to parse worker count. Expected int got: ").append(wcString).append('\n');
@@ -149,7 +150,8 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         }
 
         if (!parseErrorOccurred) {
-            setOutputFilePath(cmd.getOptionValue(CliConstants.OUTPUT_LONG, getDefaultOutputFilePath(getInputDataInfo().getFilePath())));
+            setOutputFilePath(cmd.getOptionValue(CliConstants.OUTPUT_LONG,
+                                                 getDefaultOutputFilePath(getInputDataInfo().getFilePath())));
             setCodebookCacheFolder(cmd.getOptionValue(CliConstants.CODEBOOK_CACHE_FOLDER_LONG, null));
         }
 
@@ -235,7 +237,9 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
             if ((planeWidth > (long) Integer.MAX_VALUE) ||
                     (planeHeight > (long) Integer.MAX_VALUE)) {
                 parseErrorOccurred = true;
-                errorBuilder.append("We are currently supporting planes with maximum size of Integer.MAX_VALUE x Integer.MAX_VALUE");
+                errorBuilder.append(
+                        "We are currently supporting planes with maximum size of Integer.MAX_VALUE x Integer" +
+                                ".MAX_VALUE");
             }
 
 
@@ -267,8 +271,15 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
             return;
         }
         getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.RawDataLoader);
-        parseImageDims(inputFileArguments[1], errorBuilder);
+        final Optional<V3i> parsedImageDims = ParseUtils.tryParseV3i(inputFileArguments[1], 'x');
 
+        if (!parsedImageDims.isPresent()) {
+            parseErrorOccurred = true;
+            errorBuilder.append("Failed to parse image dimensions of format DxDxD. Got: ")
+                    .append(inputFileArguments[1])
+                    .append('\n');
+            return;
+        }
         // User specified plane index or plane range.
         if (inputFileArguments.length > 2) {
             parseInputFilePlaneOptions(errorBuilder, inputFileArguments, 2);
@@ -287,27 +298,27 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
                                             final int inputFileArgumentsOffset) {
         int rangeSeparatorIndex = inputFileArguments[inputFileArgumentsOffset].indexOf("-");
         if (rangeSeparatorIndex != -1) {
-// Here we parse the plane range option.
+            // Here we parse the plane range option.
             final String fromIndexString =
                     inputFileArguments[inputFileArgumentsOffset].substring(0, rangeSeparatorIndex);
             final String toIndexString =
                     inputFileArguments[inputFileArgumentsOffset].substring(rangeSeparatorIndex + 1);
 
-            final ParseResult<Integer> indexFromResult = tryParseInt(fromIndexString);
-            final ParseResult<Integer> indexToResult = tryParseInt(toIndexString);
+            final Optional<Integer> indexFromResult = ParseUtils.tryParseInt(fromIndexString);
+            final Optional<Integer> indexToResult = ParseUtils.tryParseInt(toIndexString);
 
-            if (indexFromResult.isSuccess() && indexToResult.isSuccess()) {
-                getInputDataInfo().setPlaneRange(new Interval<>(indexFromResult.getValue(), indexToResult.getValue()));
+            if (indexFromResult.isPresent() && indexToResult.isPresent()) {
+                getInputDataInfo().setPlaneRange(new Interval<>(indexFromResult.get(), indexToResult.get()));
             } else {
                 parseErrorOccurred = true;
                 errorBuilder.append("Plane range index is wrong. Expected format D-D, got: ").append(
                         inputFileArguments[inputFileArgumentsOffset]).append('\n');
             }
         } else {
-// Here we parse single plane index option.
-            final ParseResult<Integer> parseResult = tryParseInt(inputFileArguments[inputFileArgumentsOffset]);
-            if (parseResult.isSuccess()) {
-                getInputDataInfo().setPlaneIndex(parseResult.getValue());
+            // Here we parse single plane index option.
+            final Optional<Integer> parseResult = ParseUtils.tryParseInt(inputFileArguments[inputFileArgumentsOffset]);
+            if (parseResult.isPresent()) {
+                getInputDataInfo().setPlaneIndex(parseResult.get());
             } else {
                 parseErrorOccurred = true;
                 errorBuilder.append("Failed to parse plane index option, expected integer, got: ")
@@ -317,52 +328,52 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         }
     }
 
-    /**
-     * Parse image dimensions from the command line.
-     *
-     * @param dimsString   Dimensions string.
-     * @param errorBuilder String error builder.
-     */
-    private void parseImageDims(final String dimsString, StringBuilder errorBuilder) {
-        // We thing of 3x3x1 and 3x3 as the same thing
+    //    /**
+    //     * Parse image dimensions from the command line.
+    //     *
+    //     * @param dimsString   Dimensions string.
+    //     * @param errorBuilder String error builder.
+    //     */
+    //    private V3i parseV3i(final String dimsString, StringBuilder errorBuilder) {
+    //        // We thing of 3x3x1 and 3x3 as the same thing
+    //
+    //        final int firstDelimiterIndex = dimsString.indexOf('x');
+    //        if (firstDelimiterIndex == -1) {
+    //            parseErrorOccurred = true;
+    //            errorBuilder.append("Error parsing image dimensions. We require DxDxD or DxD [=DxDx1]\n");
+    //            return;
+    //        }
+    //        final String num1String = dimsString.substring(0, firstDelimiterIndex);
+    //        final String secondPart = dimsString.substring(firstDelimiterIndex + 1);
+    //
+    //        final int secondDelimiterIndex = secondPart.indexOf('x');
+    //        if (secondDelimiterIndex == -1) {
+    //            final Optional<Integer> n1Result = ParseUtils.tryParseInt(num1String);
+    //            final Optional<Integer> n2Result = ParseUtils.tryParseInt(secondPart);
+    //            if (n1Result.isPresent() && n2Result.isPresent()) {
+    //                getInputDataInfo().setDimension(new V3i(n1Result.get(), n2Result.get(), 1));
+    //            } else {
+    //                parseErrorOccurred = true;
 
-        final int firstDelimiterIndex = dimsString.indexOf('x');
-        if (firstDelimiterIndex == -1) {
-            parseErrorOccurred = true;
-            errorBuilder.append("Error parsing image dimensions. We require DxDxD or DxD [=DxDx1]\n");
-            return;
-        }
-        final String num1String = dimsString.substring(0, firstDelimiterIndex);
-        final String secondPart = dimsString.substring(firstDelimiterIndex + 1);
-
-        final int secondDelimiterIndex = secondPart.indexOf('x');
-        if (secondDelimiterIndex == -1) {
-            final ParseResult<Integer> n1Result = tryParseInt(num1String);
-            final ParseResult<Integer> n2Result = tryParseInt(secondPart);
-            if (n1Result.isSuccess() && n2Result.isSuccess()) {
-                getInputDataInfo().setDimension(new V3i(n1Result.getValue(), n2Result.getValue(), 1));
-            } else {
-                parseErrorOccurred = true;
-                errorBuilder.append("Failed to parse image dimensions of format DxD, got: ");
-                errorBuilder.append(String.format("%sx%s\n", num1String, secondPart));
-            }
-        } else {
-            final String num2String = secondPart.substring(0, secondDelimiterIndex);
-            final String num3String = secondPart.substring(secondDelimiterIndex + 1);
-
-            final ParseResult<Integer> n1Result = tryParseInt(num1String);
-            final ParseResult<Integer> n2Result = tryParseInt(num2String);
-            final ParseResult<Integer> n3Result = tryParseInt(num3String);
-
-            if (n1Result.isSuccess() && n2Result.isSuccess() && n3Result.isSuccess()) {
-                getInputDataInfo().setDimension(new V3i(n1Result.getValue(), n2Result.getValue(), n3Result.getValue()));
-            } else {
-                parseErrorOccurred = true;
-                errorBuilder.append("Failed to parse image dimensions of format DxDxD, got: ");
-                errorBuilder.append(String.format("%sx%sx%s\n", num1String, num2String, num3String));
-            }
-        }
-    }
+    //                errorBuilder.append(String.format("%sx%s\n", num1String, secondPart));
+    //            }
+    //        } else {
+    //            final String num2String = secondPart.substring(0, secondDelimiterIndex);
+    //            final String num3String = secondPart.substring(secondDelimiterIndex + 1);
+    //
+    //            final Optional<Integer> n1Result = ParseUtils.tryParseInt(num1String);
+    //            final Optional<Integer> n2Result = ParseUtils.tryParseInt(num2String);
+    //            final Optional<Integer> n3Result = ParseUtils.tryParseInt(num3String);
+    //
+    //            if (n1Result.isPresent() && n2Result.isPresent() && n3Result.isPresent()) {
+    //                getInputDataInfo().setDimension(new V3i(n1Result.get(), n2Result.get(), n3Result.get()));
+    //            } else {
+    //                parseErrorOccurred = true;
+    //                errorBuilder.append("Failed to parse image dimensions of format DxDxD, got: ");
+    //                errorBuilder.append(String.format("%sx%sx%s\n", num1String, num2String, num3String));
+    //            }
+    //        }
+    //    }
 
     /**
      * Parse bits per codebook index.
@@ -373,13 +384,12 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
     private void parseBitsPerPixel(CommandLine cmd, StringBuilder errorBuilder) {
         if (cmd.hasOption(CliConstants.BITS_LONG)) {
             final String bitsString = cmd.getOptionValue(CliConstants.BITS_LONG);
-            final ParseResult<Integer> parseResult = tryParseInt(bitsString);
-            if (parseResult.isSuccess()) {
-                setBitsPerCodebookIndex(parseResult.getValue());
+            final Optional<Integer> parseResult = ParseUtils.tryParseInt(bitsString);
+            if (parseResult.isPresent()) {
+                setBitsPerCodebookIndex(parseResult.get());
             } else {
                 parseErrorOccurred = true;
                 errorBuilder.append("Failed to parse bits per pixel.").append('\n');
-                errorBuilder.append(parseResult.getErrorMessage()).append('\n');
             }
         } else {
             setBitsPerCodebookIndex(DEFAULT_BITS_PER_PIXEL);
@@ -405,6 +415,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
      * @param errorBuilder String error builder.
      */
     private void parseCompressionType(CommandLine cmd, StringBuilder errorBuilder) {
+        // TODO(Moravec): Parse 3d vector dimension
         if (hasQuantizationType(method)) {
 
             if (cmd.hasOption(CliConstants.SCALAR_QUANTIZATION_LONG)) {
@@ -414,23 +425,23 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
 
                 final int delimiterIndex = vectorDefinition.indexOf('x');
                 if (delimiterIndex == -1) {
-                    final ParseResult<Integer> parseResult = tryParseInt(vectorDefinition);
-                    if (parseResult.isSuccess()) {
+                    final Optional<Integer> parseResult = ParseUtils.tryParseInt(vectorDefinition);
+                    if (parseResult.isPresent()) {
                         setQuantizationType(QuantizationType.Vector1D);
-                        setVectorDimension(new V2i(parseResult.getValue(), 1));
+                        setVectorDimension(new V2i(parseResult.get(), 1));
                     } else {
                         parseErrorOccurred = true;
-                        errorBuilder.append("1D vector quantization requires vector size").append('\n').append(
-                                parseResult.getErrorMessage()).append('\n');
+                        errorBuilder.append("1D vector quantization requires vector size").append('\n').append('\n');
                     }
                 } else {
                     final String firstNumberString = vectorDefinition.substring(0, delimiterIndex);
                     final String secondNumberString = vectorDefinition.substring(delimiterIndex + 1);
 
-                    final ParseResult<Integer> firstNumberParseResult = tryParseInt(firstNumberString);
-                    final ParseResult<Integer> secondNumberParseResult = tryParseInt(secondNumberString);
-                    if (firstNumberParseResult.isSuccess() && secondNumberParseResult.isSuccess()) {
-                        setVectorDimension(new V2i(firstNumberParseResult.getValue(), secondNumberParseResult.getValue()));
+                    final Optional<Integer> firstNumberOptional = ParseUtils.tryParseInt(firstNumberString);
+                    final Optional<Integer> secondNumberOptional = ParseUtils.tryParseInt(secondNumberString);
+                    if (firstNumberOptional.isPresent() && secondNumberOptional.isPresent()) {
+                        setVectorDimension(new V2i(firstNumberOptional.get(),
+                                                   secondNumberOptional.get()));
 
                         if ((getVectorDimension().getX() <= 0) || (getVectorDimension().getY() <= 0)) {
                             parseErrorOccurred = true;
@@ -448,7 +459,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
                     } else {
                         parseErrorOccurred = true;
                         errorBuilder.append("Failed to parse vector dimension. Expected DxD, got: ").append(
-                                vectorDefinition);
+                                vectorDefinition).append('\n');
                     }
                 }
             } else {
@@ -485,20 +496,6 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         }
     }
 
-    /**
-     * Try to parse int from string.
-     *
-     * @param string Possible integer value.
-     * @return Parse result.
-     */
-    private ParseResult<Integer> tryParseInt(final String string) {
-        try {
-            final int result = Integer.parseInt(string);
-            return new ParseResult<>(result);
-        } catch (NumberFormatException e) {
-            return new ParseResult<>(e.getMessage());
-        }
-    }
 
     public ProgramMethod getMethod() {
         return method;
