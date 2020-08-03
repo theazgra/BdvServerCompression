@@ -1,8 +1,8 @@
 package azgracompress.compression;
 
-import azgracompress.io.InputData;
-import azgracompress.data.V2i;
+import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
+import azgracompress.io.InputData;
 
 /**
  * Options for the compressor/decompressor.
@@ -48,9 +48,8 @@ public class CompressionOptions {
 
     /**
      * Dimensions of the quantization vector.
-     * TODO: Once we support 3D quantization, this should be V3i.
      */
-    private V2i vectorDimension = new V2i(0);
+    private V3i quantizationVector = new V3i(0);
 
     /**
      * Number of workers to be used for different operations.
@@ -117,12 +116,12 @@ public class CompressionOptions {
         this.bitsPerCodebookIndex = bitsPerCodebookIndex;
     }
 
-    public V2i getVectorDimension() {
-        return vectorDimension;
+    public V3i getQuantizationVector() {
+        return quantizationVector;
     }
 
-    public void setVectorDimension(V2i vectorDimension) {
-        this.vectorDimension = vectorDimension;
+    public void setQuantizationVector(V3i quantizationVector) {
+        this.quantizationVector = quantizationVector;
     }
 
     public int getWorkerCount() {
