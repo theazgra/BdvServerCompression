@@ -8,6 +8,7 @@ import azgracompress.io.InputData;
 import azgracompress.utilities.TypeConverter;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Arrays;
 
 public class ImageJBufferLoader implements IPlaneLoader {
@@ -109,35 +110,43 @@ public class ImageJBufferLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[][] loadVoxels(V3i voxelDim) throws IOException {
+    public int[][] loadVoxels(final V3i voxelDim) throws IOException {
+        assert (bufferInputData.getPixelType() == InputData.PixelType.Gray16);
+        final V3i dims = bufferInputData.getDimensions();
 
-        switch (bufferInputData.getPixelType()) {
-            case Gray16: {
-                final V3i dims = bufferInputData.getDimensions();
-                final int voxelSize = (int) voxelDim.multiplyTogether();
-                final int voxelCount = Chunk3D.calculateRequiredChunkCount(bufferInputData.getDimensions(), voxelDim);
+        final int xVoxelCount = (int) Math.ceil((double) dims.getX() / (double) voxelDim.getX());
+        final int yVoxelCount = (int) Math.ceil((double) dims.getY() / (double) voxelDim.getY());
 
-                int[][] voxels = new int[voxelCount][voxelSize];
-                int voxelIndex = 0;
+        final int voxelSize = (int) voxelDim.multiplyTogether();
+        final int voxelCount = Chunk3D.calculateRequiredChunkCount(bufferInputData.getDimensions(), voxelDim);
+        int[][] voxels = new int[voxelCount][voxelSize];
 
-                for (int chunkZOffset = 0; chunkZOffset < dims.getZ(); chunkZOffset += voxelDim.getZ()) {
-                    for (int chunkYOffset = 0; chunkYOffset < dims.getY(); chunkYOffset += voxelDim.getY()) {
-                        for (int chunkXOffset = 0; chunkXOffset < dims.getX(); chunkXOffset += voxelDim.getX()) {
-                            copyDataToVector(voxels[voxelIndex++], voxelDim, chunkXOffset, chunkYOffset, chunkZOffset);
-                        }
-                    }
+        int dstZ, dstY, dstX;
+
+        // THIS IS WRONG
+        // FIXME
+
+        for (int srcZ = 0; srcZ < dims.getZ(); srcZ++) {
+            final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(srcZ);
+            dstZ = srcZ / voxelDim.getZ();
+
+            for (int srcY = 0; srcY < dims.getY(); srcY++) {
+                dstY = srcY / voxelDim.getY();
+
+                for (int srcX = 0; srcX < dims.getX(); srcX++) {
+                    dstX = srcX / voxelDim.getX();
+
+                    final int voxelIndex = (dstZ * (xVoxelCount * yVoxelCount)) + (dstY * xVoxelCount) + dstX;
+                    final int indexInsideVoxel = ((srcZ % voxelDim.getZ()) * (voxelDim.getX() * voxelDim.getY())) +
+                            ((srcY % voxelDim.getY()) * voxelDim.getX()) +
+                            (srcX % voxelDim.getX());
+
+                    voxels[voxelIndex][indexInsideVoxel] = srcBuffer[(srcY * bufferInputData.getDimensions().getX()) + srcX];
+//                    System.out.printf("SRC: [%d;%d;%d] -> %d_[%d]\n", srcX, srcY, srcZ, voxelIndex, indexInsideVoxel);
                 }
-                return voxels;
             }
-            default:
-                throw new IOException("Unable to load unsupported pixel type.");
-        }
-    }
-
-    private int readDataAt(final int x, final int y, final int z) {
-
-        final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(z);
-        return srcBuffer[(y * bufferInputData.getDimensions().getX()) + x];
+        }8
+        return voxels;
     }
 
     /**
