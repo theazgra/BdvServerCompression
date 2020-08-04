@@ -20,4 +20,8 @@ public final class V2i extends V2<Integer> {
     public final V3i toV3i() {
         return new V3i(getX(), getY(), 1);
     }
+
+    public final int multiplyTogether() {
+        return getX() * getY();
+    }
 }
