@@ -2,12 +2,23 @@ package azgracompress.io.loader;
 
 import azgracompress.data.V3i;
 
+import java.io.IOException;
+
 public abstract class BasicLoader {
     protected final V3i dims;
 
     protected BasicLoader(final V3i datasetDims) {
         this.dims = datasetDims;
     }
+
+    /**
+     * Abstract method to load specified plane data.
+     *
+     * @param plane Zero based plane index.
+     * @return Plane data.
+     * @throws IOException when fails to load plane data for some reason.
+     */
+    public abstract int[] loadPlaneData(final int plane) throws IOException;
 
     /**
      * Check whether the coordinates are inside voxel of dimension `dims`.
@@ -63,4 +74,43 @@ public abstract class BasicLoader {
         final int zChunkCount = (int) Math.ceil((double) datasetDims.getZ() / (double) voxelDims.getZ());
         return (xChunkCount * yChunkCount * zChunkCount);
     }
+
+    /**
+     * Load dataset into voxel data.
+     *
+     * @param voxelDim Single voxel dimensions.
+     * @return Voxel data arranged in arrays.
+     * @throws IOException When fails to load plane data.
+     */
+    protected int[][] loadVoxelsImplGray16(final V3i voxelDim) throws IOException {
+        final int xVoxelCount = (int) Math.ceil((double) dims.getX() / (double) voxelDim.getX());
+        final int yVoxelCount = (int) Math.ceil((double) dims.getY() / (double) voxelDim.getY());
+
+        int[][] voxels = new int[calculateRequiredVoxelCount(dims, voxelDim)][(int) voxelDim.multiplyTogether()];
+
+        int dstZ, dstY, dstX, voxelX, voxelY, voxelZ, voxelIndex;
+
+        for (int srcZ = 0; srcZ < dims.getZ(); srcZ++) {
+
+            final int[] srcPlaneBuffer = loadPlaneData(srcZ);
+
+            dstZ = srcZ / voxelDim.getZ();
+            voxelZ = srcZ - (dstZ * voxelDim.getZ());
+
+            for (int srcY = 0; srcY < dims.getY(); srcY++) {
+                dstY = srcY / voxelDim.getY();
+                voxelY = srcY - (dstY * voxelDim.getY());
+
+                for (int srcX = 0; srcX < dims.getX(); srcX++) {
+                    dstX = srcX / voxelDim.getX();
+                    voxelX = srcX - (dstX * voxelDim.getX());
+                    voxelIndex = (dstZ * (xVoxelCount * yVoxelCount)) + (dstY * xVoxelCount) + dstX;
+
+                    voxels[voxelIndex][voxelDataIndex(voxelX, voxelY, voxelZ, voxelDim)] = srcPlaneBuffer[(srcY * dims.getX()) + srcX];
+                }
+            }
+        }
+        return voxels;
+    }
+
 }

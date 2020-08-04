@@ -1,7 +1,6 @@
 package azgracompress.io.loader;
 
 import azgracompress.ScifioWrapper;
-import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.io.FileInputData;
 import azgracompress.utilities.TypeConverter;
@@ -11,7 +10,7 @@ import io.scif.Reader;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class SCIFIOLoader implements IPlaneLoader {
+public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
 
     private final FileInputData inputDataInfo;
     private final Reader reader;
@@ -24,29 +23,28 @@ public class SCIFIOLoader implements IPlaneLoader {
      * @throws FormatException When fails to create SCIFIO reader.
      */
     public SCIFIOLoader(final FileInputData inputDataInfo) throws IOException, FormatException {
+        super(inputDataInfo.getDimensions());
         this.inputDataInfo = inputDataInfo;
         this.reader = ScifioWrapper.getReader(this.inputDataInfo.getFilePath());
     }
 
     @Override
-    public ImageU16 loadPlaneU16(int plane) throws IOException {
+    public int[] loadPlaneData(final int plane) throws IOException {
         byte[] planeBytes;
         try {
             planeBytes = reader.openPlane(0, plane).getBytes();
         } catch (FormatException e) {
             throw new IOException("Unable to open plane with the reader. " + e.getMessage());
         }
-        final int[] data = TypeConverter.unsignedShortBytesToIntArray(planeBytes);
-        return new ImageU16(inputDataInfo.getDimensions().toV2i(), data);
+        return TypeConverter.unsignedShortBytesToIntArray(planeBytes);
     }
 
-    @SuppressWarnings("DuplicatedCode")
     @Override
     public int[] loadPlanesU16Data(int[] planes) throws IOException {
         if (planes.length < 1) {
             return new int[0];
         } else if (planes.length == 1) {
-            return loadPlaneU16(planes[0]).getData();
+            return loadPlaneData(planes[0]);
         }
 
         final int planeValueCount = inputDataInfo.getDimensions().getX() * inputDataInfo.getDimensions().getY();
@@ -105,4 +103,11 @@ public class SCIFIOLoader implements IPlaneLoader {
 
         return values;
     }
+
+    @Override
+    public int[][] loadVoxels(final V3i voxelDim) throws IOException {
+        return loadVoxelsImplGray16(voxelDim);
+    }
+
+
 }

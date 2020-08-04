@@ -1,18 +1,15 @@
 package azgracompress.io.loader;
 
-import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 
 import java.io.IOException;
 
 public interface IPlaneLoader {
-    ImageU16 loadPlaneU16(final int plane) throws IOException;
+    int[] loadPlaneData(final int plane) throws IOException;
 
     int[] loadPlanesU16Data(int[] planes) throws IOException;
 
     int[] loadAllPlanesU16Data() throws IOException;
 
-    default int[][] loadVoxels(final V3i voxelDim) throws IOException {
-        throw new IOException("NOT IMPLEMENTED");
-    }
+    int[][] loadVoxels(final V3i voxelDim) throws IOException;
 }

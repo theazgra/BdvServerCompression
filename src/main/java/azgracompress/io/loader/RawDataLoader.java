@@ -1,6 +1,5 @@
 package azgracompress.io.loader;
 
-import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.io.FileInputData;
 import azgracompress.utilities.TypeConverter;
@@ -11,23 +10,22 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class RawDataLoader implements IPlaneLoader {
+public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
     private final FileInputData inputDataInfo;
 
     public RawDataLoader(final FileInputData inputDataInfo) {
+        super(inputDataInfo.getDimensions());
         this.inputDataInfo = inputDataInfo;
     }
 
     @Override
-    public ImageU16 loadPlaneU16(int plane) throws IOException {
+    public int[] loadPlaneData(final int plane) throws IOException {
         byte[] buffer;
-        final V3i rawDataDimension = inputDataInfo.getDimensions();
 
         try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
-            final long planeSize = (long) rawDataDimension.getX() * (long) rawDataDimension.getY() * 2;
-            final long expectedFileSize = planeSize * rawDataDimension.getZ();
+            final long planeSize = (long) dims.getX() * (long) dims.getY() * 2;
+            final long expectedFileSize = planeSize * dims.getZ();
             final long fileSize = fileStream.getChannel().size();
-
 
             if (expectedFileSize != fileSize) {
                 throw new IOException(
@@ -45,10 +43,7 @@ public class RawDataLoader implements IPlaneLoader {
                 throw new IOException("Read wrong number of bytes.");
             }
         }
-
-        return new ImageU16(rawDataDimension.getX(),
-                            rawDataDimension.getY(),
-                            TypeConverter.unsignedShortBytesToIntArray(buffer));
+        return TypeConverter.unsignedShortBytesToIntArray(buffer);
     }
 
     @Override
@@ -56,7 +51,7 @@ public class RawDataLoader implements IPlaneLoader {
         if (planes.length < 1) {
             return new int[0];
         } else if (planes.length == 1) {
-            return loadPlaneU16(planes[0]).getData();
+            return loadPlaneData(planes[0]);
         }
 
         final int planeValueCount = inputDataInfo.getDimensions().getX() * inputDataInfo.getDimensions().getY();
@@ -118,5 +113,10 @@ public class RawDataLoader implements IPlaneLoader {
         }
 
         return values;
+    }
+
+    @Override
+    public int[][] loadVoxels(V3i voxelDim) throws IOException {
+        return loadVoxelsImplGray16(voxelDim);
     }
 }
