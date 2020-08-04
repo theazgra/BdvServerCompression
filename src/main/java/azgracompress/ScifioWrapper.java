@@ -37,6 +37,7 @@ public class ScifioWrapper {
      */
     public static Reader getReader(final String path) throws IOException, FormatException {
         SCIFIO scifio = getScifio();
+        //        return scifio.initializer().initializeReader(new FileLocation(path));
         return scifio.initializer().initializeReader(path);
     }
 

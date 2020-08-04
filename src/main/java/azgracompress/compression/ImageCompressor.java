@@ -25,10 +25,9 @@ public class ImageCompressor extends CompressorDecompressorBase {
                 break;
             case Vector1D:
             case Vector2D:
-
+            case Vector3D:
                 compressor = new VQImageCompressor(options);
                 break;
-            case Vector3D:
             case Invalid:
             default:
                 return null;

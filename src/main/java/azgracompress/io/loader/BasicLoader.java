@@ -86,7 +86,9 @@ public abstract class BasicLoader {
         final int xVoxelCount = (int) Math.ceil((double) dims.getX() / (double) voxelDim.getX());
         final int yVoxelCount = (int) Math.ceil((double) dims.getY() / (double) voxelDim.getY());
 
+
         int[][] voxels = new int[calculateRequiredVoxelCount(dims, voxelDim)][(int) voxelDim.multiplyTogether()];
+
 
         int dstZ, dstY, dstX, voxelX, voxelY, voxelZ, voxelIndex;
 
