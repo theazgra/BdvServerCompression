@@ -9,7 +9,6 @@
         <groupId>org.scijava</groupId>
         <artifactId>pom-scijava</artifactId>
         <version>27.0.1</version>
-        <relativePath/>
     </parent>
 
     <!--    <groupId>org.scijava</groupId>-->
@@ -66,6 +65,7 @@
         <dependency>
             <groupId>io.scif</groupId>
             <artifactId>scifio</artifactId>
+            <version>0.37.3</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
