@@ -90,6 +90,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
      * @param compressStream Stream to which compressed data will be written.
      * @throws ImageCompressionException When compress process fails.
      */
+    @Override
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
         final InputData inputDataInfo = options.getInputDataInfo();
         Stopwatch stopwatch = new Stopwatch();

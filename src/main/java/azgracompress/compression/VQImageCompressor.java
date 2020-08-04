@@ -98,6 +98,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @param compressStream Stream to which compressed data will be written.
      * @throws ImageCompressionException When compress process fails.
      */
+    @Override
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
         if (options.getQuantizationType() == QuantizationType.Vector3D) {
             return compressVoxels(compressStream);
@@ -196,52 +197,66 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     private int[][] loadConfiguredPlanesData() throws ImageCompressionException {
-        final int vectorSize = options.getQuantizationVector().getX() * options.getQuantizationVector().getY();
-        final InputData inputDataInfo = options.getInputDataInfo();
+
         final IPlaneLoader planeLoader;
         try {
-            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputDataInfo);
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
         } catch (Exception e) {
-            throw new ImageCompressionException("Unable to create SCIFIO reader. " + e.getMessage());
+            throw new ImageCompressionException("Unable to create reader. " + e.getMessage());
         }
-        int[][] trainData;
-        Stopwatch s = new Stopwatch();
-        s.start();
-        if (inputDataInfo.isPlaneIndexSet()) {
-            reportStatusToListeners("VQ: Loading single plane data.");
-            try {
-                trainData = loadPlaneQuantizationVectors(planeLoader, inputDataInfo.getPlaneIndex());
-            } catch (IOException e) {
-                throw new ImageCompressionException("Failed to load plane data.", e);
-            }
-        } else {
-            reportStatusToListeners(inputDataInfo.isPlaneRangeSet() ? "VQ: Loading plane range data." : "VQ: Loading all planes data.");
-            final int[] planeIndices = getPlaneIndicesForCompression();
+        if (options.getQuantizationType().isOneOf(QuantizationType.Vector1D, QuantizationType.Vector2D)) {
+            // TODO: Chunk2D operations should eventually be moved to loaders.
+            //  Same as voxel loading, so that we wouldn't have to copy data twice.
+            final int vectorSize = options.getQuantizationVector().toV2i().multiplyTogether();
 
-            final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCount(inputDataInfo.getDimensions().toV2i(),
-                                                                               options.getQuantizationVector().toV2i());
-            final int totalChunkCount = chunkCountPerPlane * planeIndices.length;
-
-            trainData = new int[totalChunkCount][vectorSize];
-
-            int[][] planeVectors;
-            int planeCounter = 0;
-            for (final int planeIndex : planeIndices) {
+            int[][] trainData;
+            Stopwatch s = Stopwatch.startNew();
+            if (options.getInputDataInfo().isPlaneIndexSet()) {
+                reportStatusToListeners("VQ: Loading single plane data.");
                 try {
-                    planeVectors = loadPlaneQuantizationVectors(planeLoader, planeIndex);
-                    assert (planeVectors.length == chunkCountPerPlane) : "Wrong chunk count per plane";
+                    trainData = loadPlaneQuantizationVectors(planeLoader, options.getInputDataInfo().getPlaneIndex());
                 } catch (IOException e) {
-                    throw new ImageCompressionException(String.format("Failed to load plane %d image data.",
-                                                                      planeIndex), e);
+                    throw new ImageCompressionException("Failed to load plane data.", e);
                 }
+            } else {
+                reportStatusToListeners(options.getInputDataInfo().isPlaneRangeSet() ?
+                                                "VQ: Loading plane range data." : "VQ: Loading all planes data.");
 
-                System.arraycopy(planeVectors, 0, trainData, (planeCounter * chunkCountPerPlane), chunkCountPerPlane);
-                ++planeCounter;
+                final int[] planeIndices = getPlaneIndicesForCompression();
+                final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCount(options.getInputDataInfo().getDimensions().toV2i(),
+                                                                                   options.getQuantizationVector().toV2i());
+                final int totalChunkCount = chunkCountPerPlane * planeIndices.length;
+                trainData = new int[totalChunkCount][vectorSize];
+
+                int[][] planeVectors;
+                int planeCounter = 0;
+                for (final int planeIndex : planeIndices) {
+                    try {
+                        planeVectors = loadPlaneQuantizationVectors(planeLoader, planeIndex);
+                        assert (planeVectors.length == chunkCountPerPlane) : "Wrong chunk count per plane";
+                    } catch (IOException e) {
+                        throw new ImageCompressionException(String.format("Failed to load plane %d image data.", planeIndex), e);
+                    }
+
+                    System.arraycopy(planeVectors, 0, trainData, (planeCounter * chunkCountPerPlane), chunkCountPerPlane);
+                    ++planeCounter;
+                }
+            }
+            s.stop();
+            reportStatusToListeners("Quantization vector load took: " + s.getElapsedTimeString());
+            return trainData;
+        } else {
+            if (options.getQuantizationType() != QuantizationType.Vector3D) {
+                throw new ImageCompressionException("Invalid QuantizationType, expected: `QuantizationType.Vector3D`, but got: " +
+                                                            options.getQuantizationType().toString());
+            }
+
+            try {
+                return planeLoader.loadVoxels(options.getQuantizationVector());
+            } catch (IOException e) {
+                throw new ImageCompressionException("Unable to load voxels.", e);
             }
         }
-        s.stop();
-        reportStatusToListeners("Quantization vector load took: " + s.getElapsedTimeString());
-        return trainData;
     }
 
     @Override
@@ -252,6 +267,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                                                                   getCodebookSize(),
                                                                   options.getWorkerCount(),
                                                                   options.getQuantizationVector());
+
         reportStatusToListeners("Starting LBG optimization.");
         vqInitializer.setStatusListener(this::reportStatusToListeners);
         LBGResult lbgResult = vqInitializer.findOptimalCodebook();

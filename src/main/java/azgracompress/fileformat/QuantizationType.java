@@ -29,4 +29,13 @@ public enum QuantizationType {
         else
             return Invalid;
     }
+
+    public boolean isOneOf(final QuantizationType... types) {
+        for (final QuantizationType type : types) {
+            if (type == this) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
