@@ -36,7 +36,7 @@ public class QuantizationCacheManager {
     private File getCacheFilePathForSQ(final String trainFile, final int codebookSize) {
         final File inputFile = new File(trainFile);
         return new File(cacheFolder, String.format("%s_%d_bits.qvc",
-                inputFile.getName(), codebookSize));
+                                                   inputFile.getName(), codebookSize));
     }
 
     /**
@@ -51,8 +51,8 @@ public class QuantizationCacheManager {
                                        final int codebookSize,
                                        final V3i vDim) {
         final File inputFile = new File(trainFile);
-        return new File(cacheFolder, String.format("%s_%d_%dx%d.qvc", inputFile.getName(), codebookSize,
-                vDim.getX(), vDim.getY()));
+        return new File(cacheFolder, String.format("%s_%d_%dx%dx%d.qvc", inputFile.getName(), codebookSize,
+                                                   vDim.getX(), vDim.getY(), vDim.getZ()));
     }
 
 
@@ -140,8 +140,8 @@ public class QuantizationCacheManager {
      */
     public void saveCodebook(final String trainFile, final VQCodebook codebook) throws IOException {
         final String fileName = getCacheFilePathForVQ(trainFile,
-                codebook.getCodebookSize(),
-                codebook.getVectorDims()).getAbsolutePath();
+                                                      codebook.getCodebookSize(),
+                                                      codebook.getVectorDims()).getAbsolutePath();
 
         final CacheFileHeader header = createHeaderForVQ(new File(trainFile).getName(), codebook);
         final VQCacheFile cacheFile = new VQCacheFile(header, codebook);
