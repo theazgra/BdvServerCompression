@@ -1,6 +1,6 @@
 package azgracompress.data;
 
-public class V3i {
+public final class V3i {
     private final int x;
     private final int y;
     private final int z;
@@ -19,15 +19,15 @@ public class V3i {
         this(universalValue, universalValue, universalValue);
     }
 
-    public int getX() {
+    public final int getX() {
         return x;
     }
 
-    public int getY() {
+    public final int getY() {
         return y;
     }
 
-    public int getZ() {
+    public final int getZ() {
         return z;
     }
 
@@ -55,20 +55,16 @@ public class V3i {
 
     }
 
-    public V3l toV3l() {
-        return new V3l(x, y, z);
-    }
-
     /**
      * Convert this vector to V2i by dropping the Z value.
      *
      * @return V2i vector with X and Y values.
      */
-    public V2i toV2i() {
+    public final V2i toV2i() {
         return new V2i(x, y);
     }
 
-    public long multiplyTogether() {
+    public final long multiplyTogether() {
         return ((long) x * (long) y * (long) z);
     }
 }

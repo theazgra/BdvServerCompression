@@ -1,6 +1,6 @@
 package azgracompress.data;
 
-public class V2i {
+public final class V2i {
     private final int x;
     private final int y;
 
@@ -13,18 +13,20 @@ public class V2i {
         this(universalValue, universalValue);
     }
 
-    public int getX() { return x; }
+    public final int getX() {
+        return x;
+    }
 
-    public int getY() {
+    public final int getY() {
         return y;
     }
 
 
-    public V2i add(final V2i other) {
+    public final V2i add(final V2i other) {
         return new V2i(x + other.x, y + other.y);
     }
 
-    public V2i sub(final V2i other) {
+    public final V2i sub(final V2i other) {
         return new V2i(x - other.x, y - other.y);
     }
 
@@ -44,11 +46,7 @@ public class V2i {
 
     }
 
-    public V2l toV2l() {
-        return new V2l(x, y);
-    }
-
-    public V3i toV3i() {
+    public final V3i toV3i() {
         return new V3i(x, y, 1);
     }
 }
