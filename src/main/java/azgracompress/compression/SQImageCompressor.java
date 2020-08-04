@@ -2,10 +2,9 @@ package azgracompress.compression;
 
 import azgracompress.U16;
 import azgracompress.cache.QuantizationCacheManager;
-import azgracompress.io.InputData;
 import azgracompress.compression.exception.ImageCompressionException;
-import azgracompress.data.ImageU16;
 import azgracompress.huffman.Huffman;
+import azgracompress.io.InputData;
 import azgracompress.io.loader.IPlaneLoader;
 import azgracompress.io.loader.PlaneLoaderFactory;
 import azgracompress.quantization.scalar.LloydMaxU16ScalarQuantization;
@@ -116,17 +115,16 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             writeCodebookToOutputStream(quantizer, compressStream);
         } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
             stopwatch.restart();
-            ImageU16 middlePlane = null;
+            int[] middlePlaneData;
             final int middlePlaneIndex = getMiddlePlaneIndex();
             try {
-
-                middlePlane = planeLoader.loadPlaneU16(middlePlaneIndex);
+                middlePlaneData = planeLoader.loadPlaneData(middlePlaneIndex);
             } catch (IOException ex) {
                 throw new ImageCompressionException("Unable to load middle plane data.", ex);
             }
 
             reportStatusToListeners(String.format("Training scalar quantizer from middle plane %d.", middlePlaneIndex));
-            quantizer = trainScalarQuantizerFromData(middlePlane.getData());
+            quantizer = trainScalarQuantizerFromData(middlePlaneData);
             huffman = createHuffmanCoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
 
             stopwatch.stop();
@@ -140,18 +138,16 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         for (final int planeIndex : planeIndices) {
             stopwatch.restart();
 
-            ImageU16 plane = null;
-
+            int[] planeData;
             try {
-
-                plane = planeLoader.loadPlaneU16(planeIndex);
+                planeData = planeLoader.loadPlaneData(planeIndex);
             } catch (IOException ex) {
                 throw new ImageCompressionException("Unable to load plane data.", ex);
             }
 
             if (!hasGeneralQuantizer) {
                 reportStatusToListeners(String.format("Training scalar quantizer from plane %d.", planeIndex));
-                quantizer = trainScalarQuantizerFromData(plane.getData());
+                quantizer = trainScalarQuantizerFromData(planeData);
                 writeCodebookToOutputStream(quantizer, compressStream);
 
                 huffman = new Huffman(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
@@ -161,7 +157,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             assert (quantizer != null) : "Scalar Quantizer wasn't initialized.";
             assert (huffman != null) : "Huffman wasn't initialized.";
 
-            final int[] indices = quantizer.quantizeIntoIndices(plane.getData(), 1);
+            final int[] indices = quantizer.quantizeIntoIndices(planeData, 1);
 
             planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
 
@@ -185,7 +181,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         if (inputDataInfo.isPlaneIndexSet()) {
             try {
                 reportStatusToListeners("Loading single plane data.");
-                trainData = planeLoader.loadPlaneU16(inputDataInfo.getPlaneIndex()).getData();
+                trainData = planeLoader.loadPlaneData(inputDataInfo.getPlaneIndex());
             } catch (IOException e) {
                 throw new ImageCompressionException("Failed to load plane data.", e);
             }

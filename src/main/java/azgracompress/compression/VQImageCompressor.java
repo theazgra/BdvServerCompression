@@ -1,7 +1,6 @@
 package azgracompress.compression;
 
 import azgracompress.cache.QuantizationCacheManager;
-import azgracompress.data.Chunk3D;
 import azgracompress.fileformat.QuantizationType;
 import azgracompress.io.InputData;
 import azgracompress.compression.exception.ImageCompressionException;
@@ -130,8 +129,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             final int middlePlaneIndex = getMiddlePlaneIndex();
             ImageU16 middlePlane = null;
             try {
-
-                middlePlane = planeLoader.loadPlaneU16(middlePlaneIndex);
+                middlePlane = new ImageU16(options.getInputDataInfo().getDimensions().toV2i(), planeLoader.loadPlaneData(middlePlaneIndex));
             } catch (IOException ex) {
                 throw new ImageCompressionException("Unable to load reference plane data.", ex);
             }
@@ -155,7 +153,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             ImageU16 plane = null;
             try {
-                plane = planeLoader.loadPlaneU16(planeIndex);
+                plane = new ImageU16(options.getInputDataInfo().getDimensions().toV2i(), planeLoader.loadPlaneData(planeIndex));
             } catch (IOException ex) {
                 throw new ImageCompressionException("Unable to load plane data.", ex);
             }
@@ -193,7 +191,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
     private int[][] loadPlaneQuantizationVectors(final IPlaneLoader planeLoader,
                                                  final int planeIndex) throws IOException {
-        ImageU16 refPlane = planeLoader.loadPlaneU16(planeIndex);
+        ImageU16 refPlane = new ImageU16(options.getInputDataInfo().getDimensions().toV2i(), planeLoader.loadPlaneData(planeIndex));
         return refPlane.toQuantizationVectors(options.getQuantizationVector().toV2i());
     }
 
@@ -272,15 +270,15 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
 
     public long[] compressVoxels(DataOutputStream compressStream) throws ImageCompressionException {
-        int[][] voxels;
-        try {
-            IPlaneLoader loader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
-            final int[] data = loader.loadAllPlanesU16Data();
-            Chunk3D bigVoxel = new Chunk3D(options.getInputDataInfo().getDimensions(), data);
-            voxels = bigVoxel.divideInto3DVectors(options.getQuantizationVector());
-        } catch (Exception e) {
-            throw new ImageCompressionException("Unable to create data loader or load image data.", e);
-        }
+        //        int[][] voxels;
+        //        try {
+        //            IPlaneLoader loader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
+        //            final int[] data = loader.loadAllPlanesU16Data();
+        //            Chunk3D bigVoxel = new Chunk3D(options.getInputDataInfo().getDimensions(), data);
+        //            voxels = bigVoxel.divideInto3DVectors(options.getQuantizationVector());
+        //        } catch (Exception e) {
+        //            throw new ImageCompressionException("Unable to create data loader or load image data.", e);
+        //        }
         return null;
 
     }

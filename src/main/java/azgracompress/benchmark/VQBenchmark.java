@@ -82,7 +82,8 @@ public class VQBenchmark extends BenchmarkBase {
             final int middlePlaneIndex = rawImageDims.getZ() / 2;
             final ImageU16 middlePlane;
             try {
-                middlePlane = planeLoader.loadPlaneU16(middlePlaneIndex);
+
+                middlePlane = new ImageU16(options.getInputDataInfo().getDimensions().toV2i(), planeLoader.loadPlaneData(middlePlaneIndex));
             } catch (IOException e) {
                 e.printStackTrace();
                 System.err.println("Failed to load middle plane data.");
@@ -91,9 +92,9 @@ public class VQBenchmark extends BenchmarkBase {
 
             final int[][] refPlaneData = getPlaneVectors(middlePlane, qVector);
             LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData,
-                    codebookSize,
-                    workerCount,
-                    qVector.toV3i());
+                                                                      codebookSize,
+                                                                      workerCount,
+                                                                      qVector.toV3i());
             final LBGResult vqResult = vqInitializer.findOptimalCodebook();
             quantizer = new VectorQuantizer(vqResult.getCodebook());
             System.out.println("Created quantizer from middle plane.");
@@ -104,7 +105,7 @@ public class VQBenchmark extends BenchmarkBase {
 
             final ImageU16 plane;
             try {
-                plane = planeLoader.loadPlaneU16(planeIndex);
+                plane = new ImageU16(options.getInputDataInfo().getDimensions().toV2i(), planeLoader.loadPlaneData(planeIndex));
             } catch (IOException e) {
                 e.printStackTrace();
                 System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
@@ -116,9 +117,9 @@ public class VQBenchmark extends BenchmarkBase {
 
             if (options.getCodebookType() == CompressionOptions.CodebookType.Individual) {
                 LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData,
-                        codebookSize,
-                        workerCount,
-                        qVector.toV3i());
+                                                                          codebookSize,
+                                                                          workerCount,
+                                                                          qVector.toV3i());
                 LBGResult vqResult = vqInitializer.findOptimalCodebook();
                 quantizer = new VectorQuantizer(vqResult.getCodebook());
                 System.out.println("Created plane quantizer.");
@@ -127,8 +128,8 @@ public class VQBenchmark extends BenchmarkBase {
             final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
             final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
             final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
-                    planeIndex,
-                    codebookSize);
+                                                          planeIndex,
+                                                          codebookSize);
 
             final int[][] quantizedData = quantizer.quantize(planeData, workerCount);
 

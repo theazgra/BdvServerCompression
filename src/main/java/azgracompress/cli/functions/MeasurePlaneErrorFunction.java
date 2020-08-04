@@ -1,11 +1,9 @@
 package azgracompress.cli.functions;
 
 import azgracompress.cli.CustomFunctionBase;
-import azgracompress.io.FileInputData;
-import azgracompress.io.InputData;
 import azgracompress.cli.ParsedCliOptions;
-import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
+import azgracompress.io.FileInputData;
 import azgracompress.io.loader.RawDataLoader;
 import azgracompress.utilities.Utils;
 
@@ -58,7 +56,7 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
                                                 final String folder) {
         System.out.println(
                 String.format("runPlaneDifferenceForAllBits\n\tChannel: %d\n\tMethod: %s\n\tType: %s",
-                        channel, type, folder));
+                              channel, type, folder));
         //        final int channel = 0;
         assert (channel == 0 || channel == 1);
         final String comp_file = channel == 0 ? COMP_FILE_ch0 : COMP_FILE_ch1;
@@ -131,7 +129,7 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
         FileInputData compFileInfo = new FileInputData(compressedFile);
         compFileInfo.setDimension(dims);
 
-        final RawDataLoader refPlaneloader = new RawDataLoader( refFileInfo);
+        final RawDataLoader refPlaneloader = new RawDataLoader(refFileInfo);
         final RawDataLoader compPlaneloader = new RawDataLoader(compFileInfo);
 
         Thread[] workers = new Thread[workerCount];
@@ -143,18 +141,19 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
 
             workers[wId] = new Thread(() -> {
 
-                ImageU16 originalPlane, compressedPlane, differencePlane;
+
+                int[] originalPlaneData, compressedPlaneData;
                 for (int planeIndex = fromIndex; planeIndex < toIndex; planeIndex++) {
                     try {
-                        originalPlane = refPlaneloader.loadPlaneU16(planeIndex);
-                        compressedPlane = compPlaneloader.loadPlaneU16(planeIndex);
+                        originalPlaneData = refPlaneloader.loadPlaneData(planeIndex);
+                        compressedPlaneData = compPlaneloader.loadPlaneData(planeIndex);
                     } catch (IOException e) {
                         e.printStackTrace();
                         break;
                     }
 
 
-                    final int[] diffData = Utils.getDifference(originalPlane.getData(), compressedPlane.getData());
+                    final int[] diffData = Utils.getDifference(originalPlaneData, compressedPlaneData);
                     Utils.applyAbsFunction(diffData);
 
                     final double absDiffSum = Arrays.stream(diffData).mapToDouble(v -> v).sum();
@@ -181,9 +180,9 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
 
             for (final PlaneError planeError : planeErrors) {
                 writer.write(String.format("%d\t%.4f\t%.4f\n",
-                        planeError.getPlaneIndex(),
-                        planeError.getAbsoluteError(),
-                        planeError.getMeanAbsoluteError()));
+                                           planeError.getPlaneIndex(),
+                                           planeError.getAbsoluteError(),
+                                           planeError.getMeanAbsoluteError()));
             }
 
         } catch (IOException e) {
