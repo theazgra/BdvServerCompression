@@ -22,13 +22,8 @@ public class TypeConverter {
 
     public static int[] shortArrayToIntArray(final short[] src) {
         int[] result = new int[src.length];
-        int intValue;
         for (int i = 0; i < src.length; i++) {
-            intValue = shortToInt(src[i]);
-            if (intValue < U16.Min || intValue > U16.Max) {
-                throw new RuntimeException("Source value is outside of bounds for 16-bit unsigned integer.");
-            }
-            result[i] = intValue;
+            result[i] = shortToInt(src[i]);
         }
         return result;
     }
