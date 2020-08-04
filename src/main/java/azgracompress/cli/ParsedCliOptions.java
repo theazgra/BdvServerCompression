@@ -370,9 +370,6 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
                 final String vectorDefinition = cmd.getOptionValue(CliConstants.VECTOR_QUANTIZATION_LONG);
 
                 final Optional<V3i> maybe3DVectorSize = ParseUtils.tryParseV3i(vectorDefinition, 'x');
-                final Optional<V2i> maybe2DVectorSize = ParseUtils.tryParseV2i(vectorDefinition, 'x');
-                final Optional<Integer> maybe1DVectorSize = ParseUtils.tryParseInt(vectorDefinition);
-
                 if (maybe3DVectorSize.isPresent()) {
                     // Process 3D box dims.
                     setQuantizationType(QuantizationType.Vector1D);
@@ -382,9 +379,11 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
                             setQuantizationType(QuantizationType.Vector3D);
                         }
                     }
-
                     setQuantizationVector(maybe3DVectorSize.map(v3 -> new V3i(v3.getX(), v3.getY(), v3.getZ())).get());
-                } else if (maybe2DVectorSize.isPresent()) {
+                    return;
+                }
+                final Optional<V2i> maybe2DVectorSize = ParseUtils.tryParseV2i(vectorDefinition, 'x');
+                if (maybe2DVectorSize.isPresent()) {
                     // Process 2D matrix dims.
                     setQuantizationType(QuantizationType.Vector1D);
                     if (maybe2DVectorSize.get().getY() > 1) {
@@ -392,7 +391,11 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
                     }
 
                     setQuantizationVector(maybe2DVectorSize.map(v2 -> new V3i(v2.getX(), v2.getY(), 1)).get());
-                } else if (maybe1DVectorSize.isPresent()) {
+                    return;
+                }
+
+                final Optional<Integer> maybe1DVectorSize = ParseUtils.tryParseInt(vectorDefinition);
+                if (maybe1DVectorSize.isPresent()) {
                     // Process 1D row dims.
                     setQuantizationType(QuantizationType.Vector1D);
                     setQuantizationVector(maybe1DVectorSize.map(xDim -> new V3i(xDim, 1, 1)).get());
