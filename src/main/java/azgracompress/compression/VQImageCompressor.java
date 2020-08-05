@@ -261,6 +261,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
     @Override
     public void trainAndSaveCodebook() throws ImageCompressionException {
+        reportStatusToListeners("Loading image data...");
         final int[][] trainingData = loadConfiguredPlanesData();
 
         LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData,
