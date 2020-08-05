@@ -29,9 +29,8 @@ public abstract class BasicLoader {
      *
      * @param voxelDim Single voxel dimensions.
      * @return Voxel data arranged in arrays.
-     * @throws IOException When fails to load plane data.
      */
-    protected int[][] loadVoxelsImplByLoadPlaneData(final V3i voxelDim) throws IOException {
+    protected int[][] loadVoxelsImplByLoadPlaneData(final V3i voxelDim) {
         final Voxel voxel = new Voxel(voxelDim);
         final int xVoxelCount = (int) Math.ceil((double) dims.getX() / (double) voxelDim.getX());
         final int yVoxelCount = (int) Math.ceil((double) dims.getY() / (double) voxelDim.getY());
@@ -39,59 +38,42 @@ public abstract class BasicLoader {
 
         int[][] voxels = new int[Voxel.calculateRequiredVoxelCount(dims, voxelDim)][(int) voxelDim.multiplyTogether()];
 
-        final int workerCount = 4;
-        final int workSize = dims.getZ() / workerCount;
-        Thread[] workers = new Thread[workerCount];
-
         final int dimX = dims.getX();
         final int dimY = dims.getY();
+        final int dimZ = dims.getZ();
         final int voxelDimX = voxelDim.getX();
         final int voxelDimY = voxelDim.getY();
         final int voxelDimZ = voxelDim.getZ();
 
-        for (int wId = 0; wId < workerCount; wId++) {
-            final int fromZ = wId * workSize;
-            final int toZ = (wId == workerCount - 1) ? dims.getZ() : (workSize + (wId * workSize));
-            System.out.printf("%d-%d\n", fromZ, toZ);
-            workers[wId] = new Thread(() -> {
-                int dstZ, dstY, dstX, voxelX, voxelY, voxelZ, voxelIndex;
-                int[] planeData;
+        int dstZ, dstY, dstX, voxelX, voxelY, voxelZ, voxelIndex;
+        int[] planeData;
 
 
-                for (int srcZ = fromZ; srcZ < toZ; srcZ++) {
-                    try {
-                        planeData = loadPlaneData(srcZ);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        break;
-                    }
-                    dstZ = srcZ / voxelDimZ;
-                    voxelZ = srcZ - (dstZ * voxelDimZ);
-
-
-                    for (int srcY = 0; srcY < dimY; srcY++) {
-                        dstY = srcY / voxelDimY;
-                        voxelY = srcY - (dstY * voxelDimY);
-
-                        for (int srcX = 0; srcX < dimX; srcX++) {
-                            dstX = srcX / voxelDimX;
-                            voxelX = srcX - (dstX * voxelDimX);
-                            voxelIndex = (dstZ * (xVoxelCount * yVoxelCount)) + (dstY * xVoxelCount) + dstX;
-
-                            voxels[voxelIndex][voxel.dataIndex(voxelX, voxelY, voxelZ, voxelDim)] = planeData[(srcY * dimX) + srcX];
-                        }
-                    }
-                }
-            });
-            workers[wId].start();
-        }
-        try {
-            for (int wId = 0; wId < workerCount; wId++) {
-                workers[wId].join();
+        for (int srcZ = 0; srcZ < dimZ; srcZ++) {
+            try {
+                planeData = loadPlaneData(srcZ);
+            } catch (IOException e) {
+                e.printStackTrace();
+                break;
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            dstZ = srcZ / voxelDimZ;
+            voxelZ = srcZ - (dstZ * voxelDimZ);
+
+
+            for (int srcY = 0; srcY < dimY; srcY++) {
+                dstY = srcY / voxelDimY;
+                voxelY = srcY - (dstY * voxelDimY);
+
+                for (int srcX = 0; srcX < dimX; srcX++) {
+                    dstX = srcX / voxelDimX;
+                    voxelX = srcX - (dstX * voxelDimX);
+                    voxelIndex = (dstZ * (xVoxelCount * yVoxelCount)) + (dstY * xVoxelCount) + dstX;
+
+                    voxels[voxelIndex][voxel.dataIndex(voxelX, voxelY, voxelZ, voxelDim)] = planeData[(srcY * dimX) + srcX];
+                }
+            }
         }
+
         return voxels;
     }
 
@@ -125,7 +107,7 @@ public abstract class BasicLoader {
         for (int wId = 0; wId < workerCount; wId++) {
             final int fromZ = wId * workSize;
             final int toZ = (wId == workerCount - 1) ? dims.getZ() : (workSize + (wId * workSize));
-//            System.out.printf("%d-%d\n", fromZ, toZ);
+            //            System.out.printf("%d-%d\n", fromZ, toZ);
             workers[wId] = new Thread(() -> {
                 int dstZ, dstY, dstX, voxelX, voxelY, voxelZ, voxelIndex;
 
