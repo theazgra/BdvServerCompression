@@ -42,8 +42,7 @@ public class CodebookEntry {
         return vector;
     }
 
-    public String getVectorString() {
-        StringBuilder sb = new StringBuilder();
+    public String getVectorString(StringBuilder sb) {
         for (int i = 0; i < vector.length; i++) {
             sb.append(vector[i]);
             if (i != (vector.length - 1))
@@ -51,5 +50,9 @@ public class CodebookEntry {
         }
         sb.append('\n');
         return sb.toString();
+    }
+
+    public String getVectorString() {
+        return getVectorString(new StringBuilder());
     }
 }
