@@ -25,11 +25,12 @@ public abstract class CompressorDecompressorBase {
         this.options = options;
         this.codebookSize = (int) Math.pow(2, this.options.getBitsPerCodebookIndex());
         // Default status listener, which can be override by setStatusListener.
-        addStatusListener(this::defaultLog);
+
+        if (options.isVerbose())
+            addStatusListener(this::defaultLog);
     }
 
     public void addStatusListener(final IStatusListener listener) {
-
         if (statusListeners == null) {
             statusListeners = new ArrayList<>(1);
         }
@@ -97,20 +98,6 @@ public abstract class CompressorDecompressorBase {
     protected Huffman createHuffmanCoder(final int[] symbols, final long[] frequencies) {
         Huffman huffman = new Huffman(symbols, frequencies);
         huffman.buildHuffmanTree();
-
-//        if (options.isVerbose()) {
-//            StringBuilder sb = new StringBuilder();
-//            sb.append("Huffman symbols and their probabilities:\n");
-//
-//            Iterator<Map.Entry<Integer, Double>> it = huffman.getSymbolProbabilityMap().entrySet().iterator();
-//            while (it.hasNext()) {
-//                final Map.Entry<Integer, Double> pair = (Map.Entry<Integer, Double>) it.next();
-//
-//                sb.append(String.format("%d: %.10f\n", pair.getKey(), pair.getValue()));
-//            }
-//            System.out.println(sb.toString());
-//        }
-
         return huffman;
     }
 
