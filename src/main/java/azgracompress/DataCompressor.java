@@ -12,7 +12,6 @@ import azgracompress.fileformat.FileExtensions;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
-import java.util.Optional;
 
 public class DataCompressor {
     public static void main(String[] args) {
@@ -93,7 +92,8 @@ public class DataCompressor {
             break;
             case InspectFile: {
                 if (parsedCliOptions.getInputDataInfo().getFilePath().endsWith(FileExtensions.CACHE_FILE_EXT)) {
-                    QuantizationCacheManager.inspectCacheFile(parsedCliOptions.getInputDataInfo().getFilePath());
+                    QuantizationCacheManager.inspectCacheFile(parsedCliOptions.getInputDataInfo().getFilePath(),
+                                                              parsedCliOptions.isVerbose());
                 } else {
                     ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
                     try {
