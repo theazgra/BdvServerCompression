@@ -1,5 +1,6 @@
 package azgracompress.cache;
 
+import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
 
@@ -168,7 +169,10 @@ public class CacheFileHeader {
                 sb.append(String.format("Vector1D [%sx1]\n", vectorSizeX));
                 break;
             case Vector2D:
-                sb.append(String.format("Vector2D %s\n", new V3i(vectorSizeX, vectorSizeY, vectorSizeZ).toString()));
+                sb.append(String.format("Vector2D %s\n", new V2i(vectorSizeX, vectorSizeY).toString()));
+                break;
+            case Vector3D:
+                sb.append(String.format("Vector3D %s\n", new V3i(vectorSizeX, vectorSizeY, vectorSizeZ).toString()));
                 break;
         }
         sb.append("CodebookSize: ").append(codebookSize).append('\n');
