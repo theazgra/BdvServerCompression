@@ -268,12 +268,22 @@ public class QuantizationCacheManager {
 
     }
 
+    private static ICacheFile getCacheFile(final QuantizationType qt) {
+        if (qt.isOneOf(QuantizationType.Vector1D, QuantizationType.Vector2D, QuantizationType.Vector3D))
+            return new VQCacheFile();
+        else if (qt == QuantizationType.Scalar)
+            return new SQCacheFile();
+
+        assert (false) : "Invalid quantization type.";
+        return null;
+    }
+
     /**
      * Inspect cache file specified by the path.
      *
      * @param path Path to cache file.
      */
-    public static void inspectCacheFile(final String path) {
+    public static void inspectCacheFile(final String path, final boolean verbose) {
         CacheFileHeader header = null;
         long fileSize;
         try (FileInputStream fis = new FileInputStream(path);
@@ -288,14 +298,28 @@ public class QuantizationCacheManager {
         StringBuilder reportBuilder = new StringBuilder();
         final long expectedFileSize = header.getExpectedFileSize();
         if (expectedFileSize == fileSize) {
-            reportBuilder.append("\u001B[32mCache file is VALID. ").append(fileSize).append(" bytes\u001B[0m\n ");
+            reportBuilder.append("\u001B[32mCache file is VALID ").append(fileSize).append(" bytes\u001B[0m\n");
         } else {
             reportBuilder.append("\u001B[31mCache file is INVALID.\u001B[0m\n\t")
                     .append(fileSize).append(" bytes instead of expected ")
                     .append(expectedFileSize).append(" bytes.\n");
         }
-
         header.report(reportBuilder);
+
+        if (verbose) {
+
+            ICacheFile cacheFile = getCacheFile(header.getQuantizationType());
+            assert (cacheFile != null);
+
+            try (FileInputStream fis = new FileInputStream(path);
+                 DataInputStream dis = new DataInputStream(fis)) {
+                cacheFile.readFromStream(dis);
+            } catch (Exception e) {
+                reportBuilder.append(e.getMessage());
+            }
+
+            cacheFile.report(reportBuilder);
+        }
 
         System.out.println(reportBuilder);
     }

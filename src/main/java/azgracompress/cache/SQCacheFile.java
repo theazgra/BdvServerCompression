@@ -5,6 +5,8 @@ import azgracompress.quantization.scalar.SQCodebook;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class SQCacheFile implements ICacheFile {
     private CacheFileHeader header;
@@ -56,5 +58,18 @@ public class SQCacheFile implements ICacheFile {
 
     public SQCodebook getCodebook() {
         return codebook;
+    }
+
+    @Override
+    public void report(StringBuilder builder) {
+
+        final int[] centroids = codebook.getCentroids();
+        for (int i = 0; i < centroids.length; i++) {
+            if (i != centroids.length - 1) {
+                builder.append(centroids[i]).append(", ");
+            } else {
+                builder.append(centroids[i]).append('\n');
+            }
+        }
     }
 }

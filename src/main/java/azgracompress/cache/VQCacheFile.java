@@ -67,4 +67,13 @@ public class VQCacheFile implements ICacheFile {
     public VQCodebook getCodebook() {
         return codebook;
     }
+
+    @Override
+    public void report(StringBuilder builder) {
+        final CodebookEntry[] vectors = codebook.getVectors();
+        for (int i = 0; i < vectors.length; i++) {
+            builder.append("- - - - - - - - - - - - - - - - - - - - - - - - -\n");
+            vectors[i].getVectorString(builder);
+        }
+    }
 }

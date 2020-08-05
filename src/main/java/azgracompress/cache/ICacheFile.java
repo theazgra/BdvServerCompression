@@ -11,4 +11,6 @@ public interface ICacheFile {
     void readFromStream(DataInputStream inputStream) throws IOException;
 
     CacheFileHeader getHeader();
+
+    void report(StringBuilder builder);
 }
