@@ -31,6 +31,13 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
     }
 
     @Override
+    protected int valueAt(int plane, int offset) {
+        final short value = ((short[]) bufferInputData.getPixelBuffer(plane))[offset];
+        return TypeConverter.shortToInt(value);
+//        return ((value & 0xFF00) | (value & 0x00FF));
+    }
+
+    @Override
     public int[] loadPlanesU16Data(int[] planes) throws IOException {
         if (planes.length < 1) {
             return new int[0];
@@ -81,7 +88,7 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
 
     @Override
     public int[][] loadVoxels(final V3i voxelDim) throws IOException {
-        return loadVoxelsImplGray16(voxelDim);
+        return loadVoxelsImplByValueAt(voxelDim);
     }
 }
 
