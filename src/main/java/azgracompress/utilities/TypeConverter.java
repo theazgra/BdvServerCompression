@@ -23,6 +23,7 @@ public class TypeConverter {
     public static int[] shortArrayToIntArray(final short[] src) {
         int[] result = new int[src.length];
         for (int i = 0; i < src.length; i++) {
+            // Hopefully call to shortToInt gets inlined by JVM.
             result[i] = shortToInt(src[i]);
         }
         return result;
