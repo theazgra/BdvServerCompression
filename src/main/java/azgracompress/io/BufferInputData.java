@@ -40,8 +40,6 @@ public class BufferInputData extends InputData {
      * @return Pointer to array of corresponding plane pixel values.
      */
     public Object getPixelBuffer(final int planeIndex) {
-        assert (planeIndex >= 0);
-        assert (planeIndex < imageBuffers.length);
         return imageBuffers[planeIndex];
     }
 
