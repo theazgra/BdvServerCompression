@@ -35,7 +35,7 @@ public class Chunk2D {
      * @return Index inside data array.
      */
     private int index(final int x, final int y) {
-        return index(x, y, dims);
+        return index(x, y, dims.getX());
     }
 
     /**
@@ -46,10 +46,23 @@ public class Chunk2D {
      * @param chunkDims Chunk dimensions.
      * @return Index inside chunk dimension data array.
      */
-    private int index(final int x, final int y, final V2i chunkDims) {
-        assert (x >= 0 && x < chunkDims.getX()) : "Index X out of bounds.";
-        assert (y >= 0 && y < chunkDims.getY()) : "Index Y out of bounds.";
-        return (y * chunkDims.getX()) + x;
+    public static int index(final int x, final int y, final V2i chunkDims) {
+        // TODO(Moravec): Remove this overload, which remove the need to pass chunkDims.
+        return index(x, y, chunkDims.getX());
+    }
+
+    /**
+     * Calculate the index inside `2D` array
+     *
+     * @param x          Zero based x coordinate.
+     * @param y          Zero based y coordinate.
+     * @param chunkWidth Data width.
+     * @return Index inside chunk dimension data array.
+     */
+    public static int index(final int x, final int y, final int chunkWidth) {
+        //        assert (x >= 0 && x < chunkDims.getX()) : "Index X out of bounds.";
+        //        assert (y >= 0 && y < chunkDims.getY()) : "Index Y out of bounds.";
+        return (y * chunkWidth) + x;
     }
 
 
