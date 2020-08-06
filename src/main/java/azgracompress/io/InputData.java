@@ -1,6 +1,6 @@
 package azgracompress.io;
 
-import azgracompress.compression.Range;
+import azgracompress.data.Range;
 import azgracompress.data.V3i;
 
 /**

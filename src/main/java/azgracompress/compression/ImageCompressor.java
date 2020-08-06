@@ -1,6 +1,7 @@
 package azgracompress.compression;
 
 import azgracompress.compression.exception.ImageCompressionException;
+import azgracompress.data.Range;
 import azgracompress.fileformat.QCMPFileHeader;
 
 import java.io.*;

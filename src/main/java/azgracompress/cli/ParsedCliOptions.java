@@ -3,7 +3,7 @@ package azgracompress.cli;
 import azgracompress.ScifioWrapper;
 import azgracompress.compression.CompressionOptions;
 import azgracompress.compression.CompressorDecompressorBase;
-import azgracompress.compression.Range;
+import azgracompress.data.Range;
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.FileExtensions;
