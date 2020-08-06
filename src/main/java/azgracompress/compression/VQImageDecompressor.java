@@ -76,16 +76,13 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
     public long getExpectedDataSize(QCMPFileHeader header) {
         // Vector count in codebook
         final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
-        System.out.println("codebookSize=" + codebookSize);
 
         // Single vector size in bytes.
         final int vectorDataSize = 2 * header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
-        System.out.println("vectorDataSize=" + vectorDataSize);
 
         // Total codebook size in bytes.
         final long codebookDataSize = ((codebookSize * vectorDataSize) + (codebookSize * LONG_BYTES)) *
                 (header.isCodebookPerPlane() ? header.getImageSizeZ() : 1);
-        System.out.println("codebookDataSize=" + codebookDataSize);
 
         // Indices are encoded using huffman. Plane data size is written in the header.
         long[] planeDataSizes = header.getPlaneDataSizes();
@@ -93,9 +90,6 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         for (final long planeDataSize : planeDataSizes) {
             totalPlaneDataSize += planeDataSize;
         }
-        System.out.println("totalPlaneDataSize=" + totalPlaneDataSize);
-        System.out.println("TOTAL=" + (codebookDataSize + totalPlaneDataSize));
-
         return (codebookDataSize + totalPlaneDataSize);
     }
 
