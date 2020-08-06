@@ -1,8 +1,6 @@
 package azgracompress.compression;
 
 import azgracompress.compression.exception.ImageDecompressionException;
-import azgracompress.compression.listeners.IProgressListener;
-import azgracompress.compression.listeners.IStatusListener;
 import azgracompress.data.ImageU16Dataset;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.utilities.Stopwatch;
@@ -47,9 +45,9 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 break;
             case Vector1D:
             case Vector2D:
+            case Vector3D:
                 decompressor = new VQImageDecompressor(options);
                 break;
-            case Vector3D:
             case Invalid:
             default:
                 return null;
@@ -70,7 +68,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         StringBuilder logBuilder = new StringBuilder();
         boolean validFile = true;
 
-        QCMPFileHeader header = null;
+        QCMPFileHeader header;
         try (FileInputStream fileInputStream = new FileInputStream(options.getInputDataInfo().getFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
             header = readQCMPFileHeader(dataInputStream);
