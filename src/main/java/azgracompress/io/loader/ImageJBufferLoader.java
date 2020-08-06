@@ -88,14 +88,14 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim) {
+    public int[][] loadVoxels(final V3i voxelDim) throws IOException {
         return loadVoxels(voxelDim, new Range<>(0, bufferInputData.getDimensions().getZ()));
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) {
+    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
         // TODO(Moravec): Thread count, now 4, should be configurable.
-        return loadVoxelsImplByValueAt(voxelDim, planeRange, 4);
+        return loadVoxelsImplByValueAt(voxelDim, planeRange, 1);
     }
 }
 

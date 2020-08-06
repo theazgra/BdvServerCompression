@@ -123,12 +123,12 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim) {
+    public int[][] loadVoxels(final V3i voxelDim) throws IOException {
         return loadVoxels(voxelDim, new Range<>(0, inputDataInfo.getDimensions().getZ()));
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) {
+    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
         return loadVoxelsImplByLoadPlaneData(voxelDim, planeRange);
     }
 }
