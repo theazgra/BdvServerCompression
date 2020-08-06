@@ -1,6 +1,7 @@
 package azgracompress.io.loader;
 
 import azgracompress.ScifioWrapper;
+import azgracompress.data.Range;
 import azgracompress.data.V3i;
 import azgracompress.io.FileInputData;
 import azgracompress.utilities.TypeConverter;
@@ -111,9 +112,12 @@ public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim) throws IOException {
-        return loadVoxelsImplByLoadPlaneData(voxelDim);
+    public int[][] loadVoxels(final V3i voxelDim) {
+        return loadVoxels(voxelDim, new Range<>(0, inputDataInfo.getDimensions().getZ()));
     }
 
-
+    @Override
+    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) {
+        return loadVoxelsImplByLoadPlaneData(voxelDim, planeRange);
+    }
 }

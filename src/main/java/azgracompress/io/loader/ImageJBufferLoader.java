@@ -1,5 +1,6 @@
 package azgracompress.io.loader;
 
+import azgracompress.data.Range;
 import azgracompress.data.V3i;
 import azgracompress.io.BufferInputData;
 import azgracompress.io.InputData;
@@ -34,7 +35,7 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
     protected int valueAt(int plane, int offset) {
         final short value = ((short[]) bufferInputData.getPixelBuffer(plane))[offset];
         return TypeConverter.shortToInt(value);
-//        return ((value & 0xFF00) | (value & 0x00FF));
+        //        return ((value & 0xFF00) | (value & 0x00FF));
     }
 
     @Override
@@ -87,8 +88,14 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim) throws IOException {
-        return loadVoxelsImplByValueAt(voxelDim);
+    public int[][] loadVoxels(final V3i voxelDim) {
+        return loadVoxels(voxelDim, new Range<>(0, bufferInputData.getDimensions().getZ()));
+    }
+
+    @Override
+    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) {
+        // TODO(Moravec): Thread count, now 4, should be configurable.
+        return loadVoxelsImplByValueAt(voxelDim, planeRange, 4);
     }
 }
 

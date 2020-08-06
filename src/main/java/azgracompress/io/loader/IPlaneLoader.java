@@ -1,5 +1,6 @@
 package azgracompress.io.loader;
 
+import azgracompress.data.Range;
 import azgracompress.data.V3i;
 
 import java.io.IOException;
@@ -43,4 +44,15 @@ public interface IPlaneLoader {
      * @throws IOException when fails to load plane data.
      */
     int[][] loadVoxels(final V3i voxelDim) throws IOException;
+
+    /**
+     * Load voxels from specified plane range in the datasIet.
+     * Plane range should be divisible by `voxelDim.getZ()`
+     *
+     * @param voxelDim   Voxel dimensions.
+     * @param planeRange Source voxel dimensions.
+     * @return Voxel data from the entire dataset.
+     * @throws IOException when fails to load plane data.
+     */
+    int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException;
 }
