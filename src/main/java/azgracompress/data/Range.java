@@ -36,7 +36,7 @@ public final class Range<T extends Comparable<T>> {
      *
      * @return Inclusive end of the interval.
      */
-    public final T getInclusiveTo() {
+    public final T getTo() {
         return to;
     }
 }

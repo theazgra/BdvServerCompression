@@ -53,7 +53,7 @@ abstract class BenchmarkBase {
             this.planes = new int[]{ifi.getPlaneIndex()};
         } else if (ifi.isPlaneRangeSet()) {
             final int from = ifi.getPlaneRange().getFrom();
-            final int count = ifi.getPlaneRange().getInclusiveTo() - from;
+            final int count = ifi.getPlaneRange().getTo() - from;
 
             this.planes = new int[count + 1];
             for (int i = 0; i <= count; i++) {

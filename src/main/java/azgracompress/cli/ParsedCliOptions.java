@@ -518,7 +518,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
 
         if (getInputDataInfo().isPlaneRangeSet()) {
             sb.append("FromPlaneIndex: ").append(getInputDataInfo().getPlaneRange().getFrom()).append('\n');
-            sb.append("ToPlaneIndex: ").append(getInputDataInfo().getPlaneRange().getInclusiveTo()).append('\n');
+            sb.append("ToPlaneIndex: ").append(getInputDataInfo().getPlaneRange().getTo()).append('\n');
         }
 
         sb.append("Verbose: ").append(isVerbose()).append('\n');

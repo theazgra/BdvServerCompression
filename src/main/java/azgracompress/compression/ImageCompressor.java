@@ -128,7 +128,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
             return 1;
         } else if (options.getInputDataInfo().isPlaneRangeSet()) {
             final Range<Integer> planeRange = options.getInputDataInfo().getPlaneRange();
-            return ((planeRange.getInclusiveTo() + 1) - planeRange.getFrom());
+            return ((planeRange.getTo() + 1) - planeRange.getFrom());
         } else {
             return options.getInputDataInfo().getDimensions().getZ();
         }
