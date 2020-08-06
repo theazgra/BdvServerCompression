@@ -1,6 +1,7 @@
 package azgracompress.fileformat;
 
 import azgracompress.U16;
+import azgracompress.compression.VQImageCompressor;
 import azgracompress.data.V3i;
 
 import java.io.DataInputStream;
@@ -71,15 +72,17 @@ public class QCMPFileHeader {
         outputStream.writeShort(vectorSizeY);
         outputStream.writeShort(vectorSizeZ);
 
+        // NOTE(Moravec): Allocate space for plane/voxel layers data sizes. Offset: 23.
+        final int chunkCount = (quantizationType != QuantizationType.Vector3D)
+                ? imageSizeZ
+                : VQImageCompressor.calculateVoxelLayerCount(imageSizeZ, vectorSizeZ);
 
-        // NOTE(Moravec): Allocate space for plane data sizes. Offset: 23.
-        for (int i = 0; i < imageSizeZ; i++) {
+        for (int i = 0; i < chunkCount; i++) {
             outputStream.writeInt(0x0);
         }
     }
 
     public boolean readHeader(DataInputStream inputStream) throws IOException {
-
         if (inputStream.available() < BASE_QCMP_HEADER_SIZE) {
             return false;
         }
@@ -108,8 +111,13 @@ public class QCMPFileHeader {
         vectorSizeY = inputStream.readUnsignedShort();
         vectorSizeZ = inputStream.readUnsignedShort();
 
-        planeDataSizes = new long[imageSizeZ];
-        for (int i = 0; i < imageSizeZ; i++) {
+
+        final int chunkCount = (quantizationType != QuantizationType.Vector3D)
+                ? imageSizeZ
+                : VQImageCompressor.calculateVoxelLayerCount(imageSizeZ, vectorSizeZ);
+
+        planeDataSizes = new long[chunkCount];
+        for (int i = 0; i < chunkCount; i++) {
             final long readValue = inputStream.readInt();
             planeDataSizes[i] = (readValue & 0x00000000FFFFFFFFL);
         }
@@ -214,6 +222,10 @@ public class QCMPFileHeader {
     }
 
     public long getHeaderSize() {
-        return BASE_QCMP_HEADER_SIZE + (imageSizeZ * 4);
+        final int chunkCount = (quantizationType != QuantizationType.Vector3D)
+                ? imageSizeZ
+                : VQImageCompressor.calculateVoxelLayerCount(imageSizeZ, vectorSizeZ);
+
+        return BASE_QCMP_HEADER_SIZE + (chunkCount * 4);
     }
 }
