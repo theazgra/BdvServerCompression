@@ -39,4 +39,9 @@ public final class Range<T extends Comparable<T>> {
     public final T getTo() {
         return to;
     }
+
+    @Override
+    public String toString() {
+        return "Range: [" + from + " - " + to + "]";
+    }
 }
