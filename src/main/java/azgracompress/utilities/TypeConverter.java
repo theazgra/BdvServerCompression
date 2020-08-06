@@ -57,6 +57,22 @@ public class TypeConverter {
         return buffer;
     }
 
+    public static byte[] unsignedShortArrayToByteArray(final short[] data, final boolean littleEndian) {
+        byte[] buffer = new byte[data.length * 2];
+
+        int j = 0;
+        for (final short v : data) {
+            if (littleEndian) {
+                buffer[j++] = (byte) (v & 0xFF);
+                buffer[j++] = (byte) ((v >> 8) & 0xFF);
+            } else {
+                buffer[j++] = (byte) ((v >> 8) & 0xFF);
+                buffer[j++] = (byte) (v & 0xFF);
+            }
+        }
+        return buffer;
+    }
+
     public static byte[] intArrayToByteArray(final int[] data, final boolean littleEndian) {
         byte[] buffer = new byte[data.length * 4];
 
