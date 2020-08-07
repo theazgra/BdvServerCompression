@@ -338,7 +338,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             try {
                 voxelData = planeLoader.loadVoxels(options.getQuantizationVector(), voxelLayerRange);
-                System.out.println("voxelData.length=" + voxelData.length);
             } catch (IOException e) {
                 throw new ImageCompressionException("Unable to load voxels from voxel layer " + voxelLayerRange, e);
             }
