@@ -36,7 +36,7 @@ public class QuantizationCacheManager {
     private File getCacheFilePathForSQ(final String trainFile, final int codebookSize) {
         final File inputFile = new File(trainFile);
         return new File(cacheFolder, String.format("%s_%d_bits.qvc",
-                                                   inputFile.getName(), codebookSize));
+                inputFile.getName(), codebookSize));
     }
 
     /**
@@ -52,7 +52,7 @@ public class QuantizationCacheManager {
                                        final V3i vDim) {
         final File inputFile = new File(trainFile);
         return new File(cacheFolder, String.format("%s_%d_%dx%dx%d.qvc", inputFile.getName(), codebookSize,
-                                                   vDim.getX(), vDim.getY(), vDim.getZ()));
+                vDim.getX(), vDim.getY(), vDim.getZ()));
     }
 
 
@@ -114,9 +114,10 @@ public class QuantizationCacheManager {
      *
      * @param trainFile Image file used for training.
      * @param codebook  SQ codebook.
+     * @return Path to the saved cache file.
      * @throws IOException when fails to save the cache file.
      */
-    public void saveCodebook(final String trainFile, final SQCodebook codebook) throws IOException {
+    public String saveCodebook(final String trainFile, final SQCodebook codebook) throws IOException {
         final String fileName = getCacheFilePathForSQ(trainFile, codebook.getCodebookSize()).getAbsolutePath();
 
         final CacheFileHeader header = createHeaderForSQ(new File(trainFile).getName(), codebook);
@@ -129,6 +130,7 @@ public class QuantizationCacheManager {
         } catch (IOException ex) {
             throw new IOException("Failed to save SQ cache file\n" + ex.getMessage());
         }
+        return fileName;
     }
 
     /**
@@ -136,12 +138,13 @@ public class QuantizationCacheManager {
      *
      * @param trainFile Image file used for training.
      * @param codebook  VQ codebook.
+     * @return Path to the saved cache file.
      * @throws IOException when fails to save the cache file.
      */
-    public void saveCodebook(final String trainFile, final VQCodebook codebook) throws IOException {
+    public String saveCodebook(final String trainFile, final VQCodebook codebook) throws IOException {
         final String fileName = getCacheFilePathForVQ(trainFile,
-                                                      codebook.getCodebookSize(),
-                                                      codebook.getVectorDims()).getAbsolutePath();
+                codebook.getCodebookSize(),
+                codebook.getVectorDims()).getAbsolutePath();
 
         final CacheFileHeader header = createHeaderForVQ(new File(trainFile).getName(), codebook);
         final VQCacheFile cacheFile = new VQCacheFile(header, codebook);
@@ -153,6 +156,7 @@ public class QuantizationCacheManager {
         } catch (IOException ex) {
             throw new IOException("Failed to save VQ cache file\n" + ex.getMessage());
         }
+        return fileName;
     }
 
     /**

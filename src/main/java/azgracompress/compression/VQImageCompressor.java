@@ -32,9 +32,9 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     private VectorQuantizer trainVectorQuantizerFromPlaneVectors(final int[][] planeVectors) {
 
         LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeVectors,
-                                                                  getCodebookSize(),
-                                                                  options.getWorkerCount(),
-                                                                  options.getQuantizationVector());
+                getCodebookSize(),
+                options.getWorkerCount(),
+                options.getQuantizationVector());
         LBGResult vqResult = vqInitializer.findOptimalCodebook();
         return new VectorQuantizer(vqResult.getCodebook());
     }
@@ -79,14 +79,14 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
         if (!cacheManager.doesVQCacheExists(options.getInputDataInfo().getCacheFileName(),
-                                            getCodebookSize(),
-                                            options.getQuantizationVector())) {
+                getCodebookSize(),
+                options.getQuantizationVector())) {
             trainAndSaveCodebook();
         }
 
         final VQCodebook codebook = cacheManager.loadVQCodebook(options.getInputDataInfo().getCacheFileName(),
-                                                                getCodebookSize(),
-                                                                options.getQuantizationVector());
+                getCodebookSize(),
+                options.getQuantizationVector());
 
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization vectors from cache.");
@@ -182,7 +182,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             stopwatch.stop();
             reportProgressToListeners(planeIndex, planeIndices.length,
-                                      "Finished compression of plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
+                    "Finished compression of plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
         }
         return planeDataSizes;
     }
@@ -226,11 +226,11 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 }
             } else {
                 reportStatusToListeners(options.getInputDataInfo().isPlaneRangeSet() ?
-                                                "VQ: Loading plane range data." : "VQ: Loading all planes data.");
+                        "VQ: Loading plane range data." : "VQ: Loading all planes data.");
 
                 final int[] planeIndices = getPlaneIndicesForCompression();
                 final int chunkCountPerPlane = Chunk2D.calculateRequiredChunkCount(options.getInputDataInfo().getDimensions().toV2i(),
-                                                                                   options.getQuantizationVector().toV2i());
+                        options.getQuantizationVector().toV2i());
                 final int totalChunkCount = chunkCountPerPlane * planeIndices.length;
                 trainData = new int[totalChunkCount][vectorSize];
 
@@ -254,7 +254,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         } else {
             if (options.getQuantizationType() != QuantizationType.Vector3D) {
                 throw new ImageCompressionException("Invalid QuantizationType, expected: `QuantizationType.Vector3D`, but got: " +
-                                                            options.getQuantizationType().toString());
+                        options.getQuantizationType().toString());
             }
 
             try {
@@ -271,9 +271,9 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final int[][] trainingData = loadConfiguredPlanesData();
 
         LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData,
-                                                                  getCodebookSize(),
-                                                                  options.getWorkerCount(),
-                                                                  options.getQuantizationVector());
+                getCodebookSize(),
+                options.getWorkerCount(),
+                options.getQuantizationVector());
 
         reportStatusToListeners("Starting LBG optimization.");
         vqInitializer.setStatusListener(this::reportStatusToListeners);
@@ -281,10 +281,10 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         reportStatusToListeners("Learned the optimal codebook.");
 
 
-        reportStatusToListeners("Saving cache file to %s", options.getOutputFilePath());
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
         try {
-            cacheManager.saveCodebook(options.getInputDataInfo().getCacheFileName(), lbgResult.getCodebook());
+            final String cacheFilePath = cacheManager.saveCodebook(options.getInputDataInfo().getCacheFileName(), lbgResult.getCodebook());
+            reportStatusToListeners("Saved cache file to %s", cacheFilePath);
         } catch (IOException e) {
             throw new ImageCompressionException("Unable to write VQ cache.", e);
         }
@@ -346,8 +346,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             voxelLayersSizes[voxelLayerIndex] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
             stopwatch.stop();
             reportProgressToListeners(voxelLayerIndex, voxelLayerCount,
-                                      "%d/%d Finished voxel layer %s compression pass in %s",
-                                      voxelLayerIndex, voxelLayerCount, voxelLayerRange.toString(), stopwatch.getElapsedTimeString());
+                    "%d/%d Finished voxel layer %s compression pass in %s",
+                    voxelLayerIndex, voxelLayerCount, voxelLayerRange.toString(), stopwatch.getElapsedTimeString());
         }
 
         return voxelLayersSizes;
