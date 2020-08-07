@@ -24,16 +24,19 @@ public abstract class CompressorDecompressorBase {
     public CompressorDecompressorBase(CompressionOptions options) {
         this.options = options;
         this.codebookSize = (int) Math.pow(2, this.options.getBitsPerCodebookIndex());
-        // Default status listener, which can be override by setStatusListener.
-
-        if (options.isVerbose())
-            addStatusListener(this::defaultLog);
     }
 
     public void addStatusListener(final IStatusListener listener) {
         if (statusListeners == null) {
             statusListeners = new ArrayList<>(1);
         }
+        if (statusListeners.size() > 0) {
+            System.out.println("Existing listeners:");
+            for (final IStatusListener l : statusListeners)
+                System.out.println("\t" + l);
+        }
+        System.out.println(this + " - Adding new statusListener: " + listener);
+
         statusListeners.add(listener);
     }
 
@@ -129,7 +132,7 @@ public abstract class CompressorDecompressorBase {
     }
 
 
-    private void defaultLog(final String message) {
+    public void defaultLog(final String message) {
         if (options.isVerbose()) {
             System.out.println(message);
         }

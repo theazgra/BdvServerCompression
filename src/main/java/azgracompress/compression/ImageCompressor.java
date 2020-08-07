@@ -36,6 +36,10 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
         // Forward listeners to image compressor.
         duplicateAllListeners(compressor);
+
+        if (options.isVerbose())
+            compressor.addStatusListener(this::defaultLog);
+
         return compressor;
     }
 
