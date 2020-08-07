@@ -180,7 +180,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
         final V3i voxelDims = new V3i(header.getVectorSizeX(), header.getVectorSizeY(), header.getVectorSizeZ());
         final int vectorSize = (int) voxelDims.multiplyTogether();
-        final int voxelLayerDepth = options.getQuantizationVector().getZ();
+        final int voxelLayerDepth = voxelDims.getZ();
         final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
 
 
