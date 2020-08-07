@@ -110,7 +110,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
 
 
             } catch (Exception ex) {
-                throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
+                throw new ImageDecompressionException("SQImageDecompressor::decompress() - Unable to read indices from InBitStream.", ex);
             }
             try {
                 decompressStream.write(decompressedPlaneData);
@@ -166,7 +166,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
 
                 buffer[planeIndex] = TypeConverter.intArrayToShortArray(decompressedValues);
             } catch (Exception ex) {
-                throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
+                throw new ImageDecompressionException("SQImageDecompressor::decompressToBuffer() - Unable to read indices from InBitStream.", ex);
             }
         }
     }

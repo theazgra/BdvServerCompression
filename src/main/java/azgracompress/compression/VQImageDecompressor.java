@@ -155,7 +155,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                 decompressedPlaneData =
                         TypeConverter.unsignedShortArrayToByteArray(decompressedPlane.getData(), false);
             } catch (Exception ex) {
-                throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
+                throw new ImageDecompressionException("VQImageDecompressor::decompress() - Unable to read indices from InBitStream.", ex);
             }
 
 
@@ -215,7 +215,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                 final Voxel currentVoxel = new Voxel(currentVoxelLayerDims);
                 currentVoxelLayer = currentVoxel.reconstructFromVoxels(voxelDims, decompressedVoxels);
             } catch (Exception e) {
-                throw new ImageDecompressionException("Unable to read indices from InBitStream.", e);
+                throw new ImageDecompressionException("VQImageDecompressor::decompressVoxels() - Unable to read indices from InBitStream.", e);
             }
 
             for (int layer = 0; layer < currentVoxelLayerDims.getZ(); layer++) {
@@ -300,7 +300,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
                 buffer[planeIndex] = TypeConverter.intArrayToShortArray(decompressedPlane.getData());
             } catch (Exception ex) {
-                throw new ImageDecompressionException("Unable to read indices from InBitStream.", ex);
+                throw new ImageDecompressionException("VQImageDecompressor::decompressToBuffer() - Unable to read indices from InBitStream.", ex);
             }
             reportProgressToListeners(planeIndex, planeCountForDecompression,
                                       "Decompressed plane %d.", planeIndex);
