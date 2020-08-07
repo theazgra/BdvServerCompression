@@ -3,6 +3,7 @@ package azgracompress.compression;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.data.ImageU16Dataset;
 import azgracompress.fileformat.QCMPFileHeader;
+import azgracompress.fileformat.QuantizationType;
 import azgracompress.utilities.Stopwatch;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +57,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         // Forward listeners to image decompressor.
         duplicateAllListeners(decompressor);
 
-        if(options.isVerbose())
+        if (options.isVerbose())
             decompressor.addStatusListener(this::defaultLog);
 
         return decompressor;
@@ -164,10 +165,11 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         logBuilder.append("\n=== Input file is ").append(validFile ? "VALID" : "INVALID").append(" ===\n");
 
         if (header != null && options.isVerbose()) {
+            final String prefix = header.getQuantizationType() != QuantizationType.Vector3D ? "Plane" : "Voxel layer";
             final long[] planeDataSizes = header.getPlaneDataSizes();
             long planeIndex = 0;
             for (final long planeDataSize : planeDataSizes) {
-                logBuilder.append(String.format("Plane: %d - %d Bytes\n", planeIndex++, planeDataSize));
+                logBuilder.append(String.format("%s %d: %d Bytes\n", prefix, planeIndex++, planeDataSize));
             }
         }
 

@@ -30,13 +30,6 @@ public abstract class CompressorDecompressorBase {
         if (statusListeners == null) {
             statusListeners = new ArrayList<>(1);
         }
-        if (statusListeners.size() > 0) {
-            System.out.println("Existing listeners:");
-            for (final IStatusListener l : statusListeners)
-                System.out.println("\t" + l);
-        }
-        System.out.println(this + " - Adding new statusListener: " + listener);
-
         statusListeners.add(listener);
     }
 
