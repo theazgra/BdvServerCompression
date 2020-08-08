@@ -233,7 +233,6 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         return true;
     }
 
-    // TODO(Moravec): Return optional to get rid of null check.
     public Optional<ImageU16Dataset> decompressInMemory() {
         try (FileInputStream fileInputStream = new FileInputStream(options.getInputDataInfo().getFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {

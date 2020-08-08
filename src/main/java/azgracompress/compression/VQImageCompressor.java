@@ -207,6 +207,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final IPlaneLoader planeLoader;
         try {
             planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
+            planeLoader.setWorkerCount(options.getWorkerCount());
         } catch (Exception e) {
             throw new ImageCompressionException("Unable to create reader. " + e.getMessage());
         }
@@ -308,6 +309,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
         try {
             planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
+            planeLoader.setWorkerCount(options.getWorkerCount());
         } catch (Exception e) {
             throw new ImageCompressionException("Unable to create plane reader. " + e.getMessage());
         }

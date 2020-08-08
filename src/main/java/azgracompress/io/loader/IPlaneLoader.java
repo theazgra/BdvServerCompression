@@ -55,4 +55,11 @@ public interface IPlaneLoader {
      * @throws IOException when fails to load plane data.
      */
     int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException;
+
+    /**
+     * Set thread count, which can be used by the loader if needed.
+     *
+     * @param threadCount Available thread count for loader.
+     */
+    void setWorkerCount(final int threadCount);
 }

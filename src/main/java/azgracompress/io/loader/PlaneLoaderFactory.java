@@ -4,8 +4,6 @@ import azgracompress.io.BufferInputData;
 import azgracompress.io.FileInputData;
 import azgracompress.io.InputData;
 
-import java.nio.Buffer;
-
 public final class PlaneLoaderFactory {
 
     /**
@@ -26,6 +24,5 @@ public final class PlaneLoaderFactory {
             default:
                 throw new Exception("Unsupported data loader.");
         }
-//        return null;
     }
 }

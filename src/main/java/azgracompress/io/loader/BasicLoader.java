@@ -8,6 +8,7 @@ import java.io.IOException;
 
 public abstract class BasicLoader {
     protected final V3i dims;
+    protected int threadCount = 1;
 
     protected BasicLoader(final V3i datasetDims) {
         this.dims = datasetDims;
@@ -83,15 +84,13 @@ public abstract class BasicLoader {
      * Load specified planes from dataset to voxel of specified dimensions.
      * This overload uses the valueAt function to read src data.
      *
-     * @param voxelDim    Single voxel dimensions.
-     * @param planeRange  Range of planes to load voxels from.
-     * @param threadCount Number of threads used for loading.
+     * @param voxelDim   Single voxel dimensions.
+     * @param planeRange Range of planes to load voxels from.
      * @return Voxel data arranged in arrays.
      * @throws IOException When fails to load plane data.
      */
     protected int[][] loadVoxelsImplByValueAt(final V3i voxelDim,
-                                              final Range<Integer> planeRange,
-                                              final int threadCount) throws IOException {
+                                              final Range<Integer> planeRange) throws IOException {
 
         // TODO(Moravec): Improve performance of loading.
         final Voxel dstVoxel = new Voxel(voxelDim);
@@ -153,6 +152,10 @@ public abstract class BasicLoader {
         }
 
         return voxels;
+    }
+
+    public void setWorkerCount(final int threadCount) {
+        this.threadCount = threadCount;
     }
 
 }
