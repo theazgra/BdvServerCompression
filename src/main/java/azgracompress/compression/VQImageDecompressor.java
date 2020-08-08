@@ -11,12 +11,12 @@ import azgracompress.quantization.vector.CodebookEntry;
 import azgracompress.quantization.vector.VQCodebook;
 import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.TypeConverter;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+@SuppressWarnings("DuplicatedCode")
 public class VQImageDecompressor extends CompressorDecompressorBase implements IImageDecompressor {
     public VQImageDecompressor(CompressionOptions options) {
         super(options);
@@ -136,8 +136,8 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (InBitStream inBitStream = new InBitStream(compressedStream,
-                                                           header.getBitsPerCodebookIndex(),
-                                                           planeDataSize)) {
+                    header.getBitsPerCodebookIndex(),
+                    planeDataSize)) {
                 inBitStream.readToBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
@@ -145,13 +145,13 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                 for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
                     final int huffmanSymbol = decodeHuffmanSymbol(huffman, inBitStream);
                     System.arraycopy(codebook.getVectors()[huffmanSymbol].getVector(),
-                                     0, decompressedVectors[vecIndex], 0, vectorSize);
+                            0, decompressedVectors[vecIndex], 0, vectorSize);
                 }
 
 
                 final ImageU16 decompressedPlane = reconstructImageFromQuantizedVectors(decompressedVectors,
-                                                                                        qVector,
-                                                                                        header.getImageDims());
+                        qVector,
+                        header.getImageDims());
                 decompressedPlaneData =
                         TypeConverter.unsignedShortArrayToByteArray(decompressedPlane.getData(), false);
             } catch (Exception ex) {
@@ -167,8 +167,82 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
             stopwatch.stop();
             reportProgressToListeners(planeIndex, planeCountForDecompression,
-                                      "Decompressed plane %d in %s", planeIndex, stopwatch.getElapsedTimeString());
+                    "Decompressed plane %d in %s", planeIndex, stopwatch.getElapsedTimeString());
         }
+    }
+
+    @Override
+    public void decompressToBuffer(DataInputStream compressedStream,
+                                   short[][] buffer,
+                                   QCMPFileHeader header) throws ImageDecompressionException {
+        if (header.getQuantizationType() == QuantizationType.Vector3D) {
+            decompressVoxelsToBuffer(compressedStream, buffer, header);
+            return;
+        }
+        // NOTE(Moravec): Think how to remove the duplicate code.
+        final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
+        assert (header.getVectorSizeZ() == 1);
+        final int vectorSize = header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
+        final int planeCountForDecompression = header.getImageSizeZ();
+        final long planeVectorCount = calculatePlaneVectorCount(header);
+        final V2i qVector = new V2i(header.getVectorSizeX(), header.getVectorSizeY());
+        final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
+
+
+        VQCodebook codebook = null;
+        Huffman huffman = null;
+        if (!header.isCodebookPerPlane()) {
+            // There is only one codebook.
+            codebook = readCodebook(compressedStream, codebookSize, vectorSize);
+            huffman = createHuffmanCoder(huffmanSymbols, codebook.getVectorFrequencies());
+        }
+
+        for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
+            if (header.isCodebookPerPlane()) {
+                codebook = readCodebook(compressedStream, codebookSize, vectorSize);
+                huffman = createHuffmanCoder(huffmanSymbols, codebook.getVectorFrequencies());
+            }
+            assert (codebook != null && huffman != null);
+
+
+            final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
+            try (InBitStream inBitStream = new InBitStream(compressedStream,
+                    header.getBitsPerCodebookIndex(),
+                    planeDataSize)) {
+                inBitStream.readToBuffer();
+                inBitStream.setAllowReadFromUnderlyingStream(false);
+
+                int[][] decompressedVectors = new int[(int) planeVectorCount][vectorSize];
+                for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
+                    HuffmanNode currentHuffmanNode = huffman.getRoot();
+                    boolean bit;
+                    while (!currentHuffmanNode.isLeaf()) {
+                        bit = inBitStream.readBit();
+                        currentHuffmanNode = currentHuffmanNode.traverse(bit);
+                    }
+                    System.arraycopy(codebook.getVectors()[currentHuffmanNode.getSymbol()].getVector(),
+                            0, decompressedVectors[vecIndex], 0, vectorSize);
+                }
+
+
+                final ImageU16 decompressedPlane = reconstructImageFromQuantizedVectors(decompressedVectors,
+                        qVector,
+                        header.getImageDims());
+
+                buffer[planeIndex] = TypeConverter.intArrayToShortArray(decompressedPlane.getData());
+            } catch (Exception ex) {
+                throw new ImageDecompressionException("VQImageDecompressor::decompressToBuffer() - Unable to read indices from InBitStream.", ex);
+            }
+            reportProgressToListeners(planeIndex, planeCountForDecompression,
+                    "Decompressed plane %d.", planeIndex);
+        }
+    }
+
+    private void decompressVoxelsToBuffer(DataInputStream compressedStream,
+                                          short[][] buffer,
+                                          QCMPFileHeader header) throws ImageDecompressionException {
+
+        throw new ImageDecompressionException("Implement this!!!");
     }
 
     private void decompressVoxels(DataInputStream compressedStream,
@@ -209,7 +283,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                 for (int voxelIndex = 0; voxelIndex < voxelLayerVoxelCount; voxelIndex++) {
                     final int huffmanSymbol = decodeHuffmanSymbol(huffman, inBitStream);
                     System.arraycopy(codebook.getVectors()[huffmanSymbol].getVector(),
-                                     0, decompressedVoxels[voxelIndex], 0, vectorSize);
+                            0, decompressedVoxels[voxelIndex], 0, vectorSize);
                 }
 
                 final Voxel currentVoxel = new Voxel(currentVoxelLayerDims);
@@ -228,8 +302,8 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
             stopwatch.stop();
             reportProgressToListeners(voxelLayerIndex, voxelLayerCount,
-                                      "Decompressed voxel layer %d/%d in %s",
-                                      voxelLayerIndex, voxelLayerCount, stopwatch.getElapsedTimeString());
+                    "Decompressed voxel layer %d/%d in %s",
+                    voxelLayerIndex, voxelLayerCount, stopwatch.getElapsedTimeString());
         }
     }
 
@@ -239,71 +313,5 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             currentHuffmanNode = currentHuffmanNode.traverse(inBitStream.readBit());
         }
         return currentHuffmanNode.getSymbol();
-    }
-
-    @Override
-    public void decompressToBuffer(DataInputStream compressedStream,
-                                   short[][] buffer,
-                                   QCMPFileHeader header) throws ImageDecompressionException {
-        // TODO: Think how to remove the duplicate code.
-        final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
-        assert (header.getVectorSizeZ() == 1);
-        final int vectorSize = header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
-        final int planeCountForDecompression = header.getImageSizeZ();
-        final long planeVectorCount = calculatePlaneVectorCount(header);
-        final V2i qVector = new V2i(header.getVectorSizeX(), header.getVectorSizeY());
-        final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
-
-
-        VQCodebook codebook = null;
-        Huffman huffman = null;
-        if (!header.isCodebookPerPlane()) {
-            // There is only one codebook.
-            codebook = readCodebook(compressedStream, codebookSize, vectorSize);
-            huffman = createHuffmanCoder(huffmanSymbols, codebook.getVectorFrequencies());
-        }
-
-        for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
-            if (header.isCodebookPerPlane()) {
-                codebook = readCodebook(compressedStream, codebookSize, vectorSize);
-                huffman = createHuffmanCoder(huffmanSymbols, codebook.getVectorFrequencies());
-            }
-            assert (codebook != null && huffman != null);
-
-
-            final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
-            try (InBitStream inBitStream = new InBitStream(compressedStream,
-                                                           header.getBitsPerCodebookIndex(),
-                                                           planeDataSize)) {
-                inBitStream.readToBuffer();
-                inBitStream.setAllowReadFromUnderlyingStream(false);
-
-                int[][] decompressedVectors = new int[(int) planeVectorCount][vectorSize];
-                for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
-                    HuffmanNode currentHuffmanNode = huffman.getRoot();
-                    boolean bit;
-                    while (!currentHuffmanNode.isLeaf()) {
-                        bit = inBitStream.readBit();
-                        currentHuffmanNode = currentHuffmanNode.traverse(bit);
-                    }
-                    System.arraycopy(codebook.getVectors()[currentHuffmanNode.getSymbol()].getVector(),
-                                     0,
-                                     decompressedVectors[vecIndex],
-                                     0,
-                                     vectorSize);
-                }
-
-
-                final ImageU16 decompressedPlane = reconstructImageFromQuantizedVectors(decompressedVectors,
-                                                                                        qVector,
-                                                                                        header.getImageDims());
-
-                buffer[planeIndex] = TypeConverter.intArrayToShortArray(decompressedPlane.getData());
-            } catch (Exception ex) {
-                throw new ImageDecompressionException("VQImageDecompressor::decompressToBuffer() - Unable to read indices from InBitStream.", ex);
-            }
-            reportProgressToListeners(planeIndex, planeCountForDecompression,
-                                      "Decompressed plane %d.", planeIndex);
-        }
     }
 }
