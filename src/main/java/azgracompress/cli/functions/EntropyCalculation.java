@@ -2,8 +2,8 @@ package azgracompress.cli.functions;
 
 import azgracompress.cli.CustomFunctionBase;
 import azgracompress.cli.ParsedCliOptions;
-import azgracompress.data.ImageU16;
-import azgracompress.io.RawDataIO;
+import azgracompress.io.loader.IPlaneLoader;
+import azgracompress.io.loader.PlaneLoaderFactory;
 import azgracompress.utilities.Utils;
 
 import java.io.IOException;
@@ -20,24 +20,27 @@ public class EntropyCalculation extends CustomFunctionBase {
 
     @Override
     public boolean run() {
-        // TODO(Moravec): Support PlaneLoader API.
-        return false;
-//        ImageU16 plane = null;
-//        System.out.println(String.format("Input file: %s", options.getInputFilePath()));
-//
-//        for (int planeIndex = 0; planeIndex < options.getImageDimension().getZ(); planeIndex++) {
-//            try {
-//                plane = RawDataIO.loadImageU16(options.getInputFilePath(),
-//                                               options.getImageDimension(),
-//                                               planeIndex);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//                return false;
-//            }
-//            final double planeEntropy = Utils.calculateEntropy(plane.getData());
-//
-//            System.out.println(String.format("%d\t%.4f", planeIndex, planeEntropy));
-//        }
-//        return true;
+        IPlaneLoader loader;
+        try {
+            loader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo())
+        } catch (Exception ex) {
+            System.err.println("EntropyCalculation::run() - Unable to get plane loader. " + ex.getMessage());
+            return false;
+        }
+
+        for (int planeIndex = 0; planeIndex < options.getInputDataInfo().getDimensions().getZ(); planeIndex++) {
+            final int[] planeData;
+            try {
+                planeData = loader.loadPlaneData(planeIndex)
+            } catch (IOException e) {
+                System.err.printf("Failed to load plane %d data. %s", planeIndex, e.getMessage());
+                return false;
+            }
+
+            final double planeEntropy = Utils.calculateEntropy(planeData);
+            System.out.printf("P: %d\tE: %.4f\n", planeIndex, planeEntropy);
+        }
+
+        return true;
     }
 }
