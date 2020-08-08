@@ -22,7 +22,7 @@ public class EntropyCalculation extends CustomFunctionBase {
     public boolean run() {
         IPlaneLoader loader;
         try {
-            loader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo())
+            loader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
         } catch (Exception ex) {
             System.err.println("EntropyCalculation::run() - Unable to get plane loader. " + ex.getMessage());
             return false;
@@ -31,7 +31,7 @@ public class EntropyCalculation extends CustomFunctionBase {
         for (int planeIndex = 0; planeIndex < options.getInputDataInfo().getDimensions().getZ(); planeIndex++) {
             final int[] planeData;
             try {
-                planeData = loader.loadPlaneData(planeIndex)
+                planeData = loader.loadPlaneData(planeIndex);
             } catch (IOException e) {
                 System.err.printf("Failed to load plane %d data. %s", planeIndex, e.getMessage());
                 return false;
