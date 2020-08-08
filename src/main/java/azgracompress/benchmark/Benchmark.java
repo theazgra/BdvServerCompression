@@ -1,6 +1,19 @@
 package azgracompress.benchmark;
 
+import azgracompress.U16;
 import azgracompress.cli.ParsedCliOptions;
+import azgracompress.compression.ImageCompressor;
+import azgracompress.compression.ImageDecompressor;
+import azgracompress.data.ImageU16Dataset;
+import azgracompress.io.FileInputData;
+import azgracompress.io.RawDataIO;
+import azgracompress.io.loader.IPlaneLoader;
+import azgracompress.io.loader.PlaneLoaderFactory;
+import azgracompress.utilities.TypeConverter;
+import azgracompress.utilities.Utils;
+
+import java.io.File;
+import java.io.IOException;
 
 public class Benchmark extends BenchmarkBase {
 
@@ -11,90 +24,84 @@ public class Benchmark extends BenchmarkBase {
 
     @Override
     public void startBenchmark() {
+        assert (options.getInputDataInfo().isPlaneIndexSet());
+        ParsedCliOptions compressOps;
+        ParsedCliOptions decompressOps;
+        try {
+            // NOTE: This works, right?
+            compressOps = (ParsedCliOptions) options.clone();
+            decompressOps = (ParsedCliOptions) options.clone();
+        } catch (CloneNotSupportedException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+            return;
+        }
+        // dirCreated is ignored.
+        boolean dirCreated = new File(options.getOutputFilePath()).mkdirs();
 
-        // TODO(Moravec): Support PlaneLoader API.
-//        ParsedCliOptions compressOps;
-//        ParsedCliOptions decompressOps;
-//        try {
-//            compressOps = (ParsedCliOptions) options.clone();
-//            decompressOps = (ParsedCliOptions) options.clone();
-//        } catch (CloneNotSupportedException e) {
-//            e.printStackTrace();
-//            return;
-//        }
-//
-//        boolean dirCreated = new File(options.getOutputFilePath()).mkdirs();
-//        //"%d_cb%d.raw.qcmp"
-//        final String qcmpFilePath = getFileNamePathIntoOutDir(String.format(COMPRESSED_FILE_TEMPLATE,
-//                                                                            options.getPlaneIndex(),
-//                                                                            codebookSize));
-//        compressOps.setOutputFilePath(qcmpFilePath);
-//        ImageCompressor compressor = new ImageCompressor(compressOps);
-//        if (!compressor.compress()) {
-//            System.err.println("Errors occurred during compression.");
-//            return;
-//        }
-//
-//        decompressOps.setInputFileInfo(new InputFileInfo(qcmpFilePath));
-//
-//
-//        final String decompressedFile = getFileNamePathIntoOutDir(String.format(QUANTIZED_FILE_TEMPLATE,
-//                                                                                options.getPlaneIndex(),
-//                                                                                codebookSize));
-//
-//        decompressOps.setOutputFilePath(decompressedFile);
-//        ImageDecompressor decompressor = new ImageDecompressor(decompressOps);
-//        if (!decompressor.decompress()) {
-//            System.err.println("Errors occurred during decompression.");
-//        }
-//
-//        final int[] originalData;
-//        try {
-//            originalData = RawDataIO.loadImageU16(options.getInputFilePath(),
-//                                                  options.getImageDimension(),
-//                                                  options.getPlaneIndex()).getData();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return;
-//        }
-//        final int[] quantizedData;
-//        try {
-//            quantizedData = RawDataIO.loadImageU16(decompressedFile,
-//                                                   options.getImageDimension().toV2i().toV3i(), 0).getData();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return;
-//        }
-//
-//        final int[] diffArray = Utils.getDifference(originalData, quantizedData);
-//        final double mse = Utils.calculateMse(diffArray);
-//        final double PSNR = Utils.calculatePsnr(mse, U16.Max);
-//        System.out.println(String.format("MSE: %.4f\tPSNR: %.4f(dB)", mse, PSNR));
-//
-//        final int[] absDifferenceData = Utils.asAbsoluteValues(diffArray);
-//
-//        final String diffFilePath = getFileNamePathIntoOutDir(String.format(DIFFERENCE_FILE_TEMPLATE,
-//                                                                        options.getPlaneIndex(),
-//                                                                        codebookSize));
-//
-//        final String absDiffFilePath = getFileNamePathIntoOutDir(String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
-//                                                                           options.getPlaneIndex(),
-//                                                                           codebookSize));
-//
-//        ImageU16 img = new ImageU16(rawImageDims.getX(),
-//                                    rawImageDims.getY(),
-//                                    absDifferenceData);
-//        try {
-//            // NOTE(Moravec): Use little endian so that gnuplot can read the array.
-//            RawDataIO.writeImageU16(absDiffFilePath, img, true);
-//            System.out.println("Saved absolute difference to: " + absDiffFilePath);
-//
-//            RawDataIO.writeDataI32(diffFilePath, diffArray, true);
-//            System.out.println("Saved difference to: " + absDiffFilePath);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            System.err.println("Failed to save difference.");
-//            return;
-//        }
+        final String qcmpFilePath = getFileNamePathIntoOutDir(String.format(COMPRESSED_FILE_TEMPLATE,
+                options.getInputDataInfo().getPlaneIndex(),
+                codebookSize));
+
+        compressOps.setOutputFilePath(qcmpFilePath);
+        ImageCompressor compressor = new ImageCompressor(compressOps);
+        if (!compressor.compress()) {
+            System.err.println("Errors occurred during compression.");
+            return;
+        }
+
+        decompressOps.setInputDataInfo(new FileInputData(qcmpFilePath));
+
+        final String decompressedFile = getFileNamePathIntoOutDir(String.format(QUANTIZED_FILE_TEMPLATE,
+                options.getInputDataInfo().getPlaneIndex(),
+                codebookSize));
+
+        decompressOps.setOutputFilePath(decompressedFile);
+        ImageDecompressor decompressor = new ImageDecompressor(decompressOps);
+
+        final ImageU16Dataset decompressedDataset = decompressor.decompressInMemory();
+        if (decompressedDataset == null) {
+            System.err.println("Errors occurred during decompression.");
+            return;
+        }
+
+        int[] originalData;
+        try {
+            final IPlaneLoader loader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
+            originalData = loader.loadPlaneData(options.getInputDataInfo().getPlaneIndex());
+        } catch (Exception e) {
+            System.err.println("Failed to get plane loader. " + e.getMessage());
+            e.printStackTrace();
+            return;
+        }
+
+        final int[] quantizedData = TypeConverter.shortArrayToIntArray(decompressedDataset.getPlaneData(0));
+
+        final int[] diffArray = Utils.getDifference(originalData, quantizedData);
+        final double mse = Utils.calculateMse(diffArray);
+        final double PSNR = Utils.calculatePsnr(mse, U16.Max);
+        System.out.printf("MSE: %.4f\tPSNR: %.4f(dB)%n", mse, PSNR);
+
+        final int[] absDifferenceData = Utils.asAbsoluteValues(diffArray);
+
+        final String diffFilePath = getFileNamePathIntoOutDir(String.format(DIFFERENCE_FILE_TEMPLATE,
+                options.getInputDataInfo().getPlaneIndex(),
+                codebookSize));
+
+        final String absDiffFilePath = getFileNamePathIntoOutDir(String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
+                options.getInputDataInfo().getPlaneIndex(),
+                codebookSize));
+
+        try {
+            // NOTE(Moravec): Use little endian so that gnuplot can read the array.
+            RawDataIO.writeBytesToFile(absDiffFilePath, TypeConverter.unsignedShortArrayToByteArray(absDifferenceData, true));
+            System.out.println("Saved absolute difference to: " + absDiffFilePath);
+
+            RawDataIO.writeDataI32(diffFilePath, diffArray, true);
+            System.out.println("Saved difference to: " + absDiffFilePath);
+        } catch (IOException e) {
+            System.err.println("Failed to save difference.");
+            e.printStackTrace();
+        }
     }
 }

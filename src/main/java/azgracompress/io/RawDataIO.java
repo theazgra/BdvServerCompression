@@ -15,19 +15,15 @@ public class RawDataIO {
         writeBytesToFile(rawFile, buffer);
     }
 
-    public static boolean writeDataI32(String rawFile, int[] differenceData, final boolean littleEndian) {
-
+    public static void writeDataI32(String rawFile,
+                                    int[] differenceData,
+                                    final boolean littleEndian) throws IOException {
         byte[] buffer = TypeConverter.intArrayToByteArray(differenceData, littleEndian);
-        try {
-            writeBytesToFile(rawFile, buffer);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
+        writeBytesToFile(rawFile, buffer);
     }
 
-    private static void writeBytesToFile(String rawFile, byte[] buffer) throws IOException {
+    public static void writeBytesToFile(String rawFile,
+                                        byte[] buffer) throws IOException {
         FileOutputStream fileStream = new FileOutputStream(rawFile, false);
         fileStream.write(buffer, 0, buffer.length);
         fileStream.flush();
