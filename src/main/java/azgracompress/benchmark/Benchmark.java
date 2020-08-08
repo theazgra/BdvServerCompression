@@ -14,6 +14,7 @@ import azgracompress.utilities.Utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 public class Benchmark extends BenchmarkBase {
 
@@ -59,8 +60,8 @@ public class Benchmark extends BenchmarkBase {
         decompressOps.setOutputFilePath(decompressedFile);
         ImageDecompressor decompressor = new ImageDecompressor(decompressOps);
 
-        final ImageU16Dataset decompressedDataset = decompressor.decompressInMemory();
-        if (decompressedDataset == null) {
+        final Optional<ImageU16Dataset> maybeDataset = decompressor.decompressInMemory();
+        if (!maybeDataset.isPresent()) {
             System.err.println("Errors occurred during decompression.");
             return;
         }
@@ -75,7 +76,7 @@ public class Benchmark extends BenchmarkBase {
             return;
         }
 
-        final int[] quantizedData = TypeConverter.shortArrayToIntArray(decompressedDataset.getPlaneData(0));
+        final int[] quantizedData = TypeConverter.shortArrayToIntArray(maybeDataset.get().getPlaneData(0));
 
         final int[] diffArray = Utils.getDifference(originalData, quantizedData);
         final double mse = Utils.calculateMse(diffArray);

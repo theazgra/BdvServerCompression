@@ -8,6 +8,7 @@ import azgracompress.utilities.Stopwatch;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.util.Optional;
 
 
 @SuppressWarnings("DuplicatedCode")
@@ -233,22 +234,22 @@ public class ImageDecompressor extends CompressorDecompressorBase {
     }
 
     // TODO(Moravec): Return optional to get rid of null check.
-    public ImageU16Dataset decompressInMemory() {
+    public Optional<ImageU16Dataset> decompressInMemory() {
         try (FileInputStream fileInputStream = new FileInputStream(options.getInputDataInfo().getFilePath());
              DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
 
             final QCMPFileHeader header = decompressQcmpHeader(dataInputStream);
             if (header == null)
-                return null;
+                return Optional.empty();
 
             IImageDecompressor imageDecompressor = getImageDecompressor(header);
             if (imageDecompressor == null) {
                 System.err.println("Unable to create correct decompressor.");
-                return null;
+                return Optional.empty();
             }
 
             if (!checkInputFileSize(header, imageDecompressor)) {
-                return null;
+                return Optional.empty();
             }
 
             final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
@@ -259,14 +260,14 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 imageDecompressor.decompressToBuffer(dataInputStream, decompressedData, header);
             } catch (ImageDecompressionException ex) {
                 System.err.println(ex.getMessage());
-                return null;
+                return Optional.empty();
             }
 
-            return new ImageU16Dataset(header.getImageDims().toV2i(), header.getImageSizeZ(), decompressedData);
+            return Optional.of(new ImageU16Dataset(header.getImageDims().toV2i(), header.getImageSizeZ(), decompressedData));
 
         } catch (IOException ioEx) {
             ioEx.printStackTrace();
-            return null;
+            return Optional.empty();
         }
     }
 
