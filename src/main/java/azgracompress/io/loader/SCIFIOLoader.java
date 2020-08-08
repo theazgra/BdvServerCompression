@@ -41,12 +41,6 @@ public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
-    protected int valueAt(int plane, int offset) {
-        // TODO: Implement me!
-        return 0;
-    }
-
-    @Override
     public int[] loadPlanesU16Data(int[] planes) throws IOException {
         if (planes.length < 1) {
             return new int[0];

@@ -22,7 +22,10 @@ public abstract class BasicLoader {
      */
     public abstract int[] loadPlaneData(final int plane) throws IOException;
 
-    protected abstract int valueAt(final int plane, final int offset);
+    protected int valueAt(final int plane, final int offset) {
+        assert (false) : "Unimplemented overload of BasicLoader::valueAt()";
+        return Integer.MIN_VALUE;
+    }
 
 
     /**
