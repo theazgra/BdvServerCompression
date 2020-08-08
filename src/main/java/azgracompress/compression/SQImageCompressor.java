@@ -210,7 +210,6 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     public void trainAndSaveCodebook() throws ImageCompressionException {
         int[] trainData = loadConfiguredPlanesData();
 
-
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(trainData,
                 getCodebookSize(),
                 options.getWorkerCount());

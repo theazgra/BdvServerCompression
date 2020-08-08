@@ -39,19 +39,6 @@ public class Chunk2D {
     }
 
     /**
-     * Calculate the index inside array of dimensions specified by chunkDims.
-     *
-     * @param x         Zero based x coordinate.
-     * @param y         Zero based y coordinate.
-     * @param chunkDims Chunk dimensions.
-     * @return Index inside chunk dimension data array.
-     */
-    public static int index(final int x, final int y, final V2i chunkDims) {
-        // TODO(Moravec): Remove this overload, which remove the need to pass chunkDims.
-        return index(x, y, chunkDims.getX());
-    }
-
-    /**
      * Calculate the index inside `2D` array
      *
      * @param x          Zero based x coordinate.
@@ -232,7 +219,7 @@ public class Chunk2D {
             srcY = chunkYOffset + y;
             for (int x = 0; x < qVectorDims.getX(); x++) {
                 srcX = chunkXOffset + x;
-                final int dstIndex = index(x, y, qVectorDims);
+                final int dstIndex = index(x, y, qVectorDims.getY());
                 vector[dstIndex] = isInside(srcX, srcY) ? data[index(srcX, srcY)] : FILL_VALUE;
             }
         }
@@ -260,7 +247,7 @@ public class Chunk2D {
             for (int chunkX = 0; chunkX < qVecXSize; chunkX++) {
                 dstX = chunkXOffset + chunkX;
                 if (!(dstX >= dims.getX() || dstY >= dims.getY())) {
-                    setValueAt(dstX, dstY, vector[index(chunkX, chunkY, qVectorDims)]);
+                    setValueAt(dstX, dstY, vector[index(chunkX, chunkY, qVectorDims.getY())]);
                 }
             }
         }
