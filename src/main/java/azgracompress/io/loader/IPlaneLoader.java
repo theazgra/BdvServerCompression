@@ -1,6 +1,7 @@
 package azgracompress.io.loader;
 
 import azgracompress.data.Range;
+import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 
 import java.io.IOException;
@@ -9,6 +10,13 @@ import java.io.IOException;
  * Interface for dataset loaders.
  */
 public interface IPlaneLoader {
+    /**
+     * Get dimensions of the image, for which the loader was created.
+     *
+     * @return Image of the loader image.
+     */
+    V3i getImageDimensions();
+
     /**
      * Load specified plane data.
      *
@@ -37,21 +45,44 @@ public interface IPlaneLoader {
     int[] loadAllPlanesU16Data() throws IOException;
 
     /**
+     * Load blocks from the entire dataset.
+     *
+     * @param blockDim Dimensions of the 2D block. (Matrix)
+     * @return Block data from the entire dataset.
+     * @throws IOException When fails to load plane data.
+     */
+    default int[][] loadBlocks(final V2i blockDim) throws IOException {
+        return loadBlocks(blockDim, new Range<>(0, getImageDimensions().getZ()));
+    }
+
+    /**
+     * Load blocks from specified plane range in the dataset.
+     *
+     * @param blockDim   Dimensions of the 2D block. (Matrix)
+     * @param planeRange Source plane range.
+     * @return Block data from the specified plane range.
+     * @throws IOException When fails to load plane data.
+     */
+    int[][] loadBlocks(final V2i blockDim, final Range<Integer> planeRange) throws IOException;
+
+    /**
      * Load voxels from entire dataset.
      *
      * @param voxelDim Voxel dimensions.
      * @return Voxel data from the entire dataset.
      * @throws IOException when fails to load plane data.
      */
-    int[][] loadVoxels(final V3i voxelDim) throws IOException;
+    default int[][] loadVoxels(final V3i voxelDim) throws IOException {
+        return loadVoxels(voxelDim, new Range<>(0, getImageDimensions().getZ()));
+    }
 
     /**
-     * Load voxels from specified plane range in the datasIet.
+     * Load voxels from specified plane range in the dataset.
      * Plane range should be divisible by `voxelDim.getZ()`
      *
      * @param voxelDim   Voxel dimensions.
-     * @param planeRange Source voxel dimensions.
-     * @return Voxel data from the entire dataset.
+     * @param planeRange Source plane range.
+     * @return Voxel data from the specified plane range.
      * @throws IOException when fails to load plane data.
      */
     int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException;

@@ -1,6 +1,7 @@
 package azgracompress.io.loader;
 
 import azgracompress.data.Range;
+import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.io.BufferInputData;
 import azgracompress.io.InputData;
@@ -87,8 +88,8 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim) throws IOException {
-        return loadVoxels(voxelDim, new Range<>(0, bufferInputData.getDimensions().getZ()));
+    public int[][] loadBlocks(V2i blockDim, Range<Integer> planeRange) throws IOException {
+        return loadBlocksImplByValueAt(blockDim, planeRange);
     }
 
     @Override

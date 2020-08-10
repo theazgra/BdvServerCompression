@@ -1,6 +1,7 @@
 package azgracompress.io.loader;
 
 import azgracompress.data.Range;
+import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.io.FileInputData;
 import azgracompress.utilities.TypeConverter;
@@ -117,8 +118,8 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim) throws IOException {
-        return loadVoxels(voxelDim, new Range<>(0, inputDataInfo.getDimensions().getZ()));
+    public int[][] loadBlocks(V2i blockDim, Range<Integer> planeRange) throws IOException {
+        return loadBlocksImplLoadPlaneData(blockDim, planeRange);
     }
 
     @Override

@@ -2,6 +2,7 @@ package azgracompress.io.loader;
 
 import azgracompress.ScifioWrapper;
 import azgracompress.data.Range;
+import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.io.FileInputData;
 import azgracompress.utilities.TypeConverter;
@@ -12,9 +13,12 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
-
     private final FileInputData inputDataInfo;
     private final Reader reader;
+
+    // Current plane buffer
+    private int currentPlaneIndex = -1;
+    private int[] currentPlaneData;
 
     /**
      * Create SCIFIO reader from input file.
@@ -28,6 +32,26 @@ public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
         this.inputDataInfo = inputDataInfo;
         this.reader = ScifioWrapper.getReader(this.inputDataInfo.getFilePath());
     }
+
+//    @Override
+//    protected int valueAt(int plane, int offset) {
+//        // TODO(Moravec): Measure if caching the current plane byte buffer make any sense.
+//        if (plane != currentPlaneIndex) {
+//            currentPlaneIndex = plane;
+//            try {
+//                currentPlaneData = TypeConverter.unsignedShortBytesToIntArray(reader.openPlane(0, currentPlaneIndex).getBytes());
+//            } catch (FormatException e) {
+//                System.err.println(e.toString());
+//                e.printStackTrace();
+//                assert (false) : "FormatException in SCIFIOLoader::valueAt()";
+//            } catch (IOException e) {
+//                System.err.println(e.toString());
+//                e.printStackTrace();
+//                assert (false) : "IOException in SCIFIOLoader::valueAt()";
+//            }
+//        }
+//        return currentPlaneData[offset];
+//    }
 
     @Override
     public int[] loadPlaneData(final int plane) throws IOException {
@@ -106,8 +130,8 @@ public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim) throws IOException {
-        return loadVoxels(voxelDim, new Range<>(0, inputDataInfo.getDimensions().getZ()));
+    public int[][] loadBlocks(V2i blockDim, Range<Integer> planeRange) throws IOException {
+        return loadBlocksImplLoadPlaneData(blockDim, planeRange);
     }
 
     @Override
