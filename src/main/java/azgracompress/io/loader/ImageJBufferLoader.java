@@ -20,6 +20,11 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
         assert (this.bufferInputData.getPixelType() == InputData.PixelType.Gray16);
     }
 
+    @Override
+    public boolean supportParallelLoading() {
+        return true;
+    }
+
     private void copyShortArrayIntoBuffer(short[] srcArray, int[] destBuffer, int destOffset, int copyLen) {
         for (int i = 0; i < copyLen; i++) {
             destBuffer[destOffset + i] = TypeConverter.shortToInt(srcArray[i]);

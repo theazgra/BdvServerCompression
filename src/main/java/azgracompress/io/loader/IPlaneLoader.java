@@ -10,6 +10,16 @@ import java.io.IOException;
  * Interface for dataset loaders.
  */
 public interface IPlaneLoader {
+
+    /**
+     * Check whether current loader supports threading.
+     *
+     * @return True if current loader can use more threads for loading.
+     */
+    default boolean supportParallelLoading() {
+        return false;
+    }
+
     /**
      * Get dimensions of the image, for which the loader was created.
      *
