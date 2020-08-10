@@ -31,53 +31,35 @@ public abstract class BasicLoader {
     }
 
     protected int[][] loadBlocksImplLoadPlaneData(final V2i blockDim, final Range<Integer> planeRange) throws IOException {
-        System.out.printf("loadBlocksImplLoadPlaneData\n");
-        final int blockSize = blockDim.multiplyTogether();
-        final int planeCount = planeRange.getTo() - planeRange.getFrom();
-        final int xBlockCount = (int) Math.ceil((double) dims.getX() / (double) blockDim.getX());
-        final int yBlockCount = (int) Math.ceil((double) dims.getY() / (double) blockDim.getY());
-        final int blockCount = planeCount * (xBlockCount*yBlockCount);
-
-        int[][] blocks = new int[blockCount][blockSize];
-
-        final int dimX = dims.getX();
-        final int dimY = dims.getY();
-        final int blockDimX = blockDim.getX();
-        final int blockDimY = blockDim.getY();
-
-        final int planeRunCount = xBlockCount * yBlockCount;
-
-        int blockIndex = 0;
-        for (int plane = planeRange.getFrom(); plane < planeRange.getTo(); plane++) {
-            final int[] planeData = loadPlaneData(plane);
-            for (int blockYOffset = 0; blockYOffset < dimY; blockYOffset += blockDimY) {
-                for (int blockXOffset = 0; blockXOffset < dimX; blockXOffset += blockDimX) {
-                    loadBlock(blocks[blockIndex++], planeData, blockXOffset, blockYOffset, blockDim);
-                }
-            }
-            assert (blockIndex == ((plane + 1) * planeRunCount));
-//            System.out.printf("Block index: %d\tCalculated: %d\n", blockIndex, ((plane + 1) * planeRunCount));
-        }
-        return blocks;
-    }
-
-    protected int[][] loadBlocksImplByValueAt(final V2i blockDim, final Range<Integer> planeRange) throws IOException {
-        System.out.printf("loadBlocksImplByValueAt\n");
         final int blockSize = blockDim.multiplyTogether();
         final int planeCount = planeRange.getTo() - planeRange.getFrom();
         final int blockCount = planeCount * Chunk2D.calculateRequiredChunkCount(dims.toV2i(), blockDim);
 
         int[][] blocks = new int[blockCount][blockSize];
 
-        final int dimX = dims.getX();
-        final int dimY = dims.getY();
-        final int blockDimX = blockDim.getX();
-        final int blockDimY = blockDim.getY();
+        int blockIndex = 0;
+        for (int plane = planeRange.getFrom(); plane < planeRange.getTo(); plane++) {
+            final int[] planeData = loadPlaneData(plane);
+            for (int blockYOffset = 0; blockYOffset < dims.getY(); blockYOffset += blockDim.getY()) {
+                for (int blockXOffset = 0; blockXOffset < dims.getX(); blockXOffset += blockDim.getX()) {
+                    loadBlock(blocks[blockIndex++], planeData, blockXOffset, blockYOffset, blockDim);
+                }
+            }
+        }
+        return blocks;
+    }
+
+    protected int[][] loadBlocksImplByValueAt(final V2i blockDim, final Range<Integer> planeRange) {
+        final int blockSize = blockDim.multiplyTogether();
+        final int planeCount = planeRange.getTo() - planeRange.getFrom();
+        final int blockCount = planeCount * Chunk2D.calculateRequiredChunkCount(dims.toV2i(), blockDim);
+
+        int[][] blocks = new int[blockCount][blockSize];
 
         int blockIndex = 0;
         for (int plane = planeRange.getFrom(); plane < planeRange.getTo(); plane++) {
-            for (int blockYOffset = 0; blockYOffset < dimY; blockYOffset += blockDimY) {
-                for (int blockXOffset = 0; blockXOffset < dimX; blockXOffset += blockDimX) {
+            for (int blockYOffset = 0; blockYOffset < dims.getY(); blockYOffset += blockDim.getY()) {
+                for (int blockXOffset = 0; blockXOffset < dims.getX(); blockXOffset += blockDim.getX()) {
                     loadBlock(blocks[blockIndex++], plane, blockXOffset, blockYOffset, blockDim);
                 }
             }
