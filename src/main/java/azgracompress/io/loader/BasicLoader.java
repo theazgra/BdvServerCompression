@@ -26,11 +26,67 @@ public abstract class BasicLoader {
     public abstract int[] loadPlaneData(final int plane) throws IOException;
 
     protected int valueAt(final int plane, final int offset) {
+        new Exception().printStackTrace(System.err);
         assert (false) : "Unimplemented overload of BasicLoader::valueAt()";
         return Integer.MIN_VALUE;
     }
 
-    protected int[][] loadBlocksImplLoadPlaneData(final V2i blockDim, final Range<Integer> planeRange) throws IOException {
+    protected int[][] loadRowVectorsImplByLoadPlaneData(final int vectorSize, final Range<Integer> planeRange) throws IOException {
+        final int rowVectorCount = (int) Math.ceil((double) dims.getX() / (double) vectorSize);
+        final int vectorCount = dims.getZ() * dims.getY() * rowVectorCount;
+
+        int[][] rowVectors = new int[vectorCount][vectorSize];
+
+        int vectorIndex = 0;
+        int baseX;
+
+        for (int plane = planeRange.getFrom(); plane < planeRange.getTo(); plane++) {
+            final int[] planeData = loadPlaneData(plane);
+            for (int row = 0; row < dims.getY(); row++) {
+                for (int rowVectorIndex = 0; rowVectorIndex < rowVectorCount; rowVectorIndex++) {
+                    // Copy single vector.
+                    baseX = rowVectorIndex * vectorSize;
+
+                    for (int vectorX = 0; vectorX < vectorSize; vectorX++) {
+                        if (baseX + vectorX >= dims.getY())
+                            break;
+                        rowVectors[vectorIndex][vectorX] = planeData[Chunk2D.index((baseX + vectorX), row, dims.getY())];
+                    }
+                    ++vectorIndex;
+                }
+            }
+        }
+        return rowVectors;
+    }
+
+    protected int[][] loadRowVectorsImplByValueAt(final int vectorSize, final Range<Integer> planeRange) {
+        final int rowVectorCount = (int) Math.ceil((double) dims.getX() / (double) vectorSize);
+        final int vectorCount = dims.getZ() * dims.getY() * rowVectorCount;
+
+        int[][] rowVectors = new int[vectorCount][vectorSize];
+
+        int vectorIndex = 0;
+        int baseX;
+
+        for (int plane = planeRange.getFrom(); plane < planeRange.getTo(); plane++) {
+            for (int row = 0; row < dims.getY(); row++) {
+                for (int rowVectorIndex = 0; rowVectorIndex < rowVectorCount; rowVectorIndex++) {
+                    // Copy single vector.
+                    baseX = rowVectorIndex * vectorSize;
+
+                    for (int vectorX = 0; vectorX < vectorSize; vectorX++) {
+                        if (baseX + vectorX >= dims.getY())
+                            break;
+                        rowVectors[vectorIndex][vectorX] = valueAt(plane, Chunk2D.index((baseX + vectorX), row, dims.getY()));
+                    }
+                    ++vectorIndex;
+                }
+            }
+        }
+        return rowVectors;
+    }
+
+    protected int[][] loadBlocksImplByLoadPlaneData(final V2i blockDim, final Range<Integer> planeRange) throws IOException {
         final int blockSize = blockDim.multiplyTogether();
         final int planeCount = planeRange.getTo() - planeRange.getFrom();
         final int blockCount = planeCount * Chunk2D.calculateRequiredChunkCount(dims.toV2i(), blockDim);

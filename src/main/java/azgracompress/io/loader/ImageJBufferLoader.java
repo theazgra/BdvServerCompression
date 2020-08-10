@@ -93,7 +93,12 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
     }
 
     @Override
-    public int[][] loadBlocks(V2i blockDim, Range<Integer> planeRange) throws IOException {
+    public int[][] loadRowVectors(final int vectorSize, final Range<Integer> planeRange) {
+        return loadRowVectorsImplByValueAt(vectorSize, planeRange);
+    }
+
+    @Override
+    public int[][] loadBlocks(V2i blockDim, Range<Integer> planeRange) {
         return loadBlocksImplByValueAt(blockDim, planeRange);
     }
 

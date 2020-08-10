@@ -118,8 +118,13 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
+    public int[][] loadRowVectors(final int vectorSize, final Range<Integer> planeRange) throws IOException {
+        return loadRowVectorsImplByLoadPlaneData(vectorSize, planeRange);
+    }
+
+    @Override
     public int[][] loadBlocks(V2i blockDim, Range<Integer> planeRange) throws IOException {
-        return loadBlocksImplLoadPlaneData(blockDim, planeRange);
+        return loadBlocksImplByLoadPlaneData(blockDim, planeRange);
     }
 
     @Override

@@ -55,6 +55,27 @@ public interface IPlaneLoader {
     int[] loadAllPlanesU16Data() throws IOException;
 
     /**
+     * Load row vectors from the entire dataset.
+     *
+     * @param vectorSize Width of the row vector.
+     * @return Row vector data from the entire dataset.
+     * @throws IOException When fails to load plane data.
+     */
+    default int[][] loadRowVectors(final int vectorSize) throws IOException {
+        return loadRowVectors(vectorSize, new Range<>(0, getImageDimensions().getZ()));
+    }
+
+    /**
+     * Load row vectors from specified plane range in the dataset.
+     *
+     * @param vectorSize Width of the row vector.
+     * @param planeRange Source plane range.
+     * @return Row vector data from the specified plane range.
+     * @throws IOException When fails to load plane data.
+     */
+    int[][] loadRowVectors(final int vectorSize, final Range<Integer> planeRange) throws IOException;
+
+    /**
      * Load blocks from the entire dataset.
      *
      * @param blockDim Dimensions of the 2D block. (Matrix)
