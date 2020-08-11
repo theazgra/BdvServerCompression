@@ -13,7 +13,7 @@ import java.util.Arrays;
 public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoader {
     private final BufferInputData bufferInputData;
 
-    public ImageJBufferLoader(BufferInputData bufferDataInfo) {
+    public ImageJBufferLoader(final BufferInputData bufferDataInfo) {
         super(bufferDataInfo.getDimensions());
         this.bufferInputData = bufferDataInfo;
         // FIXME: Support more pixel types.
