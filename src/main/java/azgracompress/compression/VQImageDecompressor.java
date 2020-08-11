@@ -287,7 +287,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                 }
 
                 final Voxel currentVoxel = new Voxel(currentVoxelLayerDims);
-                currentVoxelLayer = currentVoxel.reconstructFromVoxels(voxelDims, decompressedVoxels);
+                currentVoxelLayer = currentVoxel.reconstructFromVoxelsToDataset(voxelDims, decompressedVoxels);
             } catch (Exception e) {
                 throw new ImageDecompressionException("VQImageDecompressor::decompressVoxels() - Unable to read indices from InBitStream.", e);
             }
