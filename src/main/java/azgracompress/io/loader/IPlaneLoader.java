@@ -1,5 +1,7 @@
 package azgracompress.io.loader;
 
+import azgracompress.compression.CompressionOptions;
+import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Range;
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
@@ -124,4 +126,33 @@ public interface IPlaneLoader {
      * @param threadCount Available thread count for loader.
      */
     void setWorkerCount(final int threadCount);
+
+    /**
+     * Load correct type of vectors (quantization type in options) from specified plane range.
+     *
+     * @param planeRange Plane range to load vectors from.
+     * @return Vector data from plane range.
+     * @throws ImageCompressionException When fails to load plane range.
+     */
+    default int[][] loadVectorsFromPlaneRange(final CompressionOptions options,
+                                              final Range<Integer> planeRange) throws ImageCompressionException {
+
+        setWorkerCount(supportParallelLoading() ? options.getWorkerCount() : 1);
+
+        try {
+            switch (options.getQuantizationType()) {
+                case Vector1D:
+                    return loadRowVectors(options.getQuantizationVector().getX(), planeRange);
+                case Vector2D:
+                    return loadBlocks(options.getQuantizationVector().toV2i(), planeRange);
+                case Vector3D:
+                    return loadVoxels(options.getQuantizationVector(), planeRange);
+                default: {
+                    throw new ImageCompressionException("Invalid QuantizationType '" + options.getQuantizationType().toString() + "'");
+                }
+            }
+        } catch (IOException e) {
+            throw new ImageCompressionException("Unable to load vectors QuantizationType=" + options.getQuantizationType(), e);
+        }
+    }
 }

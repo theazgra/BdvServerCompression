@@ -71,32 +71,6 @@ public class Chunk2D {
     }
 
     /**
-     * Divide this Chunk to 1D row vector of given length.
-     *
-     * @param vectorSize Vector length.
-     * @return Array of row vectors.
-     */
-    public int[][] divideInto1DVectors(final int vectorSize) {
-        final int rowVectorCount = (int) Math.ceil(dims.getX() / (float) vectorSize);
-        final int vectorCount = rowVectorCount * dims.getY();
-        int[][] imageVectors = new int[vectorCount][vectorSize];
-
-        int vec = 0;
-        int srcX;
-        for (int row = 0; row < dims.getY(); row++) {
-            for (int vecIndex = 0; vecIndex < rowVectorCount; vecIndex++) {
-                for (int x = 0; x < vectorSize; x++) {
-                    srcX = (vecIndex * vectorSize) + x;
-                    imageVectors[vec][x] = isInside(srcX, row) ? data[index(srcX, row)] : FILL_VALUE;
-                }
-                ++vec;
-            }
-        }
-
-        return imageVectors;
-    }
-
-    /**
      * Reconstruct this Chunk from array of 1D row vectors.
      *
      * @param vectors Array of 1D row vectors.
@@ -126,27 +100,6 @@ public class Chunk2D {
     }
 
     /**
-     * Divide this Chunk to 2D matrices of given dimensions.
-     *
-     * @param qVectorDims Matrix dimension.
-     * @return Array of matrix data.
-     */
-    public int[][] divideInto2DVectors(final V2i qVectorDims) {
-        final int chunkSize = qVectorDims.getX() * qVectorDims.getY();
-        final int chunkCount = calculateRequiredChunkCount(qVectorDims);
-
-        int[][] vectors = new int[chunkCount][chunkSize];
-        int vecIndex = 0;
-
-        for (int chunkYOffset = 0; chunkYOffset < dims.getY(); chunkYOffset += qVectorDims.getY()) {
-            for (int chunkXOffset = 0; chunkXOffset < dims.getX(); chunkXOffset += qVectorDims.getX()) {
-                copyDataToVector(vectors[vecIndex++], qVectorDims, chunkXOffset, chunkYOffset);
-            }
-        }
-        return vectors;
-    }
-
-    /**
      * Reconstruct this Chunk (copy data) from matrix vectors.
      *
      * @param vectors     Matrix vector data.
@@ -167,17 +120,6 @@ public class Chunk2D {
             }
         }
         assert (vecIndex == vectors.length);
-    }
-
-
-    /**
-     * Calculate the number of required 2D matrices for plane.
-     *
-     * @param chunkDims Matrix dimension.
-     * @return Number of required chunks.
-     */
-    private int calculateRequiredChunkCount(final V2i chunkDims) {
-        return calculateRequiredChunkCount(dims, chunkDims);
     }
 
     /**
@@ -203,26 +145,6 @@ public class Chunk2D {
      */
     private boolean isInside(final int x, final int y) {
         return (((x >= 0) && (x < dims.getX())) && (y >= 0) && (y < dims.getY()));
-    }
-
-    /**
-     * Copy this chunk data to chunk vector.
-     *
-     * @param vector       Chunk vector.
-     * @param qVectorDims  Dimensions of the vector.
-     * @param chunkXOffset Chunk X offset
-     * @param chunkYOffset Chunk Y offset.
-     */
-    private void copyDataToVector(int[] vector, final V2i qVectorDims, final int chunkXOffset, final int chunkYOffset) {
-        int srcX, srcY;
-        for (int y = 0; y < qVectorDims.getY(); y++) {
-            srcY = chunkYOffset + y;
-            for (int x = 0; x < qVectorDims.getX(); x++) {
-                srcX = chunkXOffset + x;
-                final int dstIndex = index(x, y, qVectorDims.getY());
-                vector[dstIndex] = isInside(srcX, srcY) ? data[index(srcX, srcY)] : FILL_VALUE;
-            }
-        }
     }
 
     /**

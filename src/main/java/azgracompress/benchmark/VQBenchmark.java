@@ -1,24 +1,12 @@
 package azgracompress.benchmark;
 
-import azgracompress.U16;
-import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cli.ParsedCliOptions;
-import azgracompress.compression.CompressionOptions;
-import azgracompress.data.*;
-import azgracompress.io.loader.IPlaneLoader;
-import azgracompress.io.loader.PlaneLoaderFactory;
-import azgracompress.quantization.vector.LBGResult;
-import azgracompress.quantization.vector.LBGVectorQuantizer;
-import azgracompress.quantization.vector.VQCodebook;
-import azgracompress.quantization.vector.VectorQuantizer;
-import azgracompress.utilities.Utils;
-
-import java.io.File;
-import java.io.IOException;
+import azgracompress.data.Chunk2D;
+import azgracompress.data.ImageU16;
+import azgracompress.data.V2i;
+import azgracompress.data.V3i;
 
 public class VQBenchmark extends BenchmarkBase {
-
-    final static V2i DEFAULT_QVECTOR = new V2i(3, 3);
 
     public VQBenchmark(final ParsedCliOptions options) {
         super(options);
@@ -26,11 +14,10 @@ public class VQBenchmark extends BenchmarkBase {
 
     @Override
     public void startBenchmark() {
-        startBenchmark(DEFAULT_QVECTOR);
+        startBenchmark(options.getQuantizationVector());
     }
 
-    private ImageU16 reconstructImageFromQuantizedVectors(final ImageU16 plane,
-                                                          final int[][] vectors,
+    private ImageU16 reconstructImageFromQuantizedVectors(final int[][] vectors,
                                                           final V2i qVector) {
         Chunk2D reconstructedChunk = new Chunk2D(new V2i(rawImageDims.getX(), rawImageDims.getY()));
         if (qVector.getY() > 1) {
@@ -42,111 +29,98 @@ public class VQBenchmark extends BenchmarkBase {
         return reconstructedChunk.asImageU16();
     }
 
-    private int[][] getPlaneVectors(final ImageU16 plane, final V2i qVector) {
-        return plane.toQuantizationVectors(qVector);
-    }
-
-    public void startBenchmark(final V2i qVector) {
-        if (planes.length < 1) {
-            return;
-        }
-        IPlaneLoader planeLoader;
-        try {
-            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Unable to create SCIFIO reader.");
-            return;
-        }
-        if (qVector.getY() > 1) {
-            System.out.println("2D qVector");
-        } else {
-            System.out.println("1D qVector");
-        }
-        boolean dirCreated = new File(this.outputDirectory).mkdirs();
-        System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
-        VectorQuantizer quantizer = null;
-
-        if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
-            System.out.println("Loading codebook from cache");
-            QuantizationCacheManager cacheManager = new QuantizationCacheManager(cacheFolder);
-            final VQCodebook codebook = cacheManager.loadVQCodebook(inputFile, codebookSize, qVector.toV3i());
-            if (codebook == null) {
-                System.err.println("Failed to read quantization vectors from cache.");
-                return;
-            }
-            quantizer = new VectorQuantizer(codebook);
-            System.out.println("Created quantizer from cache");
-
-        } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
-            final int middlePlaneIndex = rawImageDims.getZ() / 2;
-            final ImageU16 middlePlane;
-            try {
-
-                middlePlane = new ImageU16(options.getInputDataInfo().getDimensions().toV2i(), planeLoader.loadPlaneData(middlePlaneIndex));
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.err.println("Failed to load middle plane data.");
-                return;
-            }
-
-            final int[][] refPlaneData = getPlaneVectors(middlePlane, qVector);
-            LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData,
-                                                                      codebookSize,
-                                                                      workerCount,
-                                                                      qVector.toV3i());
-            final LBGResult vqResult = vqInitializer.findOptimalCodebook();
-            quantizer = new VectorQuantizer(vqResult.getCodebook());
-            System.out.println("Created quantizer from middle plane.");
-        }
-
-        for (final int planeIndex : planes) {
-            System.out.println(String.format("Loading plane %d ...", planeIndex));
-
-            final ImageU16 plane;
-            try {
-                plane = new ImageU16(options.getInputDataInfo().getDimensions().toV2i(), planeLoader.loadPlaneData(planeIndex));
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.err.println(String.format("Failed to load plane %d data. Skipping plane.", planeIndex));
-                return;
-            }
-
-            final int[][] planeData = getPlaneVectors(plane, qVector);
-
-
-            if (options.getCodebookType() == CompressionOptions.CodebookType.Individual) {
-                LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData,
-                                                                          codebookSize,
-                                                                          workerCount,
-                                                                          qVector.toV3i());
-                LBGResult vqResult = vqInitializer.findOptimalCodebook();
-                quantizer = new VectorQuantizer(vqResult.getCodebook());
-                System.out.println("Created plane quantizer.");
-            }
-
-            final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
-            final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
-            final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
-                                                          planeIndex,
-                                                          codebookSize);
-
-            final int[][] quantizedData = quantizer.quantize(planeData, workerCount);
-
-            final ImageU16 quantizedImage = reconstructImageFromQuantizedVectors(plane, quantizedData, qVector);
-
-
-            final int[] diffArray = Utils.getDifference(plane.getData(), quantizedImage.getData());
-            final double mse = Utils.calculateMse(diffArray);
-            final double PSNR = Utils.calculatePsnr(mse, U16.Max);
-            System.out.println(String.format("MSE: %.4f\tPSNR: %.4f(dB)", mse, PSNR));
-
-            if (!saveQuantizedPlaneData(quantizedImage.getData(), quantizedFile)) {
-                System.err.println("Failed to save quantized plane.");
-                return;
-            }
-
-            saveDifference(diffArray, diffFile, absoluteDiffFile);
-        }
+    public void startBenchmark(final V3i qVector) {
+        // NOTE(Moravec): This will be enabled once we need to benchmark something.
+        //        if (planes.length < 1) {
+        //            return;
+        //        }
+        //        IPlaneLoader planeLoader;
+        //        try {
+        //            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
+        //        } catch (Exception e) {
+        //            e.printStackTrace();
+        //            System.err.println("Unable to create specific reader.");
+        //            return;
+        //        }
+        //        if (qVector.getY() > 1) {
+        //            System.out.println("2D qVector");
+        //        } else {
+        //            System.out.println("1D qVector");
+        //        }
+        //        boolean dirCreated = new File(this.outputDirectory).mkdirs();
+        //        System.out.printf("|CODEBOOK| = %d%n", codebookSize);
+        //        VectorQuantizer quantizer = null;
+        //
+        //        if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
+        //            System.out.println("Loading codebook from cache");
+        //            QuantizationCacheManager cacheManager = new QuantizationCacheManager(cacheFolder);
+        //            final VQCodebook codebook = cacheManager.loadVQCodebook(inputFile, codebookSize, qVector);
+        //            if (codebook == null) {
+        //                System.err.println("Failed to read quantization vectors from cache.");
+        //                return;
+        //            }
+        //            quantizer = new VectorQuantizer(codebook);
+        //            System.out.println("Created quantizer from cache");
+        //
+        //        } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
+        //            final int middlePlaneIndex = rawImageDims.getZ() / 2;
+        //            int[][] refPlaneData;
+        //            try {
+        //                refPlaneData = planeLoader.loadVectorsFromPlaneRange(options, Utils.singlePlaneRange(middlePlaneIndex));
+        //            } catch (ImageCompressionException e) {
+        //                e.printStackTrace();
+        //                System.err.println("Failed to load middle plane data.");
+        //                return;
+        //            }
+        //
+        //            LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(refPlaneData, codebookSize, workerCount, qVector);
+        //            final LBGResult vqResult = vqInitializer.findOptimalCodebook();
+        //
+        //            quantizer = new VectorQuantizer(vqResult.getCodebook());
+        //            System.out.println("Created quantizer from middle plane.");
+        //        }
+        //
+        //        for (final int planeIndex : planes) {
+        //            System.out.printf("Loading plane %d ...%n", planeIndex);
+        //
+        //            int[][] planeData;
+        //            try {
+        //                planeData = planeLoader.loadVectorsFromPlaneRange(options, Utils.singlePlaneRange(planeIndex));
+        //            } catch (ImageCompressionException e) {
+        //                e.printStackTrace();
+        //                System.err.printf("Failed to load plane %d data.", planeIndex);
+        //                return;
+        //            }
+        //
+        //
+        //            if (options.getCodebookType() == CompressionOptions.CodebookType.Individual) {
+        //                LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeData, codebookSize, workerCount, qVector);
+        //                LBGResult vqResult = vqInitializer.findOptimalCodebook();
+        //                quantizer = new VectorQuantizer(vqResult.getCodebook());
+        //                System.out.println("Created plane quantizer.");
+        //            }
+        //
+        //            final String quantizedFile = String.format(QUANTIZED_FILE_TEMPLATE, planeIndex, codebookSize);
+        //            final String diffFile = String.format(DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
+        //            final String absoluteDiffFile = String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE, planeIndex, codebookSize);
+        //
+        //            assert (quantizer != null);
+        //            final int[][] quantizedData = quantizer.quantize(planeData, workerCount);
+        //
+        //            final ImageU16 quantizedImage = reconstructImageFromQuantizedVectors(quantizedData, qVector.toV2i());
+        //
+        //
+        //            final int[] diffArray = Utils.getDifference(plane.getData(), quantizedImage.getData());
+        //            final double mse = Utils.calculateMse(diffArray);
+        //            final double PSNR = Utils.calculatePsnr(mse, U16.Max);
+        //            System.out.printf("MSE: %.4f\tPSNR: %.4f(dB)%n", mse, PSNR);
+        //
+        //            if (!saveQuantizedPlaneData(quantizedImage.getData(), quantizedFile)) {
+        //                System.err.println("Failed to save quantized plane.");
+        //                return;
+        //            }
+        //
+        //            saveDifference(diffArray, diffFile, absoluteDiffFile);
+        //        }
     }
 }

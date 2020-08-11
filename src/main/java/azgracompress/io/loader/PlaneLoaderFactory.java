@@ -18,7 +18,7 @@ public final class PlaneLoaderFactory {
             case RawDataLoader:
                 return new RawDataLoader((FileInputData) inputDataInfo);
             case SCIFIOLoader:
-                return new SCIFIOLoader((FileInputData)inputDataInfo);
+                return new SCIFIOLoader((FileInputData) inputDataInfo);
             case ImageJBufferLoader:
                 return new ImageJBufferLoader((BufferInputData) inputDataInfo);
             default:
