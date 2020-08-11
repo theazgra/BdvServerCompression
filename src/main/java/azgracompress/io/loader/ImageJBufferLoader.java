@@ -37,10 +37,10 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
         return TypeConverter.shortArrayToIntArray(srcBuffer);
     }
 
+
     @Override
     protected int valueAt(int plane, int offset) {
-        final short value = ((short[]) bufferInputData.getPixelBuffer(plane))[offset];
-        return TypeConverter.shortToInt(value);
+        return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer(plane))[offset]);
     }
 
     @Override
