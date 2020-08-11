@@ -106,7 +106,7 @@ public final class Voxel {
 
 
                             final int indexInsideVoxel = dataIndex(voxelX, voxelY, voxelZ, voxelDims);
-                            final int indexInsidePlane = Chunk2D.index(dstX, dstY, planeDimX);
+                            final int indexInsidePlane = Block.index(dstX, dstY, planeDimX);
 
                             // reconstructedData are 2D data while voxelData are 3D data!
                             reconstructedData[planeIndex][indexInsidePlane] =

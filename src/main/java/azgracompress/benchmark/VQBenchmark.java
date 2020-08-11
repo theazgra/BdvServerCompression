@@ -1,7 +1,7 @@
 package azgracompress.benchmark;
 
 import azgracompress.cli.ParsedCliOptions;
-import azgracompress.data.Chunk2D;
+import azgracompress.data.Block;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
@@ -19,7 +19,7 @@ public class VQBenchmark extends BenchmarkBase {
 
     private ImageU16 reconstructImageFromQuantizedVectors(final int[][] vectors,
                                                           final V2i qVector) {
-        Chunk2D reconstructedChunk = new Chunk2D(new V2i(rawImageDims.getX(), rawImageDims.getY()));
+        Block reconstructedChunk = new Block(new V2i(rawImageDims.getX(), rawImageDims.getY()));
         if (qVector.getY() > 1) {
             reconstructedChunk.reconstructFrom2DVectors(vectors, qVector);
         } else {

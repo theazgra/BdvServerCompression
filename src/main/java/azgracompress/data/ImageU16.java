@@ -24,8 +24,8 @@ public class ImageU16 {
         return (x * width) + y;
     }
 
-    public Chunk2D as2dChunk() {
-        return new Chunk2D(new V2i(width, height), data);
+    public Block as2dChunk() {
+        return new Block(new V2i(width, height), data);
     }
 
     public ImageU16 difference(final ImageU16 other) {

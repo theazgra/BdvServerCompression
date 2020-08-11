@@ -64,7 +64,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                                                           final V2i qVector,
                                                           final V3i imageDims) {
 
-        Chunk2D reconstructedChunk = new Chunk2D(new V2i(imageDims.getX(), imageDims.getY()));
+        Block reconstructedChunk = new Block(new V2i(imageDims.getX(), imageDims.getY()));
         if (qVector.getY() > 1) {
             reconstructedChunk.reconstructFrom2DVectors(vectors, qVector);
         } else {

@@ -1,6 +1,6 @@
 package azgracompress.data;
 
-public class Chunk2D {
+public class Block {
     private final int FILL_VALUE = 0;
     private int[] data;
 
@@ -12,7 +12,7 @@ public class Chunk2D {
      * @param dims Dimensions of the chunk.
      * @param data Chunk data.
      */
-    public Chunk2D(final V2i dims, final int[] data) {
+    public Block(final V2i dims, final int[] data) {
         this.dims = dims;
         this.data = data;
         assert (data.length == (dims.getX() * dims.getY())) : "Wrong box data.";
@@ -23,7 +23,7 @@ public class Chunk2D {
      *
      * @param dims Dimensions of the chunk.
      */
-    public Chunk2D(final V2i dims) {
+    public Block(final V2i dims) {
         this(dims, new int[dims.getX() * dims.getY()]);
     }
 
@@ -183,8 +183,8 @@ public class Chunk2D {
      */
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Chunk2D) {
-            final Chunk2D otherChunk = (Chunk2D) obj;
+        if (obj instanceof Block) {
+            final Block otherChunk = (Block) obj;
             if (data.length != otherChunk.data.length) {
                 return false;
             } else {
