@@ -1,5 +1,6 @@
 package azgracompress.data;
 
+@SuppressWarnings("DuplicatedCode")
 public final class Voxel {
     /**
      * Voxel dimensions.
@@ -69,7 +70,7 @@ public final class Voxel {
      * @param voxelData Voxel data.
      * @return Dataset reconstructed from the voxel data.
      */
-    public ImageU16Dataset reconstructFromVoxels(final V3i voxelDims, final int[][] voxelData) {
+    public ImageU16Dataset reconstructFromVoxelsToDataset(final V3i voxelDims, final int[][] voxelData) {
         final short[][] reconstructedData = new short[dims.getZ()][dims.toV2i().multiplyTogether()];
 
         final int xVoxelCount = (int) Math.ceil((double) dims.getX() / (double) voxelDims.getX());
@@ -120,5 +121,57 @@ public final class Voxel {
         }
 
         return new ImageU16Dataset(dims.toV2i(), dims.getZ(), reconstructedData);
+    }
+
+    public short[] reconstructFromVoxelsToVoxelArray(final V3i voxelDims, final int[][] voxelData) {
+        final short[] reconstructedVoxel = new short[(int) dims.multiplyTogether()];
+
+        final int xVoxelCount = (int) Math.ceil((double) dims.getX() / (double) voxelDims.getX());
+        final int yVoxelCount = (int) Math.ceil((double) dims.getY() / (double) voxelDims.getY());
+        final int planeVoxelCount = xVoxelCount * yVoxelCount;
+
+        final int planeDimX = dims.getX();
+        final int planeDimY = dims.getY();
+        final int voxelDimX = voxelDims.getX();
+        final int voxelDimY = voxelDims.getY();
+        final int voxelDimZ = voxelDims.getZ();
+
+        int voxelOffset = 0;
+        for (int planeOffset = 0; planeOffset < dims.getZ(); planeOffset += voxelDimZ) {
+
+            for (int voxelZ = 0; voxelZ < voxelDimZ; voxelZ++) {
+                final int planeIndex = planeOffset + voxelZ;
+                if (planeIndex >= dims.getZ())
+                    break;
+
+                for (int voxelIndex = 0; voxelIndex < planeVoxelCount; voxelIndex++) {
+                    for (int voxelY = 0; voxelY < voxelDimY; voxelY++) {
+                        final int dstY = ((voxelIndex / xVoxelCount) * voxelDimY) + voxelY;
+                        if (dstY >= planeDimY) {
+                            break;
+                        }
+
+                        for (int voxelX = 0; voxelX < voxelDimX; voxelX++) {
+                            final int dstX = ((voxelIndex % xVoxelCount) * voxelDimX) + voxelX;
+                            if (dstX >= planeDimX) {
+                                break;
+                            }
+
+                            final int indexInsideVoxel = dataIndex(voxelX, voxelY, voxelZ, voxelDims);
+                            final int dstIndex = dataIndex(dstX, dstY, planeIndex);
+                            if (dstIndex >= reconstructedVoxel.length) {
+                                System.out.printf("Fail\n");
+                            }
+                            reconstructedVoxel[dstIndex] =
+                                    (short) voxelData[(voxelOffset + voxelIndex)][indexInsideVoxel];
+
+                        }
+                    }
+
+                }
+            }
+            voxelOffset += planeVoxelCount;
+        }
+        return reconstructedVoxel;
     }
 }
