@@ -63,15 +63,10 @@ public final class Voxel {
         return (xChunkCount * yChunkCount * zChunkCount);
     }
 
-    /**
-     * Reconstruct an 3D dataset from voxels, which divided the original dataset.
-     *
-     * @param voxelDims Voxel dimensions.
-     * @param voxelData Voxel data.
-     * @return Dataset reconstructed from the voxel data.
-     */
-    public ImageU16Dataset reconstructFromVoxelsToDataset(final V3i voxelDims, final int[][] voxelData) {
-        final short[][] reconstructedData = new short[dims.getZ()][dims.toV2i().multiplyTogether()];
+    public void reconstructFromVoxels(final V3i voxelDims,
+                                      final int[][] voxelData,
+                                      final short[][] reconstructedData,
+                                      final int planeIndexOffset) {
 
         final int xVoxelCount = (int) Math.ceil((double) dims.getX() / (double) voxelDims.getX());
         final int yVoxelCount = (int) Math.ceil((double) dims.getY() / (double) voxelDims.getY());
@@ -110,7 +105,7 @@ public final class Voxel {
                             final int indexInsidePlane = Block.index(dstX, dstY, planeDimX);
 
                             // reconstructedData are 2D data while voxelData are 3D data!
-                            reconstructedData[planeIndex][indexInsidePlane] =
+                            reconstructedData[planeIndexOffset + planeIndex][indexInsidePlane] =
                                     (short) voxelData[(voxelOffset + voxelIndex)][indexInsideVoxel];
                         }
                     }
@@ -120,6 +115,18 @@ public final class Voxel {
             voxelOffset += planeVoxelCount;
         }
 
+    }
+
+    /**
+     * Reconstruct an 3D dataset from voxels, which divided the original dataset.
+     *
+     * @param voxelDims Voxel dimensions.
+     * @param voxelData Voxel data.
+     * @return Dataset reconstructed from the voxel data.
+     */
+    public ImageU16Dataset reconstructFromVoxelsToDataset(final V3i voxelDims, final int[][] voxelData) {
+        final short[][] reconstructedData = new short[dims.getZ()][dims.toV2i().multiplyTogether()];
+        reconstructFromVoxels(voxelDims, voxelData, reconstructedData, 0);
         return new ImageU16Dataset(dims.toV2i(), dims.getZ(), reconstructedData);
     }
 
@@ -173,5 +180,9 @@ public final class Voxel {
             voxelOffset += planeVoxelCount;
         }
         return reconstructedVoxel;
+    }
+
+    public final V3i getDims() {
+        return dims;
     }
 }

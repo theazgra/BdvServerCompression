@@ -18,6 +18,13 @@ import java.io.IOException;
 
 @SuppressWarnings("DuplicatedCode")
 public class VQImageDecompressor extends CompressorDecompressorBase implements IImageDecompressor {
+
+    private interface DecompressVoxelCallback {
+        void process(final Voxel decompressedVoxel,
+                     final int[][] decompressedVoxelData,
+                     final int planeOffset) throws ImageDecompressionException;
+    }
+
     public VQImageDecompressor(CompressionOptions options) {
         super(options);
     }
@@ -171,6 +178,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         }
     }
 
+
     @Override
     public void decompressToBuffer(DataInputStream compressedStream,
                                    short[][] buffer,
@@ -240,16 +248,11 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         }
     }
 
-    private void decompressVoxelsToBuffer(DataInputStream compressedStream,
-                                          short[][] buffer,
-                                          QCMPFileHeader header) throws ImageDecompressionException {
 
-        throw new ImageDecompressionException("Implement this!!!");
-    }
+    private void decompressVoxelsImpl(DataInputStream compressedStream,
+                                      QCMPFileHeader header,
+                                      DecompressVoxelCallback callback) throws ImageDecompressionException {
 
-    private void decompressVoxels(DataInputStream compressedStream,
-                                  DataOutputStream decompressStream,
-                                  QCMPFileHeader header) throws ImageDecompressionException {
         assert (header.getQuantizationType() == QuantizationType.Vector3D);
         assert (!header.isCodebookPerPlane()); // SHOULD ALWAYS BE GLOBAL.
 
@@ -265,7 +268,6 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
         final int voxelLayerCount = VQImageCompressor.calculateVoxelLayerCount(header.getImageSizeZ(), header.getVectorSizeZ());
         Stopwatch stopwatch = new Stopwatch();
-        ImageU16Dataset currentVoxelLayer;
         for (int voxelLayerIndex = 0; voxelLayerIndex < voxelLayerCount; voxelLayerIndex++) {
             stopwatch.restart();
 
@@ -277,31 +279,24 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             final int voxelLayerDataSize = (int) header.getPlaneDataSizes()[voxelLayerIndex];
             final int voxelLayerVoxelCount = Voxel.calculateRequiredVoxelCount(currentVoxelLayerDims, voxelDims);
 
+            int[][] decompressedVoxels = new int[voxelLayerVoxelCount][vectorSize];
+
             try (InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerCodebookIndex(), voxelLayerDataSize)) {
                 inBitStream.readToBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
-                int[][] decompressedVoxels = new int[voxelLayerVoxelCount][vectorSize];
                 for (int voxelIndex = 0; voxelIndex < voxelLayerVoxelCount; voxelIndex++) {
                     final int huffmanSymbol = decodeHuffmanSymbol(huffman, inBitStream);
-                    System.arraycopy(codebook.getVectors()[huffmanSymbol].getVector(),
-                                     0, decompressedVoxels[voxelIndex], 0, vectorSize);
+                    System.arraycopy(codebook.getVectors()[huffmanSymbol].getVector(), 0, decompressedVoxels[voxelIndex], 0, vectorSize);
                 }
 
-                final Voxel currentVoxel = new Voxel(currentVoxelLayerDims);
-                currentVoxelLayer = currentVoxel.reconstructFromVoxelsToDataset(voxelDims, decompressedVoxels);
             } catch (Exception e) {
                 throw new ImageDecompressionException("VQImageDecompressor::decompressVoxels() - Unable to read indices from InBitStream.",
                                                       e);
             }
 
-            for (int layer = 0; layer < currentVoxelLayerDims.getZ(); layer++) {
-                try {
-                    decompressStream.write(TypeConverter.unsignedShortArrayToByteArray(currentVoxelLayer.getPlaneData(layer), false));
-                } catch (IOException e) {
-                    throw new ImageDecompressionException("Unable to write to decompress stream.", e);
-                }
-            }
+            final Voxel currentVoxel = new Voxel(currentVoxelLayerDims);
+            callback.process(currentVoxel, decompressedVoxels, (voxelLayerIndex * voxelLayerDepth));
 
             stopwatch.stop();
             if (options.isConsoleApplication()) {
@@ -313,6 +308,36 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                                           voxelLayerIndex, voxelLayerCount, stopwatch.getElapsedTimeString());
             }
         }
+    }
+
+
+    private void decompressVoxelsToBuffer(DataInputStream compressedStream,
+                                          short[][] buffer,
+                                          QCMPFileHeader header) throws ImageDecompressionException {
+
+        final V3i voxelDims = new V3i(header.getVectorSizeX(), header.getVectorSizeY(), header.getVectorSizeZ());
+
+        decompressVoxelsImpl(compressedStream, header, (decompressedVoxel, decompressedVoxelData, planeOffset) ->
+                decompressedVoxel.reconstructFromVoxels(voxelDims, decompressedVoxelData, buffer, planeOffset));
+    }
+
+    private void decompressVoxels(DataInputStream compressedStream,
+                                  DataOutputStream decompressStream,
+                                  QCMPFileHeader header) throws ImageDecompressionException {
+
+        final V3i voxelDims = new V3i(header.getVectorSizeX(), header.getVectorSizeY(), header.getVectorSizeZ());
+        decompressVoxelsImpl(compressedStream, header, (voxel, voxelData, planeOffset) -> {
+
+            ImageU16Dataset currentVoxelLayer = voxel.reconstructFromVoxelsToDataset(voxelDims, voxelData);
+
+            for (int layer = 0; layer < voxel.getDims().getZ(); layer++) {
+                try {
+                    decompressStream.write(TypeConverter.unsignedShortArrayToByteArray(currentVoxelLayer.getPlaneData(layer), false));
+                } catch (IOException e) {
+                    throw new ImageDecompressionException("Unable to write to decompress stream.", e);
+                }
+            }
+        });
     }
 
     private int decodeHuffmanSymbol(Huffman huffman, InBitStream inBitStream) throws IOException {
