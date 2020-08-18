@@ -33,7 +33,8 @@ public abstract class BasicLoader {
 
     protected int[][] loadRowVectorsImplByLoadPlaneData(final int vectorSize, final Range<Integer> planeRange) throws IOException {
         final int rowVectorCount = (int) Math.ceil((double) dims.getX() / (double) vectorSize);
-        final int vectorCount = dims.getZ() * dims.getY() * rowVectorCount;
+        final int planeCount = planeRange.getTo() - planeRange.getFrom();
+        final int vectorCount = planeCount * dims.getY() * rowVectorCount;
 
         int[][] rowVectors = new int[vectorCount][vectorSize];
 
