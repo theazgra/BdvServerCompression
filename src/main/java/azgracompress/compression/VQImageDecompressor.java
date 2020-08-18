@@ -136,8 +136,8 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (InBitStream inBitStream = new InBitStream(compressedStream,
-                    header.getBitsPerCodebookIndex(),
-                    planeDataSize)) {
+                                                           header.getBitsPerCodebookIndex(),
+                                                           planeDataSize)) {
                 inBitStream.readToBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
@@ -145,13 +145,13 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                 for (int vecIndex = 0; vecIndex < planeVectorCount; vecIndex++) {
                     final int huffmanSymbol = decodeHuffmanSymbol(huffman, inBitStream);
                     System.arraycopy(codebook.getVectors()[huffmanSymbol].getVector(),
-                            0, decompressedVectors[vecIndex], 0, vectorSize);
+                                     0, decompressedVectors[vecIndex], 0, vectorSize);
                 }
 
 
                 final ImageU16 decompressedPlane = reconstructImageFromQuantizedVectors(decompressedVectors,
-                        qVector,
-                        header.getImageDims());
+                                                                                        qVector,
+                                                                                        header.getImageDims());
                 decompressedPlaneData =
                         TypeConverter.unsignedShortArrayToByteArray(decompressedPlane.getData(), false);
             } catch (Exception ex) {
@@ -167,7 +167,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
             stopwatch.stop();
             reportProgressToListeners(planeIndex, planeCountForDecompression,
-                    "Decompressed plane %d in %s", planeIndex, stopwatch.getElapsedTimeString());
+                                      "Decompressed plane %d in %s", planeIndex, stopwatch.getElapsedTimeString());
         }
     }
 
@@ -207,8 +207,8 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (InBitStream inBitStream = new InBitStream(compressedStream,
-                    header.getBitsPerCodebookIndex(),
-                    planeDataSize)) {
+                                                           header.getBitsPerCodebookIndex(),
+                                                           planeDataSize)) {
                 inBitStream.readToBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
@@ -221,20 +221,22 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                         currentHuffmanNode = currentHuffmanNode.traverse(bit);
                     }
                     System.arraycopy(codebook.getVectors()[currentHuffmanNode.getSymbol()].getVector(),
-                            0, decompressedVectors[vecIndex], 0, vectorSize);
+                                     0, decompressedVectors[vecIndex], 0, vectorSize);
                 }
 
 
                 final ImageU16 decompressedPlane = reconstructImageFromQuantizedVectors(decompressedVectors,
-                        qVector,
-                        header.getImageDims());
+                                                                                        qVector,
+                                                                                        header.getImageDims());
 
                 buffer[planeIndex] = TypeConverter.intArrayToShortArray(decompressedPlane.getData());
             } catch (Exception ex) {
-                throw new ImageDecompressionException("VQImageDecompressor::decompressToBuffer() - Unable to read indices from InBitStream.", ex);
+                throw new ImageDecompressionException("VQImageDecompressor::decompressToBuffer() - Unable to read indices from " +
+                                                              "InBitStream.",
+                                                      ex);
             }
             reportProgressToListeners(planeIndex, planeCountForDecompression,
-                    "Decompressed plane %d.", planeIndex);
+                                      "Decompressed plane %d.", planeIndex);
         }
     }
 
@@ -283,13 +285,14 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                 for (int voxelIndex = 0; voxelIndex < voxelLayerVoxelCount; voxelIndex++) {
                     final int huffmanSymbol = decodeHuffmanSymbol(huffman, inBitStream);
                     System.arraycopy(codebook.getVectors()[huffmanSymbol].getVector(),
-                            0, decompressedVoxels[voxelIndex], 0, vectorSize);
+                                     0, decompressedVoxels[voxelIndex], 0, vectorSize);
                 }
 
                 final Voxel currentVoxel = new Voxel(currentVoxelLayerDims);
                 currentVoxelLayer = currentVoxel.reconstructFromVoxelsToDataset(voxelDims, decompressedVoxels);
             } catch (Exception e) {
-                throw new ImageDecompressionException("VQImageDecompressor::decompressVoxels() - Unable to read indices from InBitStream.", e);
+                throw new ImageDecompressionException("VQImageDecompressor::decompressVoxels() - Unable to read indices from InBitStream.",
+                                                      e);
             }
 
             for (int layer = 0; layer < currentVoxelLayerDims.getZ(); layer++) {
@@ -301,9 +304,14 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             }
 
             stopwatch.stop();
-            reportProgressToListeners(voxelLayerIndex, voxelLayerCount,
-                    "Decompressed voxel layer %d/%d in %s",
-                    voxelLayerIndex, voxelLayerCount, stopwatch.getElapsedTimeString());
+            if (options.isConsoleApplication()) {
+                reportStatusToListeners("Decompressed voxel layer %d/%d in %s",
+                                        voxelLayerIndex, voxelLayerCount, stopwatch.getElapsedTimeString());
+            } else {
+                reportProgressToListeners(voxelLayerIndex, voxelLayerCount,
+                                          "Decompressed voxel layer %d/%d in %s",
+                                          voxelLayerIndex, voxelLayerCount, stopwatch.getElapsedTimeString());
+            }
         }
     }
 

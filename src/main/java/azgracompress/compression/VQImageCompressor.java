@@ -272,9 +272,14 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             final int[] indices = quantizer.quantizeIntoIndices(voxelData, options.getWorkerCount());
             voxelLayersSizes[voxelLayerIndex] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
             stopwatch.stop();
-            reportProgressToListeners(voxelLayerIndex, voxelLayerCount,
-                                      "%d/%d Finished voxel layer %s compression pass in %s",
-                                      voxelLayerIndex, voxelLayerCount, voxelLayerRange.toString(), stopwatch.getElapsedTimeString());
+            if (options.isConsoleApplication()) {
+                reportStatusToListeners("%d/%d Finished voxel layer %s compression pass in %s",
+                                        voxelLayerIndex, voxelLayerCount, voxelLayerRange.toString(), stopwatch.getElapsedTimeString());
+            } else {
+                reportProgressToListeners(voxelLayerIndex, voxelLayerCount,
+                                          "%d/%d Finished voxel layer %s compression pass in %s",
+                                          voxelLayerIndex, voxelLayerCount, voxelLayerRange.toString(), stopwatch.getElapsedTimeString());
+            }
         }
 
         return voxelLayersSizes;

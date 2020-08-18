@@ -189,7 +189,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         // Check if input file exists.
         if (!new File(fileInputData.getFilePath()).exists()) {
             parseErrorOccurred = true;
-            errorBuilder.append("Input file doesn't exist.\n");
+            errorBuilder.append("Input file doesn't exist. Provided path: '").append(fileInputData.getFilePath()).append("'\n");
             return;
         }
 
@@ -273,13 +273,16 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
         getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.RawDataLoader);
         final Optional<V3i> parsedImageDims = ParseUtils.tryParseV3i(inputFileArguments[1], 'x');
 
-        if (!parsedImageDims.isPresent()) {
+        if (parsedImageDims.isPresent()) {
+            getInputDataInfo().setDimension(parsedImageDims.get());
+        } else {
             parseErrorOccurred = true;
             errorBuilder.append("Failed to parse image dimensions of format DxDxD. Got: ")
                     .append(inputFileArguments[1])
                     .append('\n');
             return;
         }
+
         // User specified plane index or plane range.
         if (inputFileArguments.length > 2) {
             parseInputFilePlaneOptions(errorBuilder, inputFileArguments, 2);
@@ -530,5 +533,10 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
     @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
+    }
+
+    @Override
+    public boolean isConsoleApplication() {
+        return true;
     }
 }

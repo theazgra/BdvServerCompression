@@ -139,4 +139,6 @@ public class CompressionOptions {
     public void setCodebookType(CodebookType codebookType) {
         this.codebookType = codebookType;
     }
+
+    public boolean isConsoleApplication() {return false;}
 }
