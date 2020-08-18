@@ -32,10 +32,13 @@ public abstract class BasicLoader {
     }
 
     protected int[][] loadRowVectorsImplByLoadPlaneData(final int vectorSize, final Range<Integer> planeRange) throws IOException {
+        System.out.println("we are here and maybe it is wrong.");
         final int rowVectorCount = (int) Math.ceil((double) dims.getX() / (double) vectorSize);
         final int planeCount = planeRange.getTo() - planeRange.getFrom();
+        System.out.println("vectorSize="+vectorSize);
+        System.out.println("planeCount="+planeCount);
         final int vectorCount = planeCount * dims.getY() * rowVectorCount;
-
+        System.out.println("vectorCount="+vectorCount);
         int[][] rowVectors = new int[vectorCount][vectorSize];
 
         int vectorIndex = 0;
@@ -49,9 +52,9 @@ public abstract class BasicLoader {
                     baseX = rowVectorIndex * vectorSize;
 
                     for (int vectorX = 0; vectorX < vectorSize; vectorX++) {
-                        if (baseX + vectorX >= dims.getY())
+                        if ((baseX + vectorX) >= dims.getY())
                             break;
-                        rowVectors[vectorIndex][vectorX] = planeData[Block.index((baseX + vectorX), row, dims.getY())];
+                        rowVectors[vectorIndex][vectorX] = planeData[Block.index((baseX + vectorX), row, dims.getX())];
                     }
                     ++vectorIndex;
                 }
