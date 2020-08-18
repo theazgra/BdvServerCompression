@@ -3,9 +3,6 @@ package azgracompress.utilities;
 import azgracompress.U16;
 import azgracompress.data.Range;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 
 
@@ -18,17 +15,6 @@ public class Utils {
     public static double calculatePsnr(final double mse, final int signalMax) {
         double psnr = 10.0 * Math.log10((Math.pow(signalMax, 2) / mse));
         return psnr;
-    }
-
-    public static byte[] readFileBytes(final String path) throws FileNotFoundException {
-        FileInputStream fileStream = new FileInputStream(path);
-        try {
-            throw new FileNotFoundException("Implement this actually!");
-            //            return fileStream.readAllBytes();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return new byte[0];
     }
 
     public static <T> boolean arrayContains(final T[] array, final T element) {
