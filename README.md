@@ -1,7 +1,9 @@
 # DataCompressor usage
 
-**This branch support loading of 16-bit input files via SCIFIO readers. RAW files will be loaded as before,
-anything else will be loaded by SCIFIO.**
+DataCompressor allows compression of image files using scalar and vector quantization.
+
+The application can load RAW image files and all formats supported by the [SCIFIO](https://imagej.net/SCIFIO) library.
+
 
 Help output:
 ```
@@ -13,8 +15,8 @@ usage: azgracompress.DataCompressor [options] input
  -d,--decompress                   Decompress 16 bit raw image
  -h,--help                         Print help
  -i,--inspect                      Inspect the compressed file
+ -mp,--middle-plane                Use middle plane for codebook creation
  -o,--output <arg>                 Custom output file
- -mp,--middle-plane                Use middle plane for codebook training.
  -sq,--scalar-quantization         Use scalar quantization.
  -tcb,--train-codebook             Train codebook and save learned
                                    codebook to cache file.
@@ -25,12 +27,13 @@ usage: azgracompress.DataCompressor [options] input
 ```
 
 ### Quantization types (QT):
-- This program supports two (*three*) different quantization types:
+- This program supports two different quantization types:
 - Scalar quantization, selected by `-sq` or `--scalar-quantization`
 - Vector quantization, selected by `-vq` or `--vector-quantization`
   - Vector quantization requires you to input the vector dimension after the flag
-  - For One-Dimensional row vectors you can the length as `9` or `9x1`
-  - For Two-Dimensional matrix vectors the dimensions is set by `DxD` format, eg. `3x3`, `5x3`
+  - For one-dimensional row vectors you can the length as `9` or `9x1`
+  - For two-dimensional matrix vectors the dimensions is set by `DxD` format, eg. `3x3`, `5x3`
+  - For three-dimensional voxel vectors the dimensions is set by `DxDxD` format, eg. `3x3x3`, `5x3x2`
 
 ## Main program methods
 
@@ -51,7 +54,8 @@ usage: azgracompress.DataCompressor [options] input
 
 ### Inspect
 - Use with `-i` or `--inspect` 
-- Inspect the compressed file. Read compressed file header are write the information from that header.
+- Inspect the compressed image file or cached codebook. 
+- Read compressed file header are write the information from that header.
 
 ### Train codebook
 - Use with `-tcb` or `--train-codebook`
@@ -67,12 +71,13 @@ usage: azgracompress.DataCompressor [options] input
 
 ### Input file
 - Input file is required for all methods.
-- decompress and inspect require only the input file path, while other also require its dimensions
-- Input file dimensions are inputed in format of DxDxD [D] [D-D]
-  - DxDxD is image dimension. Eg. 1920x1080x1, 1041x996x946 (946 planes of 1041x996 images)
-  - [D] is optional plane index. Only this plane will be compressed.
-  - [D-D] is optional plane range. Only plane in this range will be compressed.
-- D stands for integer values.
+- Decompress and inspect require only the input file path, while other also require its dimensions
+- If the input file is RAW data file, then image dimensions must be provided as follows:
+  - Input file dimensions are inputed in format of DxDxD [D] [D-D]
+    - DxDxD is image dimension. Eg. 1920x1080x1, 1041x996x946 (946 planes of 1041x996 images)
+    - [D] is optional plane index. Only this plane will be compressed.
+    - [D-D] is optional plane range. Only plane in this range will be compressed.
+  - D stands for integer values.
 - Planes selected by the index or plane range are used for:
   - Compression
   - Training of codebook
@@ -83,4 +88,3 @@ usage: azgracompress.DataCompressor [options] input
 - `-v`, `--verbose` - Make program output verbose.
 - `-o`, `--output` - Set the ouput of compression, decompression, codebook training, benchmark.
 - `-wc`, `--worker-count` - Set the number of worker threads.
-
