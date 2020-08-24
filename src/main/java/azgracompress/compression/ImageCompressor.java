@@ -9,8 +9,11 @@ import java.io.*;
 public class ImageCompressor extends CompressorDecompressorBase {
     final int PLANE_DATA_SIZES_OFFSET = 23;
 
+    private final IImageCompressor imageCompressor;
+
     public ImageCompressor(CompressionOptions options) {
         super(options);
+        imageCompressor = getImageCompressor();
     }
 
     /**
@@ -46,12 +49,11 @@ public class ImageCompressor extends CompressorDecompressorBase {
     private void reportCompressionRatio(final QCMPFileHeader header, final int written) {
         final long originalDataSize = 2 * header.getImageSizeX() * header.getImageSizeY() * header.getImageSizeZ();
         final double compressionRatio = (double) written / (double) originalDataSize;
-        System.out.println(String.format("Compression ratio: %.5f", compressionRatio));
+        System.out.printf("Compression ratio: %.5f%%\n", compressionRatio);
     }
 
     public boolean trainAndSaveCodebook() {
         reportStatusToListeners("=== Training codebook ===");
-        IImageCompressor imageCompressor = getImageCompressor();
         if (imageCompressor == null) {
             return false;
         }
@@ -65,9 +67,11 @@ public class ImageCompressor extends CompressorDecompressorBase {
         return true;
     }
 
-    public boolean compress() {
-        IImageCompressor imageCompressor = getImageCompressor();
+    public int streamCompress(OutputStream outputStream) {
 
+    }
+
+    public boolean compress() {
         if (imageCompressor == null) {
             return false;
         }
