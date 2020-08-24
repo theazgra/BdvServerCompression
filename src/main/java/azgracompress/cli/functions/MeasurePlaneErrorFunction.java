@@ -1,7 +1,7 @@
 package azgracompress.cli.functions;
 
 import azgracompress.cli.CustomFunctionBase;
-import azgracompress.cli.ParsedCliOptions;
+import azgracompress.cli.CompressionOptionsCLIParser;
 import azgracompress.data.V3i;
 import azgracompress.io.FileInputData;
 import azgracompress.io.loader.RawDataLoader;
@@ -13,7 +13,7 @@ import java.io.OutputStreamWriter;
 import java.util.Arrays;
 
 public class MeasurePlaneErrorFunction extends CustomFunctionBase {
-    public MeasurePlaneErrorFunction(ParsedCliOptions options) {
+    public MeasurePlaneErrorFunction(CompressionOptionsCLIParser options) {
         super(options);
     }
 

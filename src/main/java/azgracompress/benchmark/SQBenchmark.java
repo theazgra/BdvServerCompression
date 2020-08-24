@@ -2,7 +2,7 @@ package azgracompress.benchmark;
 
 import azgracompress.U16;
 import azgracompress.cache.QuantizationCacheManager;
-import azgracompress.cli.ParsedCliOptions;
+import azgracompress.cli.CompressionOptionsCLIParser;
 import azgracompress.compression.CompressionOptions;
 import azgracompress.io.loader.IPlaneLoader;
 import azgracompress.io.loader.PlaneLoaderFactory;
@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 
 public class SQBenchmark extends BenchmarkBase {
-    public SQBenchmark(final ParsedCliOptions options) {
+    public SQBenchmark(final CompressionOptionsCLIParser options) {
         super(options);
     }
 

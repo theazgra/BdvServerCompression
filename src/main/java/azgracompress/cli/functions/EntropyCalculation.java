@@ -1,7 +1,7 @@
 package azgracompress.cli.functions;
 
 import azgracompress.cli.CustomFunctionBase;
-import azgracompress.cli.ParsedCliOptions;
+import azgracompress.cli.CompressionOptionsCLIParser;
 import azgracompress.io.loader.IPlaneLoader;
 import azgracompress.io.loader.PlaneLoaderFactory;
 import azgracompress.utilities.Utils;
@@ -14,7 +14,7 @@ public class EntropyCalculation extends CustomFunctionBase {
      *
      * @param options Parsed cli options.
      */
-    public EntropyCalculation(ParsedCliOptions options) {
+    public EntropyCalculation(CompressionOptionsCLIParser options) {
         super(options);
     }
 

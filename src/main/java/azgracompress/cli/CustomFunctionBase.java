@@ -1,13 +1,13 @@
 package azgracompress.cli;
 
 public abstract class CustomFunctionBase {
-    protected final ParsedCliOptions options;
+    protected final CompressionOptionsCLIParser options;
 
     /**
      * Base constructor with parsed CLI options.
      * @param options Parsed cli options.
      */
-    public CustomFunctionBase(ParsedCliOptions options) {
+    public CustomFunctionBase(CompressionOptionsCLIParser options) {
         this.options = options;
     }
 

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-public class ParsedCliOptions extends CompressionOptions implements Cloneable {
+public class CompressionOptionsCLIParser extends CompressionOptions implements Cloneable {
     private static final int DEFAULT_BITS_PER_PIXEL = 8;
 
     /**
@@ -44,7 +44,7 @@ public class ParsedCliOptions extends CompressionOptions implements Cloneable {
      *
      * @param cmdInput Command line arguments.
      */
-    public ParsedCliOptions(CommandLine cmdInput) {
+    public CompressionOptionsCLIParser(CommandLine cmdInput) {
         parseCLI(cmdInput);
     }
 

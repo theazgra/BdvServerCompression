@@ -2,7 +2,7 @@ package azgracompress.benchmark;
 
 import azgracompress.compression.CompressionOptions;
 import azgracompress.io.InputData;
-import azgracompress.cli.ParsedCliOptions;
+import azgracompress.cli.CompressionOptionsCLIParser;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V3i;
 import azgracompress.io.RawDataIO;
@@ -35,9 +35,9 @@ abstract class BenchmarkBase {
 
     protected final int workerCount;
 
-    protected final ParsedCliOptions options;
+    protected final CompressionOptionsCLIParser options;
 
-    protected BenchmarkBase(final ParsedCliOptions options) {
+    protected BenchmarkBase(final CompressionOptionsCLIParser options) {
         this.options = options;
 
         final InputData ifi = options.getInputDataInfo();

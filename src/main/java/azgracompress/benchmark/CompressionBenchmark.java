@@ -1,9 +1,9 @@
 package azgracompress.benchmark;
 
-import azgracompress.cli.ParsedCliOptions;
+import azgracompress.cli.CompressionOptionsCLIParser;
 
 public class CompressionBenchmark {
-    public static void runBenchmark(final ParsedCliOptions options) {
+    public static void runBenchmark(final CompressionOptionsCLIParser options) {
         Benchmark benchmark = new Benchmark(options);
         benchmark.startBenchmark();
 //        switch (options.getQuantizationType()) {

@@ -1,6 +1,6 @@
 package azgracompress.benchmark;
 
-import azgracompress.cli.ParsedCliOptions;
+import azgracompress.cli.CompressionOptionsCLIParser;
 import azgracompress.data.Block;
 import azgracompress.data.ImageU16;
 import azgracompress.data.V2i;
@@ -8,7 +8,7 @@ import azgracompress.data.V3i;
 
 public class VQBenchmark extends BenchmarkBase {
 
-    public VQBenchmark(final ParsedCliOptions options) {
+    public VQBenchmark(final CompressionOptionsCLIParser options) {
         super(options);
     }
 

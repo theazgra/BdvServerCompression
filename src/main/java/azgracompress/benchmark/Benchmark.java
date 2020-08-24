@@ -1,7 +1,7 @@
 package azgracompress.benchmark;
 
 import azgracompress.U16;
-import azgracompress.cli.ParsedCliOptions;
+import azgracompress.cli.CompressionOptionsCLIParser;
 import azgracompress.compression.ImageCompressor;
 import azgracompress.compression.ImageDecompressor;
 import azgracompress.data.ImageU16Dataset;
@@ -19,19 +19,19 @@ import java.util.Optional;
 public class Benchmark extends BenchmarkBase {
 
 
-    protected Benchmark(ParsedCliOptions options) {
+    protected Benchmark(CompressionOptionsCLIParser options) {
         super(options);
     }
 
     @Override
     public void startBenchmark() {
         assert (options.getInputDataInfo().isPlaneIndexSet());
-        ParsedCliOptions compressOps;
-        ParsedCliOptions decompressOps;
+        CompressionOptionsCLIParser compressOps;
+        CompressionOptionsCLIParser decompressOps;
         try {
             // NOTE: This works, right?
-            compressOps = (ParsedCliOptions) options.clone();
-            decompressOps = (ParsedCliOptions) options.clone();
+            compressOps = (CompressionOptionsCLIParser) options.clone();
+            decompressOps = (CompressionOptionsCLIParser) options.clone();
         } catch (CloneNotSupportedException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();

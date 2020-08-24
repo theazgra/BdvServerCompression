@@ -4,7 +4,7 @@ import azgracompress.benchmark.CompressionBenchmark;
 import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cli.CliConstants;
 import azgracompress.cli.CustomFunctionBase;
-import azgracompress.cli.ParsedCliOptions;
+import azgracompress.cli.CompressionOptionsCLIParser;
 import azgracompress.cli.functions.EntropyCalculation;
 import azgracompress.compression.ImageCompressor;
 import azgracompress.compression.ImageDecompressor;
@@ -36,28 +36,28 @@ public class DataCompressor {
             return;
         }
 
-        ParsedCliOptions parsedCliOptions = new ParsedCliOptions(cmd);
+        CompressionOptionsCLIParser compressionOptionsCLIParser = new CompressionOptionsCLIParser(cmd);
         // NOTE(Moravec): From this point we need to dispose of possible existing SCIFIO context.
-        if (parsedCliOptions.parseError()) {
-            System.err.println(parsedCliOptions.getParseError());
+        if (compressionOptionsCLIParser.parseError()) {
+            System.err.println(compressionOptionsCLIParser.getParseError());
             ScifioWrapper.dispose();
             return;
         }
 
-        if (parsedCliOptions.isVerbose()) {
-            System.out.println(parsedCliOptions.report());
+        if (compressionOptionsCLIParser.isVerbose()) {
+            System.out.println(compressionOptionsCLIParser.report());
         }
 
-        switch (parsedCliOptions.getMethod()) {
+        switch (compressionOptionsCLIParser.getMethod()) {
             case Compress: {
-                ImageCompressor compressor = new ImageCompressor(parsedCliOptions);
+                ImageCompressor compressor = new ImageCompressor(compressionOptionsCLIParser);
                 if (!compressor.compress()) {
                     System.err.println("Errors occurred during compression.");
                 }
             }
             break;
             case Decompress: {
-                ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
+                ImageDecompressor decompressor = new ImageDecompressor(compressionOptionsCLIParser);
                 if (!decompressor.decompressToFile()) {
                     System.err.println("Errors occurred during decompression.");
                 }
@@ -65,11 +65,11 @@ public class DataCompressor {
             break;
 
             case Benchmark: {
-                CompressionBenchmark.runBenchmark(parsedCliOptions);
+                CompressionBenchmark.runBenchmark(compressionOptionsCLIParser);
             }
             break;
             case TrainCodebook: {
-                ImageCompressor compressor = new ImageCompressor(parsedCliOptions);
+                ImageCompressor compressor = new ImageCompressor(compressionOptionsCLIParser);
                 if (!compressor.trainAndSaveCodebook()) {
                     System.err.println("Errors occurred during training/saving of codebook.");
                 }
@@ -79,7 +79,7 @@ public class DataCompressor {
                 // NOTE(Moravec): Custom function class here |
                 //                                           V
                 //CustomFunctionBase customFunction = new MeasurePlaneErrorFunction(parsedCliOptions);
-                CustomFunctionBase customFunction = new EntropyCalculation(parsedCliOptions);
+                CustomFunctionBase customFunction = new EntropyCalculation(compressionOptionsCLIParser);
                 if (!customFunction.run()) {
                     System.err.println("Errors occurred during custom function.");
                 }
@@ -91,11 +91,11 @@ public class DataCompressor {
             }
             break;
             case InspectFile: {
-                if (parsedCliOptions.getInputDataInfo().getFilePath().endsWith(FileExtensions.CACHE_FILE_EXT)) {
-                    QuantizationCacheManager.inspectCacheFile(parsedCliOptions.getInputDataInfo().getFilePath(),
-                                                              parsedCliOptions.isVerbose());
+                if (compressionOptionsCLIParser.getInputDataInfo().getFilePath().endsWith(FileExtensions.CACHE_FILE_EXT)) {
+                    QuantizationCacheManager.inspectCacheFile(compressionOptionsCLIParser.getInputDataInfo().getFilePath(),
+                                                              compressionOptionsCLIParser.isVerbose());
                 } else {
-                    ImageDecompressor decompressor = new ImageDecompressor(parsedCliOptions);
+                    ImageDecompressor decompressor = new ImageDecompressor(compressionOptionsCLIParser);
                     try {
                         System.out.println(decompressor.inspectCompressedFile());
                     } catch (IOException e) {
