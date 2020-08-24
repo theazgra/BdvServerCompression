@@ -30,7 +30,7 @@ public class FlatBufferInputData extends InputData {
                                final PixelType pixelType,
                                final String cacheHint) {
         this.imageBuffer = imageBuffer;
-        setDataLoaderType(DataLoaderType.ImageJBufferLoader);
+        setDataLoaderType(DataLoaderType.FlatBufferLoader);
         setDimension(imageDimensions);
         setPixelType(pixelType);
         this.cacheHint = cacheHint;
