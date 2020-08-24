@@ -91,19 +91,13 @@ public class CliConstants {
         methodGroup.addOption(new Option(CliConstants.HELP_SHORT, CliConstants.HELP_LONG, false, "Print help"));
 
         OptionGroup compressionMethodGroup = new OptionGroup();
-        compressionMethodGroup.addOption(new Option(CliConstants.SCALAR_QUANTIZATION_SHORT,
-                                                    CliConstants.SCALAR_QUANTIZATION_LONG,
-                                                    false,
-                                                    "Use scalar quantization."));
+        compressionMethodGroup.addOption(createSQOption());
 
-        compressionMethodGroup.addOption(new Option(CliConstants.VECTOR_QUANTIZATION_SHORT,
-                                                    CliConstants.VECTOR_QUANTIZATION_LONG,
-                                                    true,
-                                                    "Use vector quantization. Need to pass vector size eg. 9,9x1,3x3"));
+        compressionMethodGroup.addOption(createVQOption());
 
         options.addOptionGroup(methodGroup);
         options.addOptionGroup(compressionMethodGroup);
-        options.addOption(CliConstants.BITS_SHORT, CliConstants.BITS_LONG, true, "Bit count per pixel [Default 8]");
+        options.addOption(createBitsOption());
 
         options.addOption(CliConstants.USE_MIDDLE_PLANE_SHORT,
                           CliConstants.USE_MIDDLE_PLANE_LONG,
@@ -120,13 +114,35 @@ public class CliConstants {
                                      true,
                                      "Number of worker threads"));
 
-        options.addOption(new Option(CliConstants.CODEBOOK_CACHE_FOLDER_SHORT,
-                                     CliConstants.CODEBOOK_CACHE_FOLDER_LONG,
-                                     true,
-                                     "Folder of codebook caches"));
+        options.addOption(createCBCMethod());
 
         options.addOption(CliConstants.OUTPUT_SHORT, CliConstants.OUTPUT_LONG, true, "Custom output file");
         return options;
+    }
+
+    public static Option createBitsOption() {
+        return new Option(CliConstants.BITS_SHORT, CliConstants.BITS_LONG, true, "Bit count per pixel [Default 8]");
+    }
+
+    public static Option createCBCMethod() {
+        return new Option(CliConstants.CODEBOOK_CACHE_FOLDER_SHORT,
+                          CliConstants.CODEBOOK_CACHE_FOLDER_LONG,
+                          true,
+                          "Folder of codebook caches");
+    }
+
+    public static Option createSQOption() {
+        return new Option(CliConstants.SCALAR_QUANTIZATION_SHORT,
+                          CliConstants.SCALAR_QUANTIZATION_LONG,
+                          false,
+                          "Use scalar quantization.");
+    }
+
+    public static Option createVQOption() {
+        return new Option(CliConstants.VECTOR_QUANTIZATION_SHORT,
+                          CliConstants.VECTOR_QUANTIZATION_LONG,
+                          true,
+                          "Use vector quantization. Need to pass vector size eg. 9,9x1,3x3");
     }
 
 }
