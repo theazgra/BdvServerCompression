@@ -43,6 +43,16 @@ public class VQCodebook {
         return vectors;
     }
 
+    public int[][] getRawVectors() {
+        assert (codebookSize == vectors.length);
+        assert (vectors[0].getVector().length == (int) vectorDims.multiplyTogether());
+        final int[][] rawCodebook = new int[vectors.length][(int) vectorDims.multiplyTogether()];
+        for (int i = 0; i < codebookSize; i++) {
+            rawCodebook[i] = vectors[i].getVector();
+        }
+        return rawCodebook;
+    }
+
     /**
      * Get frequencies of codebook vectors at indices.
      *

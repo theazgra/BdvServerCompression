@@ -36,7 +36,7 @@ public class QuantizationCacheManager {
     private File getCacheFilePathForSQ(final String trainFile, final int codebookSize) {
         final File inputFile = new File(trainFile);
         return new File(cacheFolder, String.format("%s_%d_bits.qvc",
-                inputFile.getName(), codebookSize));
+                                                   inputFile.getName(), codebookSize));
     }
 
     /**
@@ -52,7 +52,7 @@ public class QuantizationCacheManager {
                                        final V3i vDim) {
         final File inputFile = new File(trainFile);
         return new File(cacheFolder, String.format("%s_%d_%dx%dx%d.qvc", inputFile.getName(), codebookSize,
-                vDim.getX(), vDim.getY(), vDim.getZ()));
+                                                   vDim.getX(), vDim.getY(), vDim.getZ()));
     }
 
 
@@ -143,8 +143,8 @@ public class QuantizationCacheManager {
      */
     public String saveCodebook(final String trainFile, final VQCodebook codebook) throws IOException {
         final String fileName = getCacheFilePathForVQ(trainFile,
-                codebook.getCodebookSize(),
-                codebook.getVectorDims()).getAbsolutePath();
+                                                      codebook.getCodebookSize(),
+                                                      codebook.getVectorDims()).getAbsolutePath();
 
         final CacheFileHeader header = createHeaderForVQ(new File(trainFile).getName(), codebook);
         final VQCacheFile cacheFile = new VQCacheFile(header, codebook);
@@ -280,6 +280,21 @@ public class QuantizationCacheManager {
 
         assert (false) : "Invalid quantization type.";
         return null;
+    }
+
+    public static ICacheFile readCacheFile(final String path) {
+        try (FileInputStream fis = new FileInputStream(path);
+             DataInputStream dis = new DataInputStream(fis)) {
+            CacheFileHeader header = new CacheFileHeader();
+            header.readFromStream(dis);
+
+            ICacheFile cacheFile = getCacheFile(header.getQuantizationType());
+            assert (cacheFile != null);
+            cacheFile.readFromStream(dis, header);
+            return cacheFile;
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     /**

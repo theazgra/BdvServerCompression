@@ -10,6 +10,8 @@ public interface ICacheFile {
 
     void readFromStream(DataInputStream inputStream) throws IOException;
 
+    void readFromStream(DataInputStream inputStream, CacheFileHeader header) throws IOException;
+
     CacheFileHeader getHeader();
 
     void report(StringBuilder builder);

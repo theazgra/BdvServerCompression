@@ -38,9 +38,12 @@ public class VQCacheFile implements ICacheFile {
 
     public void readFromStream(DataInputStream inputStream) throws IOException {
         header = new CacheFileHeader();
-
         header.readFromStream(inputStream);
+        readFromStream(inputStream, header);
+    }
 
+    @Override
+    public void readFromStream(DataInputStream inputStream, CacheFileHeader header) throws IOException {
         final int codebookSize = header.getCodebookSize();
         final CodebookEntry[] vectors = new CodebookEntry[codebookSize];
         final long[] frequencies = new long[codebookSize];
