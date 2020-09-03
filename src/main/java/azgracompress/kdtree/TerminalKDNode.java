@@ -17,4 +17,8 @@ public class TerminalKDNode extends KDNode {
     public int[][] getBucket() {
         return bucket;
     }
+
+    public void findNearestNeighborInBucket(final int[] queryRecord, final KDTree.SearchInfo searchInfo) {
+
+    }
 }

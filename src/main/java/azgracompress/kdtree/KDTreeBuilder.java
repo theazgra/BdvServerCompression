@@ -33,8 +33,14 @@ public class KDTreeBuilder {
         this.dimension = dimension;
     }
 
+    public KDTree buildTree(final int[][] records) {
+        nodeCount = 0;
+        terminalNodeCount = 0;
+        final KDNode rootNode = buildTreeImpl(records);
+        return new KDTree(rootNode, dimension, bucketSize, nodeCount, terminalNodeCount);
+    }
 
-    public KDNode buildTree(final int[][] records) {
+    public KDNode buildTreeImpl(final int[][] records) {
         if (records.length <= bucketSize) {
             return makeTerminalNode(records);
         }
@@ -73,8 +79,8 @@ public class KDTreeBuilder {
     }
 
     private KDNode makeNonTerminalNode(final int keyIndex, final int median, final DividedRecords dividedRecords) {
-        final KDNode loSon = buildTree(dividedRecords.getLoRecords());
-        final KDNode hiSon = buildTree(dividedRecords.getHiRecords());
+        final KDNode loSon = buildTreeImpl(dividedRecords.getLoRecords());
+        final KDNode hiSon = buildTreeImpl(dividedRecords.getHiRecords());
         ++nodeCount;
         return new KDNode(keyIndex, median, loSon, hiSon);
     }
@@ -113,16 +119,9 @@ public class KDTreeBuilder {
 
         for (final int[] record : records) {
             spread += Math.pow(((double) center - (double) record[keyIndex]), 2);
+            // spread += Math.abs(center - record[keyIndex]);
         }
-
         return Math.sqrt(spread);
-    }
-
-    public int getNodeCount() {
-        return nodeCount;
-    }
-
-    public int getTerminalNodeCount() {
-        return terminalNodeCount;
+        // return (spread / (double) records.length);
     }
 }
