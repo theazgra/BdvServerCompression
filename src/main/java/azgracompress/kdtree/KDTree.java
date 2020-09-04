@@ -2,6 +2,10 @@ package azgracompress.kdtree;
 
 import java.util.Arrays;
 
+// TODO(Moravec):   One more time read the paper and check the implementation!
+//                  Fix the spreadest function (max-min) may be used.
+//                  https://dl.acm.org/doi/pdf/10.1145/355744.355745
+
 public class KDTree {
     private final int maximumBucketSize;
     private final KDNode root;
