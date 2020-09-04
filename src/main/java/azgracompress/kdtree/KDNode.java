@@ -52,8 +52,8 @@ public class KDNode {
 
             if (ballWithinBounds(queryRecord, searchInfo)) {
                 searchInfo.setContinueSearching(false);
-                return;
             }
+            return;
         }
 
         assert (loSon != null && hiSon != null);
