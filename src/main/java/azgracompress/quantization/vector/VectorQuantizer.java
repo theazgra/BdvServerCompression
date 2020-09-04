@@ -1,5 +1,7 @@
 package azgracompress.quantization.vector;
 
+import azgracompress.utilities.Utils;
+
 public class VectorQuantizer {
 
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
@@ -104,11 +106,7 @@ public class VectorQuantizer {
                 return sum;
             }
             case Euclidean: {
-                double sum = 0.0;
-                for (int i = 0; i < originalDataVector.length; i++) {
-                    sum += Math.pow(((double) originalDataVector[i] - (double) codebookEntry[i]), 2);
-                }
-                return Math.sqrt(sum);
+                return Utils.calculateEuclideanDistance(originalDataVector, codebookEntry);
             }
             case MaxDiff: {
                 double maxDiff = Double.MIN_VALUE;

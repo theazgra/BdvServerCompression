@@ -11,15 +11,16 @@ public class KDTree {
     private final int terminalNodeCount;
 
     public static class SearchInfo {
-        private double currentClosestDistance;
-        private int[] currentClosestRecord = null;
+        private boolean continueSearching = true;
+        private double nearestRecordDistance;
+        private int[] nearestRecord = null;
         private final double[] coordinateUpperBound;
         private final double[] coordinateLowerBound;
         private final int dimension;
 
         public SearchInfo(final int dimension) {
             this.dimension = dimension;
-            currentClosestDistance = Double.POSITIVE_INFINITY;
+            nearestRecordDistance = Double.POSITIVE_INFINITY;
             coordinateUpperBound = new double[dimension];
             coordinateLowerBound = new double[dimension];
             Arrays.fill(coordinateLowerBound, Double.NEGATIVE_INFINITY);
@@ -30,20 +31,12 @@ public class KDTree {
             return dimension;
         }
 
-        public double getCurrentClosestDistance() {
-            return currentClosestDistance;
+        public double getNearestRecordDistance() {
+            return nearestRecordDistance;
         }
 
-        public void setCurrentClosestDistance(double currentClosestDistance) {
-            this.currentClosestDistance = currentClosestDistance;
-        }
-
-        public int[] getCurrentClosestRecord() {
-            return currentClosestRecord;
-        }
-
-        public void setCurrentClosestRecord(int[] currentClosestRecord) {
-            this.currentClosestRecord = currentClosestRecord;
+        public int[] getNearestRecord() {
+            return nearestRecord;
         }
 
         public double[] getUpperBounds() {
@@ -52,6 +45,19 @@ public class KDTree {
 
         public double[] getLowerBounds() {
             return coordinateLowerBound;
+        }
+
+        public boolean stopSearching() {
+            return !continueSearching;
+        }
+
+        public void setContinueSearching(boolean continueSearching) {
+            this.continueSearching = continueSearching;
+        }
+
+        public void setNearestRecord(final int[] record, final double recordDistance) {
+            this.nearestRecord = record;
+            this.nearestRecordDistance = recordDistance;
         }
     }
 
@@ -68,10 +74,9 @@ public class KDTree {
     }
 
     public int[] findNearestNeighbor(final int[] queryRecord) {
-        // TODO(Moravec): Read more about Ball Within Bounds and Bounds Overlap Ball
         SearchInfo searchInfo = new SearchInfo(dimension);
         root.findNearestNeighbor(queryRecord, searchInfo);
-        return searchInfo.currentClosestRecord;
+        return searchInfo.nearestRecord;
     }
 
     public int getTotalNodeCount() {

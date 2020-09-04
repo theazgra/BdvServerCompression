@@ -44,26 +44,34 @@ public class KDNode {
 
     public void findNearestNeighbor(final int[] queryRecord, final KDTree.SearchInfo searchInfo) {
 
+        if (searchInfo.stopSearching())
+            return;
+
         if (isTerminal()) {
-            // TODO: Examine records in bucket(node), updating PQD , PQR > ,
             ((TerminalKDNode) this).findNearestNeighborInBucket(queryRecord, searchInfo);
 
-            if (!ballWithinBounds(queryRecord, searchInfo))
+            if (ballWithinBounds(queryRecord, searchInfo)) {
+                searchInfo.setContinueSearching(false);
                 return;
+            }
         }
-        assert (loSon != null && hiSon != null);
 
+        assert (loSon != null && hiSon != null);
         if (queryRecord[discriminator] <= partition) {
             double tmp = searchInfo.getUpperBounds()[discriminator];
             searchInfo.getUpperBounds()[discriminator] = partition;
             loSon.findNearestNeighbor(queryRecord, searchInfo);
             searchInfo.getUpperBounds()[discriminator] = tmp;
+
         } else {
             double tmp = searchInfo.getLowerBounds()[discriminator];
             searchInfo.getLowerBounds()[discriminator] = partition;
             hiSon.findNearestNeighbor(queryRecord, searchInfo);
             searchInfo.getLowerBounds()[discriminator] = tmp;
         }
+        if (searchInfo.stopSearching())
+            return;
+
 
         if (queryRecord[discriminator] <= partition) {
             double tmp = searchInfo.getLowerBounds()[discriminator];
@@ -80,9 +88,11 @@ public class KDNode {
             }
             searchInfo.getUpperBounds()[discriminator] = tmp;
         }
-
-        if (!ballWithinBounds(queryRecord, searchInfo)) {
+        if (searchInfo.stopSearching())
             return;
+
+        if (ballWithinBounds(queryRecord, searchInfo)) {
+            searchInfo.setContinueSearching(false);
         }
     }
 
@@ -90,17 +100,16 @@ public class KDNode {
         return Math.pow((x - y), 2);
     }
 
-    private static double dissim(final double value) {
+    private static double dissimilarity(final double value) {
         return Math.sqrt(value);
     }
 
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean ballWithinBounds(final int[] queryRecord, final KDTree.SearchInfo searchInfo) {
         double lbDist, ubDist;
         for (int d = 0; d < searchInfo.getDimension(); d++) {
             lbDist = coordinateDistance(searchInfo.getLowerBounds()[d], queryRecord[d]);
             ubDist = coordinateDistance(searchInfo.getUpperBounds()[d], queryRecord[d]);
-            if ((lbDist <= searchInfo.getCurrentClosestDistance()) || (ubDist <= searchInfo.getCurrentClosestDistance())) {
+            if ((lbDist <= searchInfo.getNearestRecordDistance()) || (ubDist <= searchInfo.getNearestRecordDistance())) {
                 return false;
             }
         }
@@ -112,12 +121,12 @@ public class KDNode {
         for (int d = 0; d < searchInfo.getDimension(); d++) {
             if (queryRecord[d] < searchInfo.getLowerBounds()[d]) {
                 sum += coordinateDistance(queryRecord[d], searchInfo.getLowerBounds()[d]);
-                if (dissim(sum) > searchInfo.getCurrentClosestDistance()) {
+                if (dissimilarity(sum) > searchInfo.getNearestRecordDistance()) {
                     return true;
                 }
             } else if (queryRecord[d] > searchInfo.getUpperBounds()[d]) {
                 sum += coordinateDistance(queryRecord[d], searchInfo.getUpperBounds()[d]);
-                if (dissim(sum) > searchInfo.getCurrentClosestDistance()) {
+                if (dissimilarity(sum) > searchInfo.getNearestRecordDistance()) {
                     return true;
                 }
             }

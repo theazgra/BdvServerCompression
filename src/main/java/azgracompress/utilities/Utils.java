@@ -139,4 +139,20 @@ public class Utils {
         final double mse = (sum / (double) difference.length);
         return mse;
     }
+
+    /**
+     * Calculate the euclidean distance between two vectors.
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @return Euclidean distance.
+     */
+    public static double calculateEuclideanDistance(final int[] v1, final int[] v2) {
+        assert (v1.length == v2.length);
+        double sum = 0.0;
+        for (int i = 0; i < v1.length; i++) {
+            sum += Math.pow(((double) v1[i] - (double) v2[i]), 2);
+        }
+        return Math.sqrt(sum);
+    }
 }
