@@ -20,7 +20,7 @@ public class TerminalKDNode extends KDNode {
         return bucket;
     }
 
-    public void findNearestNeighborInBucket(final int[] queryRecord, final KDTree.SearchInfo searchInfo) {
+    public void findNearestNeighborInBucket(final int[] queryRecord, final KDTree.BBFSearchInfo searchInfo) {
         double recordDistance;
         for (final int[] record : bucket) {
             recordDistance = Utils.calculateEuclideanDistance(queryRecord, record);

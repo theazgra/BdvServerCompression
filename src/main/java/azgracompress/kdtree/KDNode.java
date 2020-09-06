@@ -44,6 +44,9 @@ public class KDNode {
 
     public void findNearestNeighbor(final int[] queryRecord, final KDTree.SearchInfo searchInfo) {
 
+
+
+
         if (searchInfo.stopSearching())
             return;
 
