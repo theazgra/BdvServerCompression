@@ -2,7 +2,6 @@ package azgracompress.kdtree;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.PriorityQueue;
 
 // TODO(Moravec):   One more time read the paper and check the implementation!
@@ -43,41 +42,6 @@ public class KDTree {
         }
     }
 
-    public static class SearchInfo extends BBFSearchInfo {
-        private boolean continueSearching = true;
-        private final double[] coordinateUpperBound;
-        private final double[] coordinateLowerBound;
-        private final int dimension;
-
-        public SearchInfo(final int dimension) {
-            this.dimension = dimension;
-            coordinateUpperBound = new double[dimension];
-            coordinateLowerBound = new double[dimension];
-            Arrays.fill(coordinateLowerBound, Double.NEGATIVE_INFINITY);
-            Arrays.fill(coordinateUpperBound, Double.POSITIVE_INFINITY);
-        }
-
-        public int getDimension() {
-            return dimension;
-        }
-
-        public double[] getUpperBounds() {
-            return coordinateUpperBound;
-        }
-
-        public double[] getLowerBounds() {
-            return coordinateLowerBound;
-        }
-
-        public boolean stopSearching() {
-            return !continueSearching;
-        }
-
-        public void setContinueSearching(boolean continueSearching) {
-            this.continueSearching = continueSearching;
-        }
-    }
-
     private static class NodeWithDistance implements Comparable<NodeWithDistance> {
         private final KDNode node;
         private final double distance;
@@ -113,12 +77,6 @@ public class KDTree {
         this.terminalNodeCount = terminalNodeCount;
     }
 
-    public int[] findNearestNeighbor(final int[] queryRecord) {
-        SearchInfo searchInfo = new SearchInfo(dimension);
-        root.findNearestNeighbor(queryRecord, searchInfo);
-        return searchInfo.getNearestRecord();
-    }
-
     public int[] findNearestBBF(final int[] queryVector, final int maxE) {
 
         PriorityQueue<NodeWithDistance> priorityQueue = new PriorityQueue<>();
@@ -137,14 +95,14 @@ public class KDTree {
                 partition = current.getNode().getPartition();
                 if (queryVector[discriminator] < partition) {
                     priorityQueue.add(new NodeWithDistance(current.getNode().getLoSon(),
-                            0.0));
+                                                           0.0));
                     priorityQueue.add(new NodeWithDistance(current.getNode().getHiSon(),
-                            (double) partition - (double) queryVector[discriminator]));
+                                                           (double) partition - (double) queryVector[discriminator]));
                 } else {
                     priorityQueue.add(new NodeWithDistance(current.getNode().getHiSon(),
-                            0.0));
+                                                           0.0));
                     priorityQueue.add(new NodeWithDistance(current.getNode().getLoSon(),
-                            (double) queryVector[discriminator] - (double) partition));
+                                                           (double) queryVector[discriminator] - (double) partition));
                 }
             }
         }

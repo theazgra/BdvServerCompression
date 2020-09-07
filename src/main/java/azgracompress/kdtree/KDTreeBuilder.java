@@ -116,7 +116,6 @@ public class KDTreeBuilder {
     public KDNode makeTerminalNode(final int[][] featureVectors) {
         ++nodeCount;
         ++terminalNodeCount;
-        System.out.printf("Terminal node bucket size: %d\n", featureVectors.length);
         return new TerminalKDNode(featureVectors);
     }
 
