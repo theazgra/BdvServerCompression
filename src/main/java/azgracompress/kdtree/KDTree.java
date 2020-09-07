@@ -12,6 +12,7 @@ import java.util.PriorityQueue;
 //                  https://github.com/iwyoo/kd_tree/blob/master/kd_tree.cxx
 
 public class KDTree {
+    private final int[][] featureVectors;
     private final int maximumBucketSize;
     private final KDNode root;
 
@@ -20,12 +21,18 @@ public class KDTree {
     private final int terminalNodeCount;
 
     public static class BBFSearchInfo {
+        private final int[][] featureVectors;
         private double nearestRecordDistance;
         private int[] nearestRecord;
 
-        public BBFSearchInfo() {
+        public BBFSearchInfo(final int[][] featureVectors) {
+            this.featureVectors = featureVectors;
             nearestRecord = null;
             nearestRecordDistance = Double.POSITIVE_INFINITY;
+        }
+
+        public int[][] getFeatureVectors() {
+            return featureVectors;
         }
 
         public double getNearestRecordDistance() {
@@ -65,13 +72,14 @@ public class KDTree {
         }
     }
 
-    public KDTree(final KDNode root,
-                  final int dimension,
+    public KDTree(final int[][] featureVectors,
+                  final KDNode root,
                   final int maximumBucketSize,
                   final int totalNodeCount,
                   final int terminalNodeCount) {
+        this.featureVectors = featureVectors;
         this.root = root;
-        this.dimension = dimension;
+        this.dimension = featureVectors[0].length;
         this.maximumBucketSize = maximumBucketSize;
         this.totalNodeCount = totalNodeCount;
         this.terminalNodeCount = terminalNodeCount;
@@ -82,7 +90,7 @@ public class KDTree {
         PriorityQueue<NodeWithDistance> priorityQueue = new PriorityQueue<>();
         priorityQueue.add(new NodeWithDistance(root, 0.0));
 
-        BBFSearchInfo searchInfo = new BBFSearchInfo();
+        BBFSearchInfo searchInfo = new BBFSearchInfo(featureVectors);
         int tryIndex = 0;
         int partition, discriminator;
         while (!priorityQueue.isEmpty() && tryIndex < maxE) {
