@@ -57,7 +57,7 @@ public class KDTreeBuilder {
      * @param featureVectors Feature vectors to build the tree with.
      * @return Node with its siblings.
      */
-    public KDNode buildTreeImpl(final int[][] featureVectors) {
+    private KDNode buildTreeImpl(final int[][] featureVectors) {
         if (featureVectors.length <= bucketSize) {
             return makeTerminalNode(featureVectors);
         }
