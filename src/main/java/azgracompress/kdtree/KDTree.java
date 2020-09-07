@@ -22,30 +22,30 @@ public class KDTree {
 
     public static class BBFSearchInfo {
         private final int[][] featureVectors;
-        private double nearestRecordDistance;
-        private int[] nearestRecord;
+        private double nearestVectorDistance;
+        private int nearestVectorIndex;
 
         public BBFSearchInfo(final int[][] featureVectors) {
             this.featureVectors = featureVectors;
-            nearestRecord = null;
-            nearestRecordDistance = Double.POSITIVE_INFINITY;
+            nearestVectorIndex = -1;
+            nearestVectorDistance = Double.POSITIVE_INFINITY;
         }
 
         public int[][] getFeatureVectors() {
             return featureVectors;
         }
 
-        public double getNearestRecordDistance() {
-            return nearestRecordDistance;
+        public double getNearestVectorDistance() {
+            return nearestVectorDistance;
         }
 
-        public int[] getNearestRecord() {
-            return nearestRecord;
+        public int getNearestVectorIndex() {
+            return nearestVectorIndex;
         }
 
-        public void setNearestRecord(final int[] record, final double recordDistance) {
-            this.nearestRecord = record;
-            this.nearestRecordDistance = recordDistance;
+        public void setNearestRecord(final int vectorIndex, final double recordDistance) {
+            this.nearestVectorIndex = vectorIndex;
+            this.nearestVectorDistance = recordDistance;
         }
     }
 
@@ -85,7 +85,7 @@ public class KDTree {
         this.terminalNodeCount = terminalNodeCount;
     }
 
-    public int[] findNearestBBF(final int[] queryVector, final int maxE) {
+    public int findNearestBBF(final int[] queryVector, final int maxE) {
 
         PriorityQueue<NodeWithDistance> priorityQueue = new PriorityQueue<>();
         priorityQueue.add(new NodeWithDistance(root, 0.0));
@@ -114,7 +114,7 @@ public class KDTree {
                 }
             }
         }
-        return searchInfo.getNearestRecord();
+        return searchInfo.getNearestVectorIndex();
     }
 
     public int getTotalNodeCount() {

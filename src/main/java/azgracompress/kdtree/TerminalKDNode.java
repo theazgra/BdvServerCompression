@@ -24,8 +24,8 @@ public class TerminalKDNode extends KDNode {
         double recordDistance;
         for (final int index : bucketIndices) {
             recordDistance = Utils.calculateEuclideanDistance(queryRecord, searchInfo.getFeatureVectors()[index]);
-            if (recordDistance < searchInfo.getNearestRecordDistance()) {
-                searchInfo.setNearestRecord(searchInfo.getFeatureVectors()[index], recordDistance);
+            if (recordDistance < searchInfo.getNearestVectorDistance()) {
+                searchInfo.setNearestRecord(index, recordDistance);
             }
         }
     }
