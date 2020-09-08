@@ -6,6 +6,10 @@ import azgracompress.utilities.Utils;
 
 public class VectorQuantizer {
 
+    private interface QuantizeVectorMethod {
+        int call(final int[] vector);
+    }
+
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
     private final CodebookEntry[] codebookVectors;
     private final int vectorSize;
@@ -55,26 +59,16 @@ public class VectorQuantizer {
         return quantizeIntoIndices(dataVectors, 1);
     }
 
-    public int[] quantizeIntoIndicesUsingKDTree(final int[][] dataVectors, final int maxWorkerCount) {
-        assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
-        int[] indices = new int[dataVectors.length];
+    private int[] quantizeIntoIndicesImpl(final int[][] dataVectors,
+                                          final int maxWorkerCount,
+                                          final QuantizeVectorMethod method) {
 
-        for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-
-            indices[vectorIndex] = kdTree.findNearestBBF(dataVectors[vectorIndex], 32);
-        }
-        return indices;
-    }
-
-    public int[] quantizeIntoIndices(final int[][] dataVectors, final int maxWorkerCount) {
-        assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
+        assert (dataVectors.length > 0 && dataVectors[0].length == vectorSize) : "Wrong vector size";
         int[] indices = new int[dataVectors.length];
 
         if (maxWorkerCount == 1) {
-            int closestIndex;
             for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-                closestIndex = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
-                indices[vectorIndex] = closestIndex;
+                indices[vectorIndex] = method.call(dataVectors[vectorIndex]);
             }
         } else {
             // Cap the worker count on 8
@@ -86,12 +80,9 @@ public class VectorQuantizer {
                 final int fromIndex = wId * workSize;
                 final int toIndex = (wId == workerCount - 1) ? dataVectors.length : (workSize + (wId * workSize));
 
-
                 workers[wId] = new Thread(() -> {
-                    int closestIndex;
                     for (int vectorIndex = fromIndex; vectorIndex < toIndex; vectorIndex++) {
-                        closestIndex = findClosestCodebookEntryIndex(dataVectors[vectorIndex], metric);
-                        indices[vectorIndex] = closestIndex;
+                        indices[vectorIndex] = method.call(dataVectors[vectorIndex]);
                     }
                 });
 
@@ -104,9 +95,21 @@ public class VectorQuantizer {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
         }
+
         return indices;
+    }
+
+    public int[] quantizeIntoIndicesUsingKDTree(final int[][] dataVectors, final int maxWorkerCount) {
+
+        return quantizeIntoIndicesImpl(dataVectors, maxWorkerCount, (final int[] queryVector) ->
+                kdTree.findNearestBBF(queryVector, 8));
+    }
+
+    public int[] quantizeIntoIndices(final int[][] dataVectors, final int maxWorkerCount) {
+
+        return quantizeIntoIndicesImpl(dataVectors, maxWorkerCount, (final int[] queryVector) ->
+                findClosestCodebookEntryIndex(queryVector, metric));
     }
 
     public static double distanceBetweenVectors(final int[] originalDataVector,

@@ -159,6 +159,9 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             assert (quantizer != null);
 
+            // Use BestBinFirst KDTree for codebook lookup.
+//             final int[] indices = quantizer.quantizeIntoIndicesUsingKDTree(planeVectors, options.getWorkerCount());
+            // Use BruteForce for codebook lookup.
             final int[] indices = quantizer.quantizeIntoIndices(planeVectors, options.getWorkerCount());
 
             planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
