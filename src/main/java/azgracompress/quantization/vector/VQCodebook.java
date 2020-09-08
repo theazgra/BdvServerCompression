@@ -9,7 +9,7 @@ public class VQCodebook {
     /**
      * Quantization vectors.
      */
-    private final CodebookEntry[] vectors;
+    private final int[][] vectors;
 
     /**
      * Absolute frequencies of quantization vectors.
@@ -26,7 +26,7 @@ public class VQCodebook {
      */
     private final V3i vectorDims;
 
-    public VQCodebook(final V3i vectorDims, final CodebookEntry[] vectors, final long[] vectorFrequencies) {
+    public VQCodebook(final V3i vectorDims, final int[][] vectors, final long[] vectorFrequencies) {
         //assert (vectors.length == vectorFrequencies.length);
         this.vectorDims = vectorDims;
         this.vectors = vectors;
@@ -39,18 +39,8 @@ public class VQCodebook {
      *
      * @return Quantization vectors.
      */
-    public CodebookEntry[] getVectors() {
+    public int[][] getVectors() {
         return vectors;
-    }
-
-    public int[][] getRawVectors() {
-        assert (codebookSize == vectors.length);
-        assert (vectors[0].getVector().length == (int) vectorDims.multiplyTogether());
-        final int[][] rawCodebook = new int[vectors.length][(int) vectorDims.multiplyTogether()];
-        for (int i = 0; i < codebookSize; i++) {
-            rawCodebook[i] = vectors[i].getVector();
-        }
-        return rawCodebook;
     }
 
     /**

@@ -4,14 +4,14 @@ import azgracompress.data.V3i;
 
 public class LBGResult {
 
-    private final CodebookEntry[] codebookVectors;
+    private final int[][] codebookVectors;
     private final long[] frequencies;
     private final double averageMse;
     private final double psnr;
     private final V3i vectorDims;
 
     public LBGResult(final V3i vectorDims,
-                     final CodebookEntry[] codebook,
+                     final int[][] codebook,
                      final long[] frequencies,
                      final double averageMse,
                      final double psnr) {

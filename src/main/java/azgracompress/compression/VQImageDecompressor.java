@@ -7,7 +7,6 @@ import azgracompress.fileformat.QuantizationType;
 import azgracompress.huffman.Huffman;
 import azgracompress.huffman.HuffmanNode;
 import azgracompress.io.InBitStream;
-import azgracompress.quantization.vector.CodebookEntry;
 import azgracompress.quantization.vector.VQCodebook;
 import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.TypeConverter;
@@ -48,15 +47,14 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                                     final int codebookSize,
                                     final int vectorSize) throws ImageDecompressionException {
 
-        final CodebookEntry[] codebookVectors = new CodebookEntry[codebookSize];
+        final int[][] codebookVectors = new int[codebookSize][vectorSize];
         final long[] frequencies = new long[codebookSize];
         try {
             for (int codebookIndex = 0; codebookIndex < codebookSize; codebookIndex++) {
-                final int[] vector = new int[vectorSize];
+                //                final int[] vector = new int[vectorSize];
                 for (int vecIndex = 0; vecIndex < vectorSize; vecIndex++) {
-                    vector[vecIndex] = compressedStream.readUnsignedShort();
+                    codebookVectors[codebookIndex][vecIndex] = compressedStream.readUnsignedShort();
                 }
-                codebookVectors[codebookIndex] = new CodebookEntry(vector);
             }
             for (int codebookIndex = 0; codebookIndex < codebookSize; codebookIndex++) {
                 frequencies[codebookIndex] = compressedStream.readLong();
@@ -166,7 +164,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                         bit = inBitStream.readBit();
                         currentHuffmanNode = currentHuffmanNode.traverse(bit);
                     }
-                    System.arraycopy(codebook.getVectors()[currentHuffmanNode.getSymbol()].getVector(),
+                    System.arraycopy(codebook.getVectors()[currentHuffmanNode.getSymbol()],
                                      0, decompressedVectors[vecIndex], 0, vectorSize);
                 }
 
@@ -239,7 +237,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
                 for (int voxelIndex = 0; voxelIndex < voxelLayerVoxelCount; voxelIndex++) {
                     final int huffmanSymbol = decodeHuffmanSymbol(huffman, inBitStream);
-                    System.arraycopy(codebook.getVectors()[huffmanSymbol].getVector(), 0, decompressedVoxels[voxelIndex], 0, vectorSize);
+                    System.arraycopy(codebook.getVectors()[huffmanSymbol], 0, decompressedVoxels[voxelIndex], 0, vectorSize);
                 }
 
             } catch (Exception e) {

@@ -47,11 +47,10 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      */
     private void writeQuantizerToCompressStream(final VectorQuantizer quantizer,
                                                 DataOutputStream compressStream) throws ImageCompressionException {
-        final CodebookEntry[] codebook = quantizer.getCodebookVectors();
+        final int[][] codebook = quantizer.getCodebookVectors();
         try {
-            for (final CodebookEntry entry : codebook) {
-                final int[] entryVector = entry.getVector();
-                for (final int vecVal : entryVector) {
+            for (final int[] entry : codebook) {
+                for (final int vecVal : entry) {
                     compressStream.writeShort(vecVal);
                 }
             }
@@ -160,7 +159,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             assert (quantizer != null);
 
             // Use BestBinFirst KDTree for codebook lookup.
-//             final int[] indices = quantizer.quantizeIntoIndicesUsingKDTree(planeVectors, options.getWorkerCount());
+            //             final int[] indices = quantizer.quantizeIntoIndicesUsingKDTree(planeVectors, options.getWorkerCount());
             // Use BruteForce for codebook lookup.
             final int[] indices = quantizer.quantizeIntoIndices(planeVectors, options.getWorkerCount());
 

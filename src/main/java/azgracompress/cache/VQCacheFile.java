@@ -1,6 +1,5 @@
 package azgracompress.cache;
 
-import azgracompress.quantization.vector.CodebookEntry;
 import azgracompress.quantization.vector.VQCodebook;
 
 import java.io.DataInputStream;
@@ -23,9 +22,9 @@ public class VQCacheFile implements ICacheFile {
     public void writeToStream(DataOutputStream outputStream) throws IOException {
         header.writeToStream(outputStream);
 
-        final CodebookEntry[] entries = codebook.getVectors();
-        for (final CodebookEntry entry : entries) {
-            for (final int vectorValue : entry.getVector()) {
+        final int[][] entries = codebook.getVectors();
+        for (final int[] entry : entries) {
+            for (final int vectorValue : entry) {
                 outputStream.writeShort(vectorValue);
             }
         }
@@ -45,16 +44,16 @@ public class VQCacheFile implements ICacheFile {
     @Override
     public void readFromStream(DataInputStream inputStream, CacheFileHeader header) throws IOException {
         final int codebookSize = header.getCodebookSize();
-        final CodebookEntry[] vectors = new CodebookEntry[codebookSize];
-        final long[] frequencies = new long[codebookSize];
 
         final int entrySize = header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
+        final int[][] vectors = new int[codebookSize][entrySize];
+        final long[] frequencies = new long[codebookSize];
+
         for (int i = 0; i < codebookSize; i++) {
-            int[] vector = new int[entrySize];
+            //int[] vector = new int[entrySize];
             for (int j = 0; j < entrySize; j++) {
-                vector[j] = inputStream.readUnsignedShort();
+                vectors[i][j] = inputStream.readUnsignedShort();
             }
-            vectors[i] = new CodebookEntry(vector);
         }
 
         for (int i = 0; i < codebookSize; i++) {
@@ -73,10 +72,12 @@ public class VQCacheFile implements ICacheFile {
 
     @Override
     public void report(StringBuilder builder) {
-        final CodebookEntry[] vectors = codebook.getVectors();
-        for (int i = 0; i < vectors.length; i++) {
+        final int[][] vectors = codebook.getVectors();
+        for (int[] vector : vectors) {
             builder.append("- - - - - - - - - - - - - - - - - - - - - - - - -\n");
-            vectors[i].getVectorString(builder);
+            for (final int x : vector) {
+                builder.append(x).append(';');
+            }
         }
     }
 }

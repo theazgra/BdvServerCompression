@@ -11,7 +11,7 @@ public class VectorQuantizer {
     }
 
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
-    private final CodebookEntry[] codebookVectors;
+    private final int[][] codebookVectors;
     private final int vectorSize;
     private final long[] frequencies;
 
@@ -19,16 +19,15 @@ public class VectorQuantizer {
 
     public VectorQuantizer(final VQCodebook codebook) {
         this.codebookVectors = codebook.getVectors();
-        this.vectorSize = codebookVectors[0].getVector().length;
+        this.vectorSize = codebook.getVectors()[0].length;
         this.frequencies = codebook.getVectorFrequencies();
 
-        kdTree = new KDTreeBuilder(this.vectorSize, 8).buildTree(codebook.getRawVectors());
+        kdTree = new KDTreeBuilder(this.vectorSize, 8).buildTree(codebook.getVectors());
     }
 
     public int[] quantize(final int[] dataVector) {
         assert (dataVector.length > 0 && dataVector.length % vectorSize == 0) : "Wrong vector size";
-        final CodebookEntry closestEntry = findClosestCodebookEntry(dataVector, metric);
-        return closestEntry.getVector();
+        return findClosestCodebookEntry(dataVector, metric);
     }
 
     public int quantizeToIndex(final int[] dataVector) {
@@ -42,13 +41,12 @@ public class VectorQuantizer {
 
         if (workerCount == 1) {
             for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
-                final CodebookEntry closestEntry = findClosestCodebookEntry(dataVectors[vectorIndex], metric);
-                result[vectorIndex] = closestEntry.getVector();
+                result[vectorIndex] = findClosestCodebookEntry(dataVectors[vectorIndex], metric);
             }
         } else {
             final int[] indices = quantizeIntoIndices(dataVectors, workerCount);
             for (int i = 0; i < dataVectors.length; i++) {
-                result[i] = codebookVectors[indices[i]].getVector();
+                result[i] = codebookVectors[indices[i]];
             }
         }
 
@@ -142,11 +140,11 @@ public class VectorQuantizer {
         return 0.0;
     }
 
-    private CodebookEntry findClosestCodebookEntry(final int[] dataVector) {
+    private int[] findClosestCodebookEntry(final int[] dataVector) {
         return findClosestCodebookEntry(dataVector, metric);
     }
 
-    private CodebookEntry findClosestCodebookEntry(final int[] dataVector, final VectorDistanceMetric metric) {
+    private int[] findClosestCodebookEntry(final int[] dataVector, final VectorDistanceMetric metric) {
         return codebookVectors[findClosestCodebookEntryIndex(dataVector, metric)];
     }
 
@@ -156,7 +154,7 @@ public class VectorQuantizer {
         for (int entryIndex = 0; entryIndex < codebookVectors.length; entryIndex++) {
 
 
-            final double dist = distanceBetweenVectors(dataVector, codebookVectors[entryIndex].getVector(), metric);
+            final double dist = distanceBetweenVectors(dataVector, codebookVectors[entryIndex], metric);
             if (dist < minDist) {
                 minDist = dist;
                 closestEntryIndex = entryIndex;
@@ -166,7 +164,7 @@ public class VectorQuantizer {
         return closestEntryIndex;
     }
 
-    public CodebookEntry[] getCodebookVectors() {
+    public int[][] getCodebookVectors() {
         return codebookVectors;
     }
 

@@ -92,13 +92,12 @@ public class LBGVectorQuantizer {
         assert (uniqueTrainingVectors != null) : "uniqueTrainingVectors aren't initialized.";
         reportStatus("There is only %d unique vectors. Creating codebook from unique vectors...",
                      uniqueTrainingVectors.size());
-        CodebookEntry[] codebook = new CodebookEntry[codebookSize];
-        int[] zeros = new int[vectorSize];
-        Arrays.fill(zeros, 0);
-        CodebookEntry zeroEntry = new CodebookEntry(zeros);
+        final int[][] codebook = new int[codebookSize][vectorSize];
+        int[] zeroEntry = new int[vectorSize];
+        Arrays.fill(zeroEntry, 0);
         for (int i = 0; i < codebookSize; i++) {
             if (i < uniqueVectorCount) {
-                codebook[i] = new CodebookEntry(uniqueTrainingVectors.get(i).getVector());
+                codebook[i] = uniqueTrainingVectors.get(i).getVector();
             } else {
                 codebook[i] = zeroEntry;
             }
@@ -141,10 +140,10 @@ public class LBGVectorQuantizer {
      * @param learningCodebook Source array of LearningCodebookEntry.
      * @return Array of CodebookEntries.
      */
-    private CodebookEntry[] learningCodebookToCodebook(final LearningCodebookEntry[] learningCodebook) {
-        CodebookEntry[] codebook = new CodebookEntry[learningCodebook.length];
+    private int[][] learningCodebookToCodebook(final LearningCodebookEntry[] learningCodebook) {
+        final int[][] codebook = new int[learningCodebook.length][vectorSize];
         for (int i = 0; i < codebook.length; i++) {
-            codebook[i] = new CodebookEntry(learningCodebook[i].getVector());
+            codebook[i] = learningCodebook[i].getVector();
         }
         return codebook;
     }
@@ -168,14 +167,17 @@ public class LBGVectorQuantizer {
         }
     }
 
+    private double averageMse(final LearningCodebookEntry[] codebook) {
+        return averageMse(learningCodebookToCodebook(codebook));
+    }
+
     /**
      * Calculate the average mean square error of the codebook.
      *
      * @param codebook Codebook of vectors.
      * @return Mean square error.
      */
-    private double averageMse(final CodebookEntry[] codebook) {
-        Stopwatch s = Stopwatch.startNew("averageMse");
+    private double averageMse(final int[][] codebook) {
         double mse = 0.0;
         resetFrequencies();
         if (workerCount > 1) {
@@ -202,7 +204,8 @@ public class LBGVectorQuantizer {
                         qIndex = quantizer.quantizeToIndex(vector);
                         ++workerFrequencies[qIndex];
 
-                        qVector = quantizer.getCodebookVectors()[qIndex].getVector();
+
+                        qVector = quantizer.getCodebookVectors()[qIndex];
                         for (int vI = 0; vI < vectorSize; vI++) {
                             threadMse += Math.pow(((double) vector[vI] - (double) qVector[vI]), 2);
                         }
@@ -233,7 +236,7 @@ public class LBGVectorQuantizer {
             int[] qVector;
             for (final TrainingVector trV : trainingVectors) {
                 qIndex = quantizer.quantizeToIndex(trV.getVector());
-                qVector = quantizer.getCodebookVectors()[qIndex].getVector();
+                qVector = quantizer.getCodebookVectors()[qIndex];
                 ++frequencies[qIndex];
                 for (int i = 0; i < vectorSize; i++) {
                     mse += Math.pow(((double) trV.getVector()[i] - (double) qVector[i]), 2);
@@ -241,10 +244,6 @@ public class LBGVectorQuantizer {
             }
             mse /= (double) trainingVectors.length;
         }
-        s.stop();
-        //        if (this.verbose) {
-        ////            System.out.println(s);
-        //        }
         return mse;
     }
 

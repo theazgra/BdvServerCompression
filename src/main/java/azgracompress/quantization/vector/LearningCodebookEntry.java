@@ -1,29 +1,34 @@
 package azgracompress.quantization.vector;
 
-public class LearningCodebookEntry extends CodebookEntry {
+public class LearningCodebookEntry {
 
+    private final int[] codebookVector;
     private int vectorCount = -1;
     private double averageDistortion = -1.0f;
     private double[] perturbationVector;
 
-    public LearningCodebookEntry(int[] codebook) {
-        super(codebook);
+    public LearningCodebookEntry(int[] codebookVector) {
+        this.codebookVector = codebookVector;
     }
 
     /**
      * Set codebook entry properties from helper object.
      *
-     * @param info Helper object with property informations.
+     * @param info Helper object with property information.
      */
     public void setInfo(final EntryInfo info) {
         this.vectorCount = info.vectorCount;
         this.averageDistortion = info.calculateAverageDistortion();
 
         final int[] newCentroid = info.calculateCentroid();
-        assert (newCentroid.length == vector.length);
-        System.arraycopy(newCentroid, 0, this.vector, 0, newCentroid.length);
+        assert (newCentroid.length == codebookVector.length);
+        System.arraycopy(newCentroid, 0, this.codebookVector, 0, newCentroid.length);
 
         this.perturbationVector = info.calculatePRTVector();
+    }
+
+    public int[] getVector() {
+        return codebookVector;
     }
 
     /**
