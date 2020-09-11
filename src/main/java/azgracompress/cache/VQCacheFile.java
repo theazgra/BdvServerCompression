@@ -43,6 +43,7 @@ public class VQCacheFile implements ICacheFile {
 
     @Override
     public void readFromStream(DataInputStream inputStream, CacheFileHeader header) throws IOException {
+        this.header = header;
         final int codebookSize = header.getCodebookSize();
 
         final int entrySize = header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();

@@ -39,6 +39,7 @@ public class SQCacheFile implements ICacheFile {
     }
 
     public void readFromStream(DataInputStream inputStream, CacheFileHeader header) throws IOException {
+        this.header = header;
         final int codebookSize = header.getCodebookSize();
         final int[] centroids = new int[codebookSize];
         final long[] frequencies = new long[codebookSize];

@@ -1,5 +1,6 @@
 package azgracompress.cache;
 
+import azgracompress.compression.CompressionOptions;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
 import azgracompress.quantization.scalar.SQCodebook;
@@ -133,6 +134,7 @@ public class QuantizationCacheManager {
         return fileName;
     }
 
+
     /**
      * Save VQ codebook to cache.
      *
@@ -206,7 +208,7 @@ public class QuantizationCacheManager {
      * @param codebookSize Codebook size.
      * @return SQ cache file.
      */
-    private SQCacheFile loadSQCacheFile(final String imageFile, final int codebookSize) {
+    public SQCacheFile loadSQCacheFile(final String imageFile, final int codebookSize) {
         final File path = getCacheFilePathForSQ(imageFile, codebookSize);
         try {
             return (SQCacheFile) readCacheFile(path, new SQCacheFile());
@@ -225,9 +227,9 @@ public class QuantizationCacheManager {
      * @param vDim         Quantization vector dimension.
      * @return VQ cache file.
      */
-    private VQCacheFile loadVQCacheFile(final String trainFile,
-                                        final int codebookSize,
-                                        final V3i vDim) {
+    public VQCacheFile loadVQCacheFile(final String trainFile,
+                                       final int codebookSize,
+                                       final V3i vDim) {
         final File path = getCacheFilePathForVQ(trainFile, codebookSize, vDim);
         try {
             return (VQCacheFile) readCacheFile(path, new VQCacheFile());
@@ -282,9 +284,36 @@ public class QuantizationCacheManager {
         return null;
     }
 
-    public static ICacheFile readCacheFile(final String path) {
-        try (FileInputStream fis = new FileInputStream(path);
-             DataInputStream dis = new DataInputStream(fis)) {
+    public ICacheFile loadCacheFile(final CompressionOptions compressionParams) {
+        String path;
+        int codebookSize = (int) Math.pow(2, compressionParams.getBitsPerCodebookIndex());
+        switch (compressionParams.getQuantizationType()) {
+
+            case Scalar:
+                path = getCacheFilePathForSQ(compressionParams.getInputDataInfo().getCacheFileName(),
+                                             codebookSize).getAbsolutePath();
+                break;
+            case Vector1D:
+            case Vector2D:
+            case Vector3D:
+                path = getCacheFilePathForVQ(compressionParams.getInputDataInfo().getCacheFileName(),
+                                             codebookSize,
+                                             compressionParams.getQuantizationVector()).getAbsolutePath();
+                break;
+            default:
+                return null;
+        }
+        return readCacheFile(path);
+    }
+
+    /**
+     * Read cache file by DataInputStream.
+     *
+     * @param inputStream Input stream.
+     * @return Cache file or null, if exception occurs.
+     */
+    private static ICacheFile readCacheFileImpl(final InputStream inputStream) {
+        try (DataInputStream dis = new DataInputStream(inputStream)) {
             CacheFileHeader header = new CacheFileHeader();
             header.readFromStream(dis);
 
@@ -292,6 +321,31 @@ public class QuantizationCacheManager {
             assert (cacheFile != null);
             cacheFile.readFromStream(dis, header);
             return cacheFile;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Read cache file from input stream.
+     *
+     * @param inputStream Input data stream.
+     * @return Cache file or null if reading fails.
+     */
+    public static ICacheFile readCacheFile(final InputStream inputStream) {
+        return readCacheFileImpl(inputStream);
+    }
+
+
+    /**
+     * Read cache file from file.
+     *
+     * @param path File path.
+     * @return Cache file or null if reading fails.
+     */
+    public static ICacheFile readCacheFile(final String path) {
+        try (FileInputStream fis = new FileInputStream(path)) {
+            return readCacheFileImpl(fis);
         } catch (IOException e) {
             return null;
         }
