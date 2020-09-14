@@ -1,5 +1,6 @@
 package azgracompress.compression;
 
+import azgracompress.cache.ICacheFile;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.data.ImageU16Dataset;
 import azgracompress.fileformat.QCMPFileHeader;
@@ -14,8 +15,17 @@ import java.util.Optional;
 @SuppressWarnings("DuplicatedCode")
 public class ImageDecompressor extends CompressorDecompressorBase {
 
-    public ImageDecompressor(CompressionOptions options) {
-        super(options);
+    private IImageDecompressor cachedDecompressor = null;
+
+    public ImageDecompressor(final CompressionOptions passedOptions) {
+        super(passedOptions);
+    }
+
+
+    public ImageDecompressor(final ICacheFile codebookCacheFile) {
+        this(new CompressionOptions(codebookCacheFile));
+        cachedDecompressor = getImageDecompressor(options.getQuantizationType());
+        cachedDecompressor.preloadGlobalCodebook(codebookCacheFile);
     }
 
     /**
@@ -39,9 +49,9 @@ public class ImageDecompressor extends CompressorDecompressorBase {
      *
      * @return Correct implementation of image decompressor.
      */
-    private IImageDecompressor getImageDecompressor(final QCMPFileHeader header) {
+    private IImageDecompressor getImageDecompressor(final QuantizationType quantizationType) {
         IImageDecompressor decompressor;
-        switch (header.getQuantizationType()) {
+        switch (quantizationType) {
             case Scalar:
                 decompressor = new SQImageDecompressor(options);
                 break;
@@ -131,7 +141,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             final long fileSize = new File(options.getInputDataInfo().getFilePath()).length();
             final long dataSize = fileSize - header.getHeaderSize();
 
-            final IImageDecompressor decompressor = getImageDecompressor(header);
+            final IImageDecompressor decompressor = getImageDecompressor(header.getQuantizationType());
 
             if (decompressor != null) {
                 final long expectedDataSize = decompressor.getExpectedDataSize(header);
@@ -189,7 +199,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
 
             decompressedFileSize = 2 * header.getImageDims().multiplyTogether();
 
-            IImageDecompressor imageDecompressor = getImageDecompressor(header);
+            final IImageDecompressor imageDecompressor = getImageDecompressor(header.getQuantizationType());
             if (imageDecompressor == null) {
                 System.err.println("Unable to create correct decompressor.");
                 return false;
@@ -241,7 +251,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             if (header == null)
                 return Optional.empty();
 
-            IImageDecompressor imageDecompressor = getImageDecompressor(header);
+            IImageDecompressor imageDecompressor = getImageDecompressor(header.getQuantizationType());
             if (imageDecompressor == null) {
                 System.err.println("Unable to create correct decompressor.");
                 return Optional.empty();
@@ -268,6 +278,10 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             ioEx.printStackTrace();
             return Optional.empty();
         }
+    }
+
+    public short[] decompressStream(final InputStream compressedStream) {
+        return new short[0];
     }
 
     @Nullable
