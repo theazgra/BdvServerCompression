@@ -1,5 +1,6 @@
 package azgracompress.compression;
 
+import azgracompress.cache.ICacheFile;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
 import azgracompress.io.InputData;
@@ -59,12 +60,19 @@ public class CompressionOptions {
     /**
      * Flag whether the CLI app should be verbose while running.
      */
-    private boolean verbose;
+    private boolean verbose = false;
 
     public CompressionOptions() {
         int cores = Runtime.getRuntime().availableProcessors();
         this.workerCount = (cores / 2);
     }
+
+    public CompressionOptions(final ICacheFile codebookCacheFile) {
+        this();
+        quantizationType = codebookCacheFile.getHeader().getQuantizationType();
+        codebookType = CodebookType.Global;
+    }
+
 
     public void setVerbose(boolean verbose) {
         this.verbose = verbose;
@@ -140,5 +148,7 @@ public class CompressionOptions {
         this.codebookType = codebookType;
     }
 
-    public boolean isConsoleApplication() {return false;}
+    public boolean isConsoleApplication() {
+        return false;
+    }
 }
