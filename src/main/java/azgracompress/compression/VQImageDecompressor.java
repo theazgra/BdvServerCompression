@@ -1,5 +1,8 @@
 package azgracompress.compression;
 
+import azgracompress.cache.ICacheFile;
+import azgracompress.cache.SQCacheFile;
+import azgracompress.cache.VQCacheFile;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.data.*;
 import azgracompress.fileformat.QCMPFileHeader;
@@ -16,6 +19,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class VQImageDecompressor extends CompressorDecompressorBase implements IImageDecompressor {
+
+    private VQCodebook cachedCodebook = null;
+    private Huffman cachedHuffman = null;
 
     private interface DecompressCallback {
         void process(final Block imageBlock, final int planeIndex) throws ImageDecompressionException;
@@ -65,6 +71,15 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
         // We don't care about vector dimensions in here.
         return new VQCodebook(new V3i(0), codebookVectors, frequencies);
+    }
+
+    @Override
+    public void preloadGlobalCodebook(final ICacheFile codebookCacheFile) {
+        assert (codebookCacheFile instanceof VQCacheFile) : "Incorrect codebook cache file type for VQImageDecompressor";
+        VQCacheFile codebookCache = (VQCacheFile) codebookCacheFile;
+
+        cachedCodebook = codebookCache.getCodebook();
+        cachedHuffman = createHuffmanCoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()), cachedCodebook.getVectorFrequencies());
     }
 
 

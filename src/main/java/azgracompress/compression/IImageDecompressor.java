@@ -1,5 +1,6 @@
 package azgracompress.compression;
 
+import azgracompress.cache.ICacheFile;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.fileformat.QCMPFileHeader;
 
@@ -38,4 +39,11 @@ public interface IImageDecompressor extends IListenable {
     void decompressToBuffer(DataInputStream compressedStream,
                             short[][] buffer,
                             final QCMPFileHeader header) throws ImageDecompressionException;
+
+    /**
+     * Preload decompressor codebook and Huffman tree for stream decompressor from provided cache file.
+     *
+     * @param codebookCacheFile Codebook cache file.
+     */
+    void preloadGlobalCodebook(final ICacheFile codebookCacheFile);
 }

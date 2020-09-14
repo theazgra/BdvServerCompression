@@ -1,5 +1,8 @@
 package azgracompress.compression;
 
+import azgracompress.cache.ICacheFile;
+import azgracompress.cache.SQCacheFile;
+import azgracompress.cache.VQCacheFile;
 import azgracompress.compression.exception.ImageDecompressionException;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.huffman.Huffman;
@@ -14,6 +17,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class SQImageDecompressor extends CompressorDecompressorBase implements IImageDecompressor {
+    private SQCodebook cachedCodebook = null;
+    private Huffman cachedHuffman = null;
+
     public SQImageDecompressor(CompressionOptions options) {
         super(options);
     }
@@ -88,8 +94,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             byte[] decompressedPlaneData = null;
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (InBitStream inBitStream = new InBitStream(compressedStream,
-                    header.getBitsPerCodebookIndex(),
-                    planeDataSize)) {
+                                                           header.getBitsPerCodebookIndex(),
+                                                           planeDataSize)) {
                 inBitStream.readToBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
@@ -124,7 +130,19 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
     }
 
     @Override
-    public void decompressToBuffer(DataInputStream compressedStream, short[][] buffer, QCMPFileHeader header) throws ImageDecompressionException {
+    public void preloadGlobalCodebook(final ICacheFile codebookCacheFile) {
+        assert (codebookCacheFile instanceof SQCacheFile) : "Incorrect codebook cache file type for SQImageDecompressor";
+
+        SQCacheFile codebookCache = (SQCacheFile) codebookCacheFile;
+
+        cachedCodebook = codebookCache.getCodebook();
+        cachedHuffman = createHuffmanCoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()), cachedCodebook.getSymbolFrequencies());
+    }
+
+    @Override
+    public void decompressToBuffer(DataInputStream compressedStream,
+                                   short[][] buffer,
+                                   QCMPFileHeader header) throws ImageDecompressionException {
         final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
         final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
         final int planeCountForDecompression = header.getImageSizeZ();
@@ -166,8 +184,12 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
 
                 buffer[planeIndex] = TypeConverter.intArrayToShortArray(decompressedValues);
             } catch (Exception ex) {
-                throw new ImageDecompressionException("SQImageDecompressor::decompressToBuffer() - Unable to read indices from InBitStream.", ex);
+                throw new ImageDecompressionException("SQImageDecompressor::decompressToBuffer() - Unable to read indices from " +
+                                                              "InBitStream.",
+                                                      ex);
             }
         }
+
+
     }
 }
