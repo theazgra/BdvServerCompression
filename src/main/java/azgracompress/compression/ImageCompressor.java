@@ -67,7 +67,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
         return true;
     }
 
-    public int streamCompress(OutputStream outputStream) {
+    public int streamCompress(final OutputStream outputStream) {
         assert (false) : "Not implemented!";
         return -1;
     }
