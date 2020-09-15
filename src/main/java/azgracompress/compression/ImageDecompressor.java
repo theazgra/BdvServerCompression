@@ -6,6 +6,7 @@ import azgracompress.data.ImageU16Dataset;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.fileformat.QuantizationType;
 import azgracompress.utilities.Stopwatch;
+import azgracompress.utilities.Utils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -16,6 +17,7 @@ import java.util.Optional;
 public class ImageDecompressor extends CompressorDecompressorBase {
 
     private IImageDecompressor cachedDecompressor = null;
+    private QCMPFileHeader cachedHeader = null;
 
     public ImageDecompressor(final CompressionOptions passedOptions) {
         super(passedOptions);
@@ -25,7 +27,13 @@ public class ImageDecompressor extends CompressorDecompressorBase {
     public ImageDecompressor(final ICacheFile codebookCacheFile) {
         this(new CompressionOptions(codebookCacheFile));
         cachedDecompressor = getImageDecompressor(options.getQuantizationType());
+        assert (cachedDecompressor != null);
         cachedDecompressor.preloadGlobalCodebook(codebookCacheFile);
+
+        cachedHeader = new QCMPFileHeader();
+        cachedHeader.setQuantizationType(codebookCacheFile.getHeader().getQuantizationType());
+        cachedHeader.setBitsPerCodebookIndex((byte) ((int) Utils.log2(codebookCacheFile.getHeader().getCodebookSize())));
+        cachedHeader.setVectorDimension(codebookCacheFile.getHeader().getVectorDim());
     }
 
     /**
@@ -280,8 +288,42 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         }
     }
 
-    public short[] decompressStream(final InputStream compressedStream) {
-        return new short[0];
+
+    public short[] decompressStream(final InputStream compressedStream, final int contentLength) throws ImageDecompressionException {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(compressedStream))) {
+            assert (dis.markSupported());
+
+            cachedHeader.setImageSizeX(dis.readUnsignedShort());
+            cachedHeader.setImageSizeY(dis.readUnsignedShort());
+            cachedHeader.setImageSizeZ(dis.readUnsignedShort());
+
+            final int chunkCount = dis.readUnsignedShort();
+            final long[] chunkSizes = new long[chunkCount];
+
+            dis.mark(contentLength);
+
+            {
+                int toSkip = contentLength - (4 * 2);
+                while (toSkip > 0) {
+                    int skipped = dis.skipBytes(toSkip);
+                    assert (skipped > 0);
+                    toSkip -= skipped;
+                }
+                assert (toSkip == 0);
+                for (int i = 0; i < chunkCount; i++) {
+                    chunkSizes[i] = dis.readInt();
+                }
+            }
+
+            dis.reset();
+
+            cachedHeader.setPlaneDataSizes(chunkSizes);
+
+
+            return cachedDecompressor.decompressStreamMode(dis, cachedHeader);
+        } catch (IOException e) {
+            throw new ImageDecompressionException("Unable to decompress chunk of image from stream.", e);
+        }
     }
 
     @Nullable

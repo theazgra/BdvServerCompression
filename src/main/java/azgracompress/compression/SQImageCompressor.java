@@ -1,7 +1,9 @@
 package azgracompress.compression;
 
 import azgracompress.U16;
+import azgracompress.cache.ICacheFile;
 import azgracompress.cache.QuantizationCacheManager;
+import azgracompress.cache.SQCacheFile;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.huffman.Huffman;
 import azgracompress.io.InputData;
@@ -17,6 +19,9 @@ import java.io.IOException;
 
 public class SQImageCompressor extends CompressorDecompressorBase implements IImageCompressor {
 
+    private ScalarQuantizer cachedQuantizer;
+    private Huffman cachedHuffman;
+
     public SQImageCompressor(CompressionOptions options) {
         super(options);
     }
@@ -30,10 +35,17 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     private ScalarQuantizer trainScalarQuantizerFromData(final int[] planeData) {
 
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(planeData,
-                getCodebookSize(),
-                options.getWorkerCount());
+                                                                                   getCodebookSize(),
+                                                                                   options.getWorkerCount());
         lloydMax.train();
         return new ScalarQuantizer(U16.Min, U16.Max, lloydMax.getCodebook());
+    }
+
+    @Override
+    public void preloadGlobalCodebook(ICacheFile codebookCacheFile) {
+        final SQCodebook cachedCodebook = ((SQCacheFile) codebookCacheFile).getCodebook();
+        cachedQuantizer = new ScalarQuantizer(cachedCodebook);
+        cachedHuffman = createHuffmanCoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()), cachedCodebook.getSymbolFrequencies());
     }
 
     /**
@@ -77,7 +89,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         }
 
         final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputDataInfo().getCacheFileName(),
-                getCodebookSize());
+                                                                getCodebookSize());
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization values from cache file.");
         }
@@ -164,7 +176,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
 
             stopwatch.stop();
             reportProgressToListeners(planeIndex, planeIndices.length,
-                    "Compressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
+                                      "Compressed plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
         }
         return planeDataSizes;
     }
@@ -211,8 +223,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         int[] trainData = loadConfiguredPlanesData();
 
         LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(trainData,
-                getCodebookSize(),
-                options.getWorkerCount());
+                                                                                   getCodebookSize(),
+                                                                                   options.getWorkerCount());
         reportStatusToListeners("Starting LloydMax training.");
 
         lloydMax.setStatusListener(this::reportStatusToListeners);
@@ -228,5 +240,10 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             throw new ImageCompressionException("Unable to write cache.", e);
         }
         reportStatusToListeners("Operation completed.");
+    }
+
+    @Override
+    public long[] compressStreamMode(DataOutputStream compressStream) throws ImageCompressionException {
+        throw new ImageCompressionException("Not implemented yet");
     }
 }

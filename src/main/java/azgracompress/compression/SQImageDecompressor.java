@@ -189,7 +189,10 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
                                                       ex);
             }
         }
+    }
 
-
+    @Override
+    public short[] decompressStreamMode(DataInputStream compressedStream, QCMPFileHeader header) throws ImageDecompressionException {
+        throw new ImageDecompressionException("Not implemented yet.");
     }
 }

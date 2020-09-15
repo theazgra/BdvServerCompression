@@ -40,6 +40,9 @@ public interface IImageDecompressor extends IListenable {
                             short[][] buffer,
                             final QCMPFileHeader header) throws ImageDecompressionException;
 
+    short[] decompressStreamMode(final DataInputStream compressedStream,
+                                 final QCMPFileHeader header) throws ImageDecompressionException;
+
     /**
      * Preload decompressor codebook and Huffman tree for stream decompressor from provided cache file.
      *

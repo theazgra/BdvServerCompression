@@ -44,11 +44,6 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         return (vectorXCount * vectorYCount);
     }
 
-    private long calculatePlaneDataSize(final long planeVectorCount, final int bpp) {
-        // Data size of single plane indices.
-        return (long) Math.ceil((planeVectorCount * bpp) / 8.0);
-    }
-
     private VQCodebook readCodebook(DataInputStream compressedStream,
                                     final int codebookSize,
                                     final int vectorSize) throws ImageDecompressionException {
@@ -275,6 +270,64 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         }
     }
 
+    @SuppressWarnings("DuplicatedCode")
+    private void decompressVoxelsStreamModeImpl(DataInputStream compressedStream,
+                                                QCMPFileHeader header,
+                                                DecompressVoxelCallback callback) throws ImageDecompressionException {
+
+        assert (header.getQuantizationType() == QuantizationType.Vector3D);
+        assert (!header.isCodebookPerPlane()); // SHOULD ALWAYS BE GLOBAL.
+
+
+        final V3i voxelDims = new V3i(header.getVectorSizeX(), header.getVectorSizeY(), header.getVectorSizeZ());
+        final int vectorSize = (int) voxelDims.multiplyTogether();
+        final int voxelLayerDepth = voxelDims.getZ();
+
+
+        final int voxelLayerCount = VQImageCompressor.calculateVoxelLayerCount(header.getImageSizeZ(), header.getVectorSizeZ());
+        Stopwatch stopwatch = new Stopwatch();
+        for (int voxelLayerIndex = 0; voxelLayerIndex < voxelLayerCount; voxelLayerIndex++) {
+            stopwatch.restart();
+
+            final int fromZ = (voxelLayerIndex * voxelLayerDepth);
+            final int toZ = (voxelLayerIndex == voxelLayerCount - 1)
+                    ? header.getImageSizeZ()
+                    : (voxelLayerDepth + (voxelLayerIndex * voxelLayerDepth));
+            final V3i currentVoxelLayerDims = new V3i(header.getImageSizeX(), header.getImageSizeY(), toZ - fromZ);
+            final int voxelLayerDataSize = (int) header.getPlaneDataSizes()[voxelLayerIndex];
+            final int voxelLayerVoxelCount = Voxel.calculateRequiredVoxelCount(currentVoxelLayerDims, voxelDims);
+
+            int[][] decompressedVoxels = new int[voxelLayerVoxelCount][vectorSize];
+
+            try (InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerCodebookIndex(), voxelLayerDataSize)) {
+                inBitStream.readToBuffer();
+                inBitStream.setAllowReadFromUnderlyingStream(false);
+
+                for (int voxelIndex = 0; voxelIndex < voxelLayerVoxelCount; voxelIndex++) {
+                    final int huffmanSymbol = decodeHuffmanSymbol(cachedHuffman, inBitStream);
+                    System.arraycopy(cachedCodebook.getVectors()[huffmanSymbol], 0, decompressedVoxels[voxelIndex], 0, vectorSize);
+                }
+
+            } catch (Exception e) {
+                throw new ImageDecompressionException("VQImageDecompressor::decompressVoxels() - Unable to read indices from InBitStream.",
+                                                      e);
+            }
+
+            final Voxel currentVoxel = new Voxel(currentVoxelLayerDims);
+            callback.process(currentVoxel, decompressedVoxels, (voxelLayerIndex * voxelLayerDepth));
+
+            stopwatch.stop();
+            if (options.isConsoleApplication()) {
+                reportStatusToListeners("Decompressed voxel layer %d/%d in %s",
+                                        voxelLayerIndex, voxelLayerCount, stopwatch.getElapsedTimeString());
+            } else {
+                reportProgressToListeners(voxelLayerIndex, voxelLayerCount,
+                                          "Decompressed voxel layer %d/%d in %s",
+                                          voxelLayerIndex, voxelLayerCount, stopwatch.getElapsedTimeString());
+            }
+        }
+    }
+
 
     private void decompressVoxelsToBuffer(DataInputStream compressedStream,
                                           short[][] buffer,
@@ -311,5 +364,27 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             currentHuffmanNode = currentHuffmanNode.traverse(inBitStream.readBit());
         }
         return currentHuffmanNode.getSymbol();
+    }
+
+
+    @Override
+    public short[] decompressStreamMode(final DataInputStream compressedStream,
+                                        final QCMPFileHeader header) throws ImageDecompressionException {
+        // TODO(Moravec): Implement missing quantization type.
+        assert (header.getQuantizationType() == QuantizationType.Vector3D);
+        final short[] buffer = new short[(int) header.getImageDims().multiplyTogether()];
+        final V3i voxelDim = new V3i(header.getVectorSizeX(), header.getVectorSizeY(), header.getVectorSizeZ());
+
+        decompressVoxelsStreamModeImpl(compressedStream, header, (voxel, voxelData, planeOffset) -> {
+            final ImageU16Dataset currentVoxelLayer = voxel.reconstructFromVoxelsToDataset(voxelDim, voxelData);
+            int offset = planeOffset * (voxelDim.getX() * voxelDim.getY());
+
+            for (int layer = 0; layer < voxel.getDims().getZ(); layer++) {
+                final short[] voxelLayerData = currentVoxelLayer.getPlaneData(layer);
+                System.arraycopy(voxelLayerData, 0, buffer, offset, voxelLayerData.length);
+                offset += voxelLayerData.length;
+            }
+        });
+        return buffer;
     }
 }

@@ -221,6 +221,10 @@ public class QCMPFileHeader {
         return planeDataSizes;
     }
 
+    public void setPlaneDataSizes(final long[] sizes) {
+        planeDataSizes = sizes;
+    }
+
     public long getHeaderSize() {
         final int chunkCount = (quantizationType != QuantizationType.Vector3D)
                 ? imageSizeZ

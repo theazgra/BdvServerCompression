@@ -1,10 +1,14 @@
 package azgracompress.compression;
 
+import azgracompress.cache.ICacheFile;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Range;
 import azgracompress.fileformat.QCMPFileHeader;
+import azgracompress.io.InputData;
+import org.scijava.util.ArrayUtils;
 
 import java.io.*;
+import java.util.Arrays;
 
 public class ImageCompressor extends CompressorDecompressorBase {
     final int PLANE_DATA_SIZES_OFFSET = 23;
@@ -14,6 +18,20 @@ public class ImageCompressor extends CompressorDecompressorBase {
     public ImageCompressor(CompressionOptions options) {
         super(options);
         imageCompressor = getImageCompressor();
+    }
+
+    public ImageCompressor(final CompressionOptions options, final ICacheFile codebookCacheFile) {
+        this(options);
+        imageCompressor.preloadGlobalCodebook(codebookCacheFile);
+    }
+
+    /**
+     * Set InputData object for compressor.
+     *
+     * @param inputData Current input data information.
+     */
+    public void setInputData(final InputData inputData) {
+        options.setInputDataInfo(inputData);
     }
 
     /**
@@ -67,9 +85,27 @@ public class ImageCompressor extends CompressorDecompressorBase {
         return true;
     }
 
-    public int streamCompress(final OutputStream outputStream) {
-        assert (false) : "Not implemented!";
-        return -1;
+    public int streamCompressChunk(final OutputStream outputStream) {
+        assert (imageCompressor != null);
+
+        try (DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(outputStream, 8192))) {
+            final long[] chunkSizes = imageCompressor.compressStreamMode(compressStream);
+            for (final long chunkSize : chunkSizes) {
+                assert (chunkSize < Integer.MAX_VALUE);
+                compressStream.writeInt((int) chunkSize);
+                compressStream.writeInt((int) chunkSize);
+            }
+
+            return (int) Arrays.stream(chunkSizes).sum() + (3 * 2) + (chunkSizes.length * 4);
+        } catch (ImageCompressionException ice) {
+            System.err.println(ice.getMessage());
+            return -1;
+
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+            return -1;
+        }
     }
 
     public boolean compress() {

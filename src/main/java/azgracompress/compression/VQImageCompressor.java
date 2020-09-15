@@ -1,8 +1,11 @@
 package azgracompress.compression;
 
+import azgracompress.cache.ICacheFile;
 import azgracompress.cache.QuantizationCacheManager;
+import azgracompress.cache.VQCacheFile;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Range;
+import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
 import azgracompress.huffman.Huffman;
 import azgracompress.io.InputData;
@@ -18,8 +21,18 @@ import java.io.IOException;
 
 public class VQImageCompressor extends CompressorDecompressorBase implements IImageCompressor {
 
+    private VectorQuantizer cachedQuantizer = null;
+    private Huffman cachedHuffman = null;
+
     public VQImageCompressor(CompressionOptions options) {
         super(options);
+    }
+
+    @Override
+    public void preloadGlobalCodebook(final ICacheFile codebookCacheFile) {
+        final VQCodebook cachedCodebook = ((VQCacheFile) codebookCacheFile).getCodebook();
+        cachedQuantizer = new VectorQuantizer(cachedCodebook);
+        cachedHuffman = createHuffmanCoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()), cachedCodebook.getVectorFrequencies());
     }
 
     /**
@@ -73,7 +86,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException when fails to read cached codebook.
      */
     private VectorQuantizer loadQuantizerFromCache() throws ImageCompressionException {
-
         QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
         if (!cacheManager.doesVQCacheExists(options.getInputDataInfo().getCacheFileName(),
@@ -101,14 +113,24 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     @Override
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
         if (options.getQuantizationType() == QuantizationType.Vector3D) {
-            return compressVoxels(compressStream);
+            return compressVoxels(compressStream, false);
         }
         assert (options.getQuantizationVector().getZ() == 1);
-        return compress1D2DVectors(compressStream);
+        return compress1D2DVectors(compressStream, false);
+    }
+
+    @Override
+    public long[] compressStreamMode(DataOutputStream compressStream) throws ImageCompressionException {
+        if (options.getQuantizationType() == QuantizationType.Vector3D) {
+            return compressVoxels(compressStream, true);
+        }
+        assert (options.getQuantizationVector().getZ() == 1);
+        return compress1D2DVectors(compressStream, true);
     }
 
     @NotNull
-    private long[] compress1D2DVectors(DataOutputStream compressStream) throws ImageCompressionException {
+    private long[] compress1D2DVectors(final DataOutputStream compressStream, final boolean streamMode) throws ImageCompressionException {
+
         final InputData inputDataInfo = options.getInputDataInfo();
         Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.getCodebookType() != CompressionOptions.CodebookType.Individual;
@@ -127,19 +149,35 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             quantizer = loadQuantizerFromCache();
             huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
             reportStatusToListeners("Cached quantizer with huffman coder created.");
-            writeQuantizerToCompressStream(quantizer, compressStream);
+            if (!streamMode)
+                writeQuantizerToCompressStream(quantizer, compressStream);
         } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
             stopwatch.restart();
             reportStatusToListeners("Training vector quantizer from middle plane.");
             final int[][] refPlaneVectors = planeLoader.loadVectorsFromPlaneRange(options, Utils.singlePlaneRange(getMiddlePlaneIndex()));
             quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
             huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
-            writeQuantizerToCompressStream(quantizer, compressStream);
+            if (!streamMode)
+                writeQuantizerToCompressStream(quantizer, compressStream);
             stopwatch.stop();
             reportStatusToListeners("Middle plane codebook created in: " + stopwatch.getElapsedTimeString());
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression();
+        if (streamMode) {
+            try {
+                final V3i imageDims = options.getInputDataInfo().getDimensions();
+                // Image dimensions
+                compressStream.writeShort(imageDims.getX());
+                compressStream.writeShort(imageDims.getY());
+                compressStream.writeShort(imageDims.getZ());
+
+                // Write voxel layer in stream mode.
+                compressStream.writeShort(planeIndices.length);
+            } catch (IOException e) {
+                throw new ImageCompressionException("Failed to write short value to compression stream.", e);
+            }
+        }
         long[] planeDataSizes = new long[planeIndices.length];
         int planeCounter = 0;
 
@@ -153,7 +191,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 reportStatusToListeners(String.format("Training vector quantizer from plane %d.", planeIndex));
                 quantizer = trainVectorQuantizerFromPlaneVectors(planeVectors);
                 huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
-                writeQuantizerToCompressStream(quantizer, compressStream);
+                if (!streamMode)
+                    writeQuantizerToCompressStream(quantizer, compressStream);
             }
 
             assert (quantizer != null);
@@ -234,7 +273,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         return (datasetPlaneCount / voxelDepth);
     }
 
-    public long[] compressVoxels(DataOutputStream compressStream) throws ImageCompressionException {
+    public long[] compressVoxels(final DataOutputStream compressStream, final boolean streamMode) throws ImageCompressionException {
         assert (options.getCodebookType() == CompressionOptions.CodebookType.Global);
         final IPlaneLoader planeLoader;
         final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
@@ -247,11 +286,26 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
         final int voxelLayerDepth = options.getQuantizationVector().getZ();
         final int voxelLayerCount = calculateVoxelLayerCount(options.getInputDataInfo().getDimensions().getZ(), voxelLayerDepth);
+        if (streamMode) {
+            try {
+                final V3i imageDims = options.getInputDataInfo().getDimensions();
+                // Image dimensions
+                compressStream.writeShort(imageDims.getX());
+                compressStream.writeShort(imageDims.getY());
+                compressStream.writeShort(imageDims.getZ());
+
+                // Write voxel layer in stream mode.
+                compressStream.writeShort(voxelLayerCount);
+            } catch (IOException e) {
+                throw new ImageCompressionException("Failed to write short value to compression stream.", e);
+            }
+        }
         long[] voxelLayersSizes = new long[voxelLayerCount];
 
-        final VectorQuantizer quantizer = loadQuantizerFromCache();
-        final Huffman huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
-        writeQuantizerToCompressStream(quantizer, compressStream);
+        final VectorQuantizer quantizer = (cachedQuantizer != null) ? cachedQuantizer : loadQuantizerFromCache();
+        final Huffman huffman = (cachedHuffman != null) ? cachedHuffman : createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
+        if (!streamMode)
+            writeQuantizerToCompressStream(quantizer, compressStream);
 
         int[][] voxelData;
         Stopwatch stopwatch = new Stopwatch();
