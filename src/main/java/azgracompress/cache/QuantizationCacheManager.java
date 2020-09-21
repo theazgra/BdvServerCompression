@@ -52,8 +52,10 @@ public class QuantizationCacheManager {
                                        final int codebookSize,
                                        final V3i vDim) {
         final File inputFile = new File(trainFile);
-        return new File(cacheFolder, String.format("%s_%d_%dx%dx%d.qvc", inputFile.getName(), codebookSize,
-                                                   vDim.getX(), vDim.getY(), vDim.getZ()));
+        final String cacheFileName = String.format("%s_%d_%dx%dx%d.qvc", inputFile.getName(), codebookSize,
+                                                   vDim.getX(), vDim.getY(), vDim.getZ());
+        // System.out.println("getCacheFilePathForVQ()=" + cacheFileName);
+        return new File(cacheFolder, cacheFileName);
     }
 
 
