@@ -1,10 +1,12 @@
 package azgracompress.compression;
 
+import azgracompress.U16;
 import azgracompress.cache.ICacheFile;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Range;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.io.InputData;
+import azgracompress.utilities.Utils;
 
 import java.io.*;
 import java.util.Arrays;
@@ -90,12 +92,11 @@ public class ImageCompressor extends CompressorDecompressorBase {
         try (DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(outputStream, 8192))) {
             final long[] chunkSizes = imageCompressor.compressStreamMode(compressStream);
             for (final long chunkSize : chunkSizes) {
-                assert (chunkSize < Integer.MAX_VALUE);
-                compressStream.writeInt((int) chunkSize);
-                compressStream.writeInt((int) chunkSize);
+                assert (chunkSize < U16.Max);
+                compressStream.writeShort((int) chunkSize);
             }
 
-            return (int) Arrays.stream(chunkSizes).sum() + (3 * 2) + (chunkSizes.length * 4);
+            return (4 * 2) + ((int) Arrays.stream(chunkSizes).sum()) + (chunkSizes.length * 2);
         } catch (ImageCompressionException ice) {
             System.err.println(ice.getMessage());
             return -1;
