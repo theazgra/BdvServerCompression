@@ -10,6 +10,7 @@ import azgracompress.utilities.Utils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Optional;
 
 
@@ -293,9 +294,12 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(compressedStream))) {
             assert (dis.markSupported());
 
-            cachedHeader.setImageSizeX(dis.readUnsignedShort());
-            cachedHeader.setImageSizeY(dis.readUnsignedShort());
-            cachedHeader.setImageSizeZ(dis.readUnsignedShort());
+            final QCMPFileHeader header = cachedHeader.copyOf();
+
+            header.setImageSizeX(dis.readUnsignedShort());
+            header.setImageSizeY(dis.readUnsignedShort());
+            header.setImageSizeZ(dis.readUnsignedShort());
+
 
             final int chunkCount = dis.readUnsignedShort();
             final long[] chunkSizes = new long[chunkCount];
@@ -303,7 +307,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             dis.mark(contentLength);
 
             {
-                int toSkip = contentLength - (4 * 2);
+                int toSkip = contentLength - ((4 * 2) + (chunkCount * 2));
                 while (toSkip > 0) {
                     int skipped = dis.skipBytes(toSkip);
                     assert (skipped > 0);
@@ -311,16 +315,16 @@ public class ImageDecompressor extends CompressorDecompressorBase {
                 }
                 assert (toSkip == 0);
                 for (int i = 0; i < chunkCount; i++) {
-                    chunkSizes[i] = dis.readInt();
+                    chunkSizes[i] = dis.readUnsignedShort();
                 }
             }
 
             dis.reset();
 
-            cachedHeader.setPlaneDataSizes(chunkSizes);
+            header.setPlaneDataSizes(chunkSizes);
 
 
-            return cachedDecompressor.decompressStreamMode(dis, cachedHeader);
+            return cachedDecompressor.decompressStreamMode(dis, header);
         } catch (IOException e) {
             throw new ImageDecompressionException("Unable to decompress chunk of image from stream.", e);
         }
