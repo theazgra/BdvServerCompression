@@ -1,10 +1,10 @@
 package azgracompress.compression;
 
+import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.compression.listeners.IProgressListener;
 import azgracompress.compression.listeners.IStatusListener;
-import azgracompress.io.InputData;
-import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.huffman.Huffman;
+import azgracompress.io.InputData;
 import azgracompress.io.OutBitStream;
 
 import java.io.DataOutputStream;
@@ -38,6 +38,11 @@ public abstract class CompressorDecompressorBase {
             this.progressListeners = new ArrayList<>(1);
         }
         this.progressListeners.add(listener);
+    }
+
+    public void clearAllListeners() {
+        this.statusListeners.clear();
+        this.progressListeners.clear();
     }
 
     protected void duplicateAllListeners(IListenable other) {

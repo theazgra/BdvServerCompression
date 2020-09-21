@@ -5,7 +5,6 @@ import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Range;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.io.InputData;
-import org.scijava.util.ArrayUtils;
 
 import java.io.*;
 import java.util.Arrays;
@@ -112,6 +111,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
         if (imageCompressor == null) {
             return false;
         }
+        duplicateAllListeners(imageCompressor);
 
         long[] planeDataSizes = null;
 

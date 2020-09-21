@@ -91,6 +91,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         if (!cacheManager.doesVQCacheExists(options.getInputDataInfo().getCacheFileName(),
                                             getCodebookSize(),
                                             options.getQuantizationVector())) {
+            reportStatusToListeners("Quantization file doesn't exist");
             trainAndSaveCodebook();
         }
 
@@ -183,9 +184,10 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
         for (final int planeIndex : planeIndices) {
             stopwatch.restart();
-            reportStatusToListeners(String.format("Loading plane %d.", planeIndex));
+
 
             final int[][] planeVectors = planeLoader.loadVectorsFromPlaneRange(options, Utils.singlePlaneRange(planeIndex));
+
 
             if (!hasGeneralQuantizer) {
                 reportStatusToListeners(String.format("Training vector quantizer from plane %d.", planeIndex));
@@ -206,6 +208,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             stopwatch.stop();
             if (options.isConsoleApplication()) {
+                System.out.println("Is console app, whyy");
                 reportStatusToListeners("Finished compression of plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
             } else {
                 reportProgressToListeners(planeIndex, planeIndices.length,

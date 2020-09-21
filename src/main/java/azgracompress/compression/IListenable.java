@@ -17,4 +17,9 @@ public interface IListenable {
      * @param listener Progress listener.
      */
     void addProgressListener(IProgressListener listener);
+
+    /**
+     * Remove all active listeners.
+     */
+    void clearAllListeners();
 }
