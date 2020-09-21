@@ -8,7 +8,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class QCMPFileHeader {
+public class QCMPFileHeader implements Cloneable {
     public static final int BASE_QCMP_HEADER_SIZE = 23;
     public static final String QCMP_MAGIC_VALUE = "QCMPFILE";
 
@@ -55,6 +55,19 @@ public class QCMPFileHeader {
             return false;
 
         return true;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    public QCMPFileHeader copyOf() {
+        try {
+            return (QCMPFileHeader) this.clone();
+        } catch (CloneNotSupportedException e) {
+            return null;
+        }
     }
 
     public void writeHeader(DataOutputStream outputStream) throws IOException {
