@@ -6,7 +6,6 @@ import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Range;
 import azgracompress.fileformat.QCMPFileHeader;
 import azgracompress.io.InputData;
-import azgracompress.utilities.Utils;
 
 import java.io.*;
 import java.util.Arrays;
@@ -33,6 +32,9 @@ public class ImageCompressor extends CompressorDecompressorBase {
      */
     public void setInputData(final InputData inputData) {
         options.setInputDataInfo(inputData);
+        if ((imageCompressor != null) && (imageCompressor instanceof CompressorDecompressorBase)) {
+            ((CompressorDecompressorBase) imageCompressor).options.setInputDataInfo(inputData);
+        }
     }
 
     /**
@@ -86,11 +88,11 @@ public class ImageCompressor extends CompressorDecompressorBase {
         return true;
     }
 
-    public int streamCompressChunk(final OutputStream outputStream) {
+    public int streamCompressChunk(final OutputStream outputStream, final InputData inputData) {
         assert (imageCompressor != null);
 
         try (DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(outputStream, 8192))) {
-            final long[] chunkSizes = imageCompressor.compressStreamMode(compressStream);
+            final long[] chunkSizes = imageCompressor.compressStreamChunk(compressStream, inputData);
             for (final long chunkSize : chunkSizes) {
                 assert (chunkSize < U16.Max);
                 compressStream.writeShort((int) chunkSize);

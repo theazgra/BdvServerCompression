@@ -2,6 +2,8 @@ package azgracompress.compression;
 
 import azgracompress.cache.ICacheFile;
 import azgracompress.compression.exception.ImageCompressionException;
+import azgracompress.data.V3i;
+import azgracompress.io.InputData;
 
 import java.io.DataOutputStream;
 
@@ -22,10 +24,12 @@ public interface IImageCompressor extends IListenable {
      * META information.
      *
      * @param compressStream Compressed data stream.
+     * @param inputData      Chunk input data.
      * @return Size of compressed chunks.
      * @throws ImageCompressionException when compression fails
      */
-    long[] compressStreamMode(DataOutputStream compressStream) throws ImageCompressionException;
+    long[] compressStreamChunk(final DataOutputStream compressStream,
+                               final InputData inputData) throws ImageCompressionException;
 
     /**
      * Train codebook from selected frames and save the learned codebook to cache file.

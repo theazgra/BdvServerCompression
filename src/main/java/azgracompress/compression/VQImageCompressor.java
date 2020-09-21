@@ -114,16 +114,16 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     @Override
     public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
         if (options.getQuantizationType() == QuantizationType.Vector3D) {
-            return compressVoxels(compressStream, false);
+            return compressVoxels(compressStream, false, options.getInputDataInfo());
         }
         assert (options.getQuantizationVector().getZ() == 1);
         return compress1D2DVectors(compressStream, false);
     }
 
     @Override
-    public long[] compressStreamMode(DataOutputStream compressStream) throws ImageCompressionException {
+    public long[] compressStreamChunk(DataOutputStream compressStream, final InputData inputData) throws ImageCompressionException {
         if (options.getQuantizationType() == QuantizationType.Vector3D) {
-            return compressVoxels(compressStream, true);
+            return compressVoxels(compressStream, true, inputData);
         }
         assert (options.getQuantizationVector().getZ() == 1);
         return compress1D2DVectors(compressStream, true);
@@ -276,26 +276,28 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         return (datasetPlaneCount / voxelDepth);
     }
 
-    public long[] compressVoxels(final DataOutputStream compressStream, final boolean streamMode) throws ImageCompressionException {
+    // TODO(Moravec): Remove dependencies on instance variables to enable multi-thread usage.
+    public long[] compressVoxels(final DataOutputStream compressStream,
+                                 final boolean streamMode,
+                                 final InputData inputData) throws ImageCompressionException {
         assert (options.getCodebookType() == CompressionOptions.CodebookType.Global);
         final IPlaneLoader planeLoader;
         final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
         try {
-            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputData);
             planeLoader.setWorkerCount(options.getWorkerCount());
         } catch (Exception e) {
             throw new ImageCompressionException("Unable to create plane reader. " + e.getMessage());
         }
 
         final int voxelLayerDepth = options.getQuantizationVector().getZ();
-        final int voxelLayerCount = calculateVoxelLayerCount(options.getInputDataInfo().getDimensions().getZ(), voxelLayerDepth);
+        final int voxelLayerCount = calculateVoxelLayerCount(inputData.getDimensions().getZ(), voxelLayerDepth);
         if (streamMode) {
             try {
-                final V3i imageDims = options.getInputDataInfo().getDimensions();
                 // Image dimensions
-                compressStream.writeShort(imageDims.getX());
-                compressStream.writeShort(imageDims.getY());
-                compressStream.writeShort(imageDims.getZ());
+                compressStream.writeShort(inputData.getDimensions().getX());
+                compressStream.writeShort(inputData.getDimensions().getY());
+                compressStream.writeShort(inputData.getDimensions().getZ());
 
                 // Write voxel layer in stream mode.
                 compressStream.writeShort(voxelLayerCount);
@@ -321,8 +323,12 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             //                  Those stupid voxels have only one or two layers of actual data and the rest are zeros.
             //                  This ends up increasing the file size because they have quite long Huffman codes.
             final int toZ = (voxelLayerIndex == voxelLayerCount - 1)
-                    ? options.getInputDataInfo().getDimensions().getZ()
+                    ? inputData.getDimensions().getZ()
                     : (voxelLayerDepth + (voxelLayerIndex * voxelLayerDepth));
+
+            if (toZ < fromZ) {
+                System.err.println("@Wrong range");
+            }
 
             final Range<Integer> voxelLayerRange = new Range<>(fromZ, toZ);
 

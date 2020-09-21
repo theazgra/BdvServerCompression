@@ -5,6 +5,7 @@ import azgracompress.cache.ICacheFile;
 import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cache.SQCacheFile;
 import azgracompress.compression.exception.ImageCompressionException;
+import azgracompress.data.V3i;
 import azgracompress.huffman.Huffman;
 import azgracompress.io.InputData;
 import azgracompress.io.loader.IPlaneLoader;
@@ -243,7 +244,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     @Override
-    public long[] compressStreamMode(DataOutputStream compressStream) throws ImageCompressionException {
+    public long[] compressStreamChunk(DataOutputStream compressStream, InputData inputData) throws ImageCompressionException {
         throw new ImageCompressionException("Not implemented yet");
     }
 }
