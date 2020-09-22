@@ -146,7 +146,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             reportStatusToListeners("Middle plane codebook with huffman coder created in: " + stopwatch.getElapsedTimeString());
         }
 
-        final int[] planeIndices = getPlaneIndicesForCompression();
+        final int[] planeIndices = getPlaneIndicesForCompression(options.getInputDataInfo());
         long[] planeDataSizes = new long[planeIndices.length];
         int planeCounter = 0;
         for (final int planeIndex : planeIndices) {
@@ -201,7 +201,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             }
         } else if (inputDataInfo.isPlaneRangeSet()) {
             reportStatusToListeners("Loading plane range data.");
-            final int[] planes = getPlaneIndicesForCompression();
+            final int[] planes = getPlaneIndicesForCompression(options.getInputDataInfo());
             try {
                 trainData = planeLoader.loadPlanesU16Data(planes);
             } catch (IOException e) {

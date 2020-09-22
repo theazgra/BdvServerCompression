@@ -117,7 +117,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             return compressVoxels(compressStream, false, options.getInputDataInfo());
         }
         assert (options.getQuantizationVector().getZ() == 1);
-        return compress1D2DVectors(compressStream, false);
+        return compress1D2DVectors(compressStream, false, options.getInputDataInfo());
     }
 
     @Override
@@ -126,52 +126,54 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             return compressVoxels(compressStream, true, inputData);
         }
         assert (options.getQuantizationVector().getZ() == 1);
-        return compress1D2DVectors(compressStream, true);
+        return compress1D2DVectors(compressStream, true, inputData);
     }
 
     @NotNull
-    private long[] compress1D2DVectors(final DataOutputStream compressStream, final boolean streamMode) throws ImageCompressionException {
+    private long[] compress1D2DVectors(final DataOutputStream compressStream,
+                                       final boolean streamMode,
+                                       final InputData inputData) throws ImageCompressionException {
 
-        final InputData inputDataInfo = options.getInputDataInfo();
         Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.getCodebookType() != CompressionOptions.CodebookType.Individual;
         final IPlaneLoader planeLoader;
         final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
         try {
-            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputDataInfo);
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputData);
         } catch (Exception e) {
             throw new ImageCompressionException("Unable to create plane reader. " + e.getMessage());
         }
-        VectorQuantizer quantizer = null;
-        Huffman huffman = null;
 
-        if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
-            reportStatusToListeners("Loading codebook from cache file.");
-            quantizer = loadQuantizerFromCache();
-            huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
-            reportStatusToListeners("Cached quantizer with huffman coder created.");
-            if (!streamMode)
-                writeQuantizerToCompressStream(quantizer, compressStream);
-        } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
-            stopwatch.restart();
-            reportStatusToListeners("Training vector quantizer from middle plane.");
-            final int[][] refPlaneVectors = planeLoader.loadVectorsFromPlaneRange(options, Utils.singlePlaneRange(getMiddlePlaneIndex()));
-            quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
-            huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
-            if (!streamMode)
-                writeQuantizerToCompressStream(quantizer, compressStream);
-            stopwatch.stop();
-            reportStatusToListeners("Middle plane codebook created in: " + stopwatch.getElapsedTimeString());
+        VectorQuantizer quantizer = cachedQuantizer;
+        Huffman huffman = cachedHuffman;
+        assert (!streamMode || ((quantizer != null) && (huffman != null)));
+
+        if (!streamMode) {
+            if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
+                reportStatusToListeners("Loading codebook from cache file.");
+                quantizer = loadQuantizerFromCache();
+                huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
+                reportStatusToListeners("Cached quantizer with huffman coder created.");
+            } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
+                stopwatch.restart();
+                reportStatusToListeners("Training vector quantizer from middle plane.");
+                final int[][] refPlaneVectors = planeLoader.loadVectorsFromPlaneRange(options,
+                                                                                      Utils.singlePlaneRange(getMiddlePlaneIndex()));
+                quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
+                huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
+                stopwatch.stop();
+                reportStatusToListeners("Middle plane codebook created in: " + stopwatch.getElapsedTimeString());
+            }
+            writeQuantizerToCompressStream(quantizer, compressStream);
         }
 
-        final int[] planeIndices = getPlaneIndicesForCompression();
+        final int[] planeIndices = getPlaneIndicesForCompression(inputData);
         if (streamMode) {
             try {
-                final V3i imageDims = options.getInputDataInfo().getDimensions();
                 // Image dimensions
-                compressStream.writeShort(imageDims.getX());
-                compressStream.writeShort(imageDims.getY());
-                compressStream.writeShort(imageDims.getZ());
+                compressStream.writeShort(inputData.getDimensions().getX());
+                compressStream.writeShort(inputData.getDimensions().getY());
+                compressStream.writeShort(inputData.getDimensions().getZ());
 
                 // Write voxel layer in stream mode.
                 compressStream.writeShort(planeIndices.length);
@@ -189,18 +191,15 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             final int[][] planeVectors = planeLoader.loadVectorsFromPlaneRange(options, Utils.singlePlaneRange(planeIndex));
 
 
-            if (!hasGeneralQuantizer) {
+            if (!streamMode && !hasGeneralQuantizer) {
                 reportStatusToListeners(String.format("Training vector quantizer from plane %d.", planeIndex));
                 quantizer = trainVectorQuantizerFromPlaneVectors(planeVectors);
                 huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
-                if (!streamMode)
-                    writeQuantizerToCompressStream(quantizer, compressStream);
+                writeQuantizerToCompressStream(quantizer, compressStream);
             }
 
-            assert (quantizer != null);
-
             // Use BestBinFirst KDTree for codebook lookup.
-            //             final int[] indices = quantizer.quantizeIntoIndicesUsingKDTree(planeVectors, options.getWorkerCount());
+            // final int[] indices = quantizer.quantizeIntoIndicesUsingKDTree(planeVectors, options.getWorkerCount());
             // Use BruteForce for codebook lookup.
             final int[] indices = quantizer.quantizeIntoIndices(planeVectors, options.getWorkerCount());
 
@@ -276,7 +275,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         return (datasetPlaneCount / voxelDepth);
     }
 
-    // TODO(Moravec): Remove dependencies on instance variables to enable multi-thread usage.
     public long[] compressVoxels(final DataOutputStream compressStream,
                                  final boolean streamMode,
                                  final InputData inputData) throws ImageCompressionException {
@@ -325,10 +323,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             final int toZ = (voxelLayerIndex == voxelLayerCount - 1)
                     ? inputData.getDimensions().getZ()
                     : (voxelLayerDepth + (voxelLayerIndex * voxelLayerDepth));
-
-            if (toZ < fromZ) {
-                System.err.println("@Wrong range");
-            }
+            assert (toZ >= fromZ);
 
             final Range<Integer> voxelLayerRange = new Range<>(fromZ, toZ);
 

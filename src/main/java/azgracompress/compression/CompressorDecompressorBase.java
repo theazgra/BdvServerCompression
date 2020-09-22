@@ -102,14 +102,12 @@ public abstract class CompressorDecompressorBase {
         return huffman;
     }
 
-    protected int[] getPlaneIndicesForCompression() {
-
-        final InputData ifi = options.getInputDataInfo();
-        if (ifi.isPlaneIndexSet()) {
-            return new int[]{ifi.getPlaneIndex()};
-        } else if (ifi.isPlaneRangeSet()) {
-            final int from = ifi.getPlaneRange().getFrom();
-            final int count = ifi.getPlaneRange().getTo() - from;
+    protected int[] getPlaneIndicesForCompression(final InputData inputData) {
+        if (inputData.isPlaneIndexSet()) {
+            return new int[]{inputData.getPlaneIndex()};
+        } else if (inputData.isPlaneRangeSet()) {
+            final int from = inputData.getPlaneRange().getFrom();
+            final int count = inputData.getPlaneRange().getTo() - from;
 
             int[] indices = new int[count + 1];
             for (int i = 0; i <= count; i++) {
@@ -117,7 +115,7 @@ public abstract class CompressorDecompressorBase {
             }
             return indices;
         } else {
-            return generateAllPlaneIndices(ifi.getDimensions().getZ());
+            return generateAllPlaneIndices(inputData.getDimensions().getZ());
         }
     }
 
