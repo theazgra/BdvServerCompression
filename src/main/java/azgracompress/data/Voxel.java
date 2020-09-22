@@ -45,7 +45,7 @@ public final class Voxel {
      * @param voxelDims Chunk dimensions.
      * @return Index inside chunk dimension data array.
      */
-    public int dataIndex(final int x, final int y, final int z, final V3i voxelDims) {
+    public static int dataIndex(final int x, final int y, final int z, final V3i voxelDims) {
         return (z * (voxelDims.getX() * voxelDims.getY())) + (y * voxelDims.getX()) + x;
     }
 

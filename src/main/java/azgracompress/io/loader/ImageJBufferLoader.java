@@ -104,7 +104,8 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
 
     @Override
     public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
-        return loadVoxelsImplByValueAt(voxelDim, planeRange);
+//        return loadVoxelsImplByValueAt(voxelDim, planeRange);
+        return experimentalLoadVoxelsImplByValueAt(voxelDim, planeRange);
     }
 }
 

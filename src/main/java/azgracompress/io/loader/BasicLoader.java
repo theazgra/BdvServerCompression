@@ -2,7 +2,6 @@ package azgracompress.io.loader;
 
 import azgracompress.data.*;
 
-import javax.print.attribute.standard.RequestingUserName;
 import java.io.IOException;
 
 public abstract class BasicLoader {
@@ -248,6 +247,55 @@ public abstract class BasicLoader {
             }
         }
     }
+
+    private void loadVoxel(final int[] voxel,
+                           final int voxelXOffset,
+                           final int voxelYOffset,
+                           final int voxelZOffset,
+                           final V3i voxelDim) {
+        int srcX, srcY, srcZ;
+        for (int z = 0; z < voxelDim.getZ(); z++) {
+            srcZ = voxelZOffset + z;
+            if (srcZ >= dims.getZ()) {
+                // Handle plane overflow.
+                break;
+            }
+            for (int y = 0; y < voxelDim.getY(); y++) {
+                srcY = voxelYOffset + y;
+                if (srcY >= dims.getY()) {
+                    // Handle row overflow.
+                    break;
+                }
+                for (int x = 0; x < voxelDim.getX(); x++) {
+                    srcX = voxelXOffset + x;
+                    if (srcX >= dims.getX()) {
+                        // Handle column overflow
+                        break;
+                    }
+
+                    voxel[Voxel.dataIndex(x, y, z, voxelDim)] = valueAt(srcZ, Block.index(x, y, dims.getX()));
+                }
+            }
+        }
+
+    }
+
+    protected int[][] experimentalLoadVoxelsImplByValueAt(final V3i voxelDim, final Range<Integer> planeRange) {
+        System.out.println("experimentalLoadVoxelsImplByValueAt");
+        final int voxelCount = Voxel.calculateRequiredVoxelCount(dims, voxelDim);
+        final int voxelElementCount = (int) voxelDim.multiplyTogether();
+        int[][] voxels = new int[voxelCount][voxelElementCount];
+        int voxelIndex = 0;
+        for (int voxelZOffset = planeRange.getFrom(); voxelZOffset < planeRange.getTo(); voxelZOffset += voxelDim.getZ()) {
+            for (int voxelYOffset = 0; voxelYOffset < dims.getY(); voxelYOffset += voxelDim.getY()) {
+                for (int voxelXOffset = 0; voxelXOffset < dims.getX(); voxelXOffset += voxelDim.getX()) {
+                    loadVoxel(voxels[voxelIndex++], voxelXOffset, voxelYOffset, voxelZOffset, voxelDim);
+                }
+            }
+        }
+        return voxels;
+    }
+
 
     /**
      * Load specified planes from dataset to voxel of specified dimensions.
