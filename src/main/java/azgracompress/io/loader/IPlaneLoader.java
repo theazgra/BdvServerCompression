@@ -23,6 +23,20 @@ public interface IPlaneLoader {
     }
 
     /**
+     * Get data wrapping strategy configured for this loader.
+     *
+     * @return Wrapping strategy.
+     */
+    DataWrappingStrategy getWrappingStrategy();
+
+    /**
+     * Configure data wrapping strategy for this loader.
+     *
+     * @param strategy Wrapping strategy.
+     */
+    void setWrappingStrategy(DataWrappingStrategy strategy);
+
+    /**
      * Get dimensions of the image, for which the loader was created.
      *
      * @return Image of the loader image.
