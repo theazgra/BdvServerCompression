@@ -188,7 +188,6 @@ public abstract class BasicLoader {
                                 valueAt(planeIndex, Block.index(dims.getX() - ((srcX - dims.getX()) + 1), srcY, dims.getX()));
                         continue;
                     }
-
                 }
                 block[Block.index(x, y, blockDim.getX())] = valueAt(planeIndex, Block.index(srcX, srcY, dims.getX()));
             }
@@ -199,14 +198,51 @@ public abstract class BasicLoader {
         int srcX, srcY;
         for (int y = 0; y < blockDim.getY(); y++) {
             srcY = blockYOffset + y;
+            // Row overflow
             if (srcY >= dims.getY()) {
-                //                handleBlockRowOverflow(block, blockDim, y, srcY);
-                continue;
+
+                if (wrappingStrategy == DataWrappingStrategy.LeaveBlank)
+                    break;
+
+                if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
+                    final int srcRow = dims.getY() - 1;
+                    final int dstOffset = y * blockDim.getX();
+                    for (int x = 0; x < blockDim.getX(); x++) {
+                        srcX = (blockXOffset + x);
+                        if (srcX >= dims.getX())
+                            srcX = dims.getX() - 1;
+                        block[dstOffset + x] = planeData[Block.index(srcX, srcRow, dims.getX())];
+                    }
+                    continue;
+                } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
+                    final int srcRow = dims.getY() - ((srcY - dims.getY()) + 1);
+                    final int dstOffset = y * blockDim.getX();
+                    for (int x = 0; x < blockDim.getX(); x++) {
+                        srcX = (blockXOffset + x);
+                        if (srcX >= dims.getX())
+                            srcX = dims.getX() - 1;
+                        block[dstOffset + x] = planeData[Block.index(srcX, srcRow, dims.getX())];
+                    }
+                    continue;
+                }
             }
             for (int x = 0; x < blockDim.getX(); x++) {
                 srcX = blockXOffset + x;
-                if (srcX >= dims.getX())
-                    break;
+                // Column overflow.
+                if (srcX >= dims.getX()) {
+
+                    if (wrappingStrategy == DataWrappingStrategy.LeaveBlank)
+                        break;
+                    if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
+                        block[Block.index(x, y, blockDim.getX())] = planeData[Block.index(dims.getX() - 1, srcY, dims.getX())];
+                        continue;
+                    } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
+
+                        block[Block.index(x, y, blockDim.getX())] =
+                                planeData[Block.index(dims.getX() - ((srcX - dims.getX()) + 1), srcY, dims.getX())];
+                        continue;
+                    }
+                }
 
                 block[Block.index(x, y, blockDim.getX())] = planeData[Block.index(srcX, srcY, dims.getX())];
             }
