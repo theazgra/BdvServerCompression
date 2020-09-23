@@ -388,7 +388,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         final V3i voxelDims = new V3i(header.getVectorSizeX(), header.getVectorSizeY(), header.getVectorSizeZ());
         decompressVoxelsImpl(compressedStream, header, (voxel, voxelData, planeOffset) -> {
 
-            ImageU16Dataset currentVoxelLayer = voxel.reconstructFromVoxelsToDataset(voxelDims, voxelData);
+            final ImageU16Dataset currentVoxelLayer = voxel.reconstructFromVoxelsToDataset(voxelDims, voxelData);
 
             for (int layer = 0; layer < voxel.getDims().getZ(); layer++) {
                 try {

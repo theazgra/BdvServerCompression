@@ -1,6 +1,5 @@
 package azgracompress.data;
 
-@SuppressWarnings("DuplicatedCode")
 public final class Voxel {
     /**
      * Voxel dimensions.
