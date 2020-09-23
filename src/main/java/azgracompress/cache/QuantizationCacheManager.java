@@ -54,7 +54,7 @@ public class QuantizationCacheManager {
         final File inputFile = new File(trainFile);
         final String cacheFileName = String.format("%s_%d_%dx%dx%d.qvc", inputFile.getName(), codebookSize,
                                                    vDim.getX(), vDim.getY(), vDim.getZ());
-        // System.out.println("getCacheFilePathForVQ()=" + cacheFileName);
+//         System.out.println("getCacheFilePathForVQ()=" + cacheFileName);
         return new File(cacheFolder, cacheFileName);
     }
 
@@ -67,7 +67,7 @@ public class QuantizationCacheManager {
      * @return SQ cache file header.
      */
     private CacheFileHeader createHeaderForSQ(final String trainFile, final SQCodebook codebook) {
-        CacheFileHeader header = new CacheFileHeader();
+        final CacheFileHeader header = new CacheFileHeader();
         header.setQuantizationType(QuantizationType.Scalar);
         header.setCodebookSize(codebook.getCodebookSize());
         header.setTrainFileName(trainFile);
@@ -104,7 +104,7 @@ public class QuantizationCacheManager {
      * @return VQ cache file header.
      */
     private CacheFileHeader createHeaderForVQ(final String trainFile, final VQCodebook codebook) {
-        CacheFileHeader header = new CacheFileHeader();
+        final CacheFileHeader header = new CacheFileHeader();
         header.setQuantizationType(getQuantizationTypeFromVectorDimensions(codebook.getVectorDims()));
         header.setCodebookSize(codebook.getCodebookSize());
         header.setTrainFileName(trainFile);
@@ -126,11 +126,11 @@ public class QuantizationCacheManager {
         final CacheFileHeader header = createHeaderForSQ(new File(trainFile).getName(), codebook);
         final SQCacheFile cacheFile = new SQCacheFile(header, codebook);
 
-        try (FileOutputStream fos = new FileOutputStream(fileName, false);
-             DataOutputStream dos = new DataOutputStream(fos)) {
+        try (final FileOutputStream fos = new FileOutputStream(fileName, false);
+             final DataOutputStream dos = new DataOutputStream(fos)) {
 
             cacheFile.writeToStream(dos);
-        } catch (IOException ex) {
+        } catch (final IOException ex) {
             throw new IOException("Failed to save SQ cache file\n" + ex.getMessage());
         }
         return fileName;
@@ -153,11 +153,11 @@ public class QuantizationCacheManager {
         final CacheFileHeader header = createHeaderForVQ(new File(trainFile).getName(), codebook);
         final VQCacheFile cacheFile = new VQCacheFile(header, codebook);
 
-        try (FileOutputStream fos = new FileOutputStream(fileName, false);
-             DataOutputStream dos = new DataOutputStream(fos)) {
+        try (final FileOutputStream fos = new FileOutputStream(fileName, false);
+             final DataOutputStream dos = new DataOutputStream(fos)) {
 
             cacheFile.writeToStream(dos);
-        } catch (IOException ex) {
+        } catch (final IOException ex) {
             throw new IOException("Failed to save VQ cache file\n" + ex.getMessage());
         }
         return fileName;
@@ -172,8 +172,8 @@ public class QuantizationCacheManager {
      * @throws IOException when fails to read the cache file from disk.
      */
     private ICacheFile readCacheFile(final File file, final ICacheFile cacheFile) throws IOException {
-        try (FileInputStream fis = new FileInputStream(file);
-             DataInputStream dis = new DataInputStream(fis)) {
+        try (final FileInputStream fis = new FileInputStream(file);
+             final DataInputStream dis = new DataInputStream(fis)) {
 
             cacheFile.readFromStream(dis);
             return cacheFile;
@@ -214,7 +214,7 @@ public class QuantizationCacheManager {
         final File path = getCacheFilePathForSQ(imageFile, codebookSize);
         try {
             return (SQCacheFile) readCacheFile(path, new SQCacheFile());
-        } catch (IOException e) {
+        } catch (final IOException e) {
             System.err.println("Failed to read SQ cache file." + path);
             e.printStackTrace(System.err);
             return null;
@@ -235,7 +235,7 @@ public class QuantizationCacheManager {
         final File path = getCacheFilePathForVQ(trainFile, codebookSize, vDim);
         try {
             return (VQCacheFile) readCacheFile(path, new VQCacheFile());
-        } catch (IOException e) {
+        } catch (final IOException e) {
             System.err.println("Failed to read VQ cache file." + path);
             e.printStackTrace(System.err);
             return null;
@@ -287,8 +287,8 @@ public class QuantizationCacheManager {
     }
 
     public ICacheFile loadCacheFile(final CompressionOptions compressionParams) {
-        String path;
-        int codebookSize = (int) Math.pow(2, compressionParams.getBitsPerCodebookIndex());
+        final String path;
+        final int codebookSize = (int) Math.pow(2, compressionParams.getBitsPerCodebookIndex());
         switch (compressionParams.getQuantizationType()) {
 
             case Scalar:
@@ -315,15 +315,15 @@ public class QuantizationCacheManager {
      * @return Cache file or null, if exception occurs.
      */
     private static ICacheFile readCacheFileImpl(final InputStream inputStream) {
-        try (DataInputStream dis = new DataInputStream(inputStream)) {
-            CacheFileHeader header = new CacheFileHeader();
+        try (final DataInputStream dis = new DataInputStream(inputStream)) {
+            final CacheFileHeader header = new CacheFileHeader();
             header.readFromStream(dis);
 
-            ICacheFile cacheFile = getCacheFile(header.getQuantizationType());
+            final ICacheFile cacheFile = getCacheFile(header.getQuantizationType());
             assert (cacheFile != null);
             cacheFile.readFromStream(dis, header);
             return cacheFile;
-        } catch (IOException e) {
+        } catch (final IOException e) {
             return null;
         }
     }
@@ -346,9 +346,9 @@ public class QuantizationCacheManager {
      * @return Cache file or null if reading fails.
      */
     public static ICacheFile readCacheFile(final String path) {
-        try (FileInputStream fis = new FileInputStream(path)) {
+        try (final FileInputStream fis = new FileInputStream(path)) {
             return readCacheFileImpl(fis);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             return null;
         }
     }
@@ -360,17 +360,17 @@ public class QuantizationCacheManager {
      */
     public static void inspectCacheFile(final String path, final boolean verbose) {
         CacheFileHeader header = null;
-        long fileSize;
-        try (FileInputStream fis = new FileInputStream(path);
-             DataInputStream dis = new DataInputStream(fis)) {
+        final long fileSize;
+        try (final FileInputStream fis = new FileInputStream(path);
+             final DataInputStream dis = new DataInputStream(fis)) {
             fileSize = fis.getChannel().size();
             header = new CacheFileHeader();
             header.readFromStream(dis);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
             return;
         }
-        StringBuilder reportBuilder = new StringBuilder();
+        final StringBuilder reportBuilder = new StringBuilder();
         final long expectedFileSize = header.getExpectedFileSize();
         if (expectedFileSize == fileSize) {
             reportBuilder.append("\u001B[32mCache file is VALID ").append(fileSize).append(" bytes\u001B[0m\n");
@@ -383,13 +383,13 @@ public class QuantizationCacheManager {
 
         if (verbose) {
 
-            ICacheFile cacheFile = getCacheFile(header.getQuantizationType());
+            final ICacheFile cacheFile = getCacheFile(header.getQuantizationType());
             assert (cacheFile != null);
 
-            try (FileInputStream fis = new FileInputStream(path);
-                 DataInputStream dis = new DataInputStream(fis)) {
+            try (final FileInputStream fis = new FileInputStream(path);
+                 final DataInputStream dis = new DataInputStream(fis)) {
                 cacheFile.readFromStream(dis);
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 reportBuilder.append(e.getMessage());
             }
 
