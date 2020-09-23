@@ -135,27 +135,18 @@ public abstract class BasicLoader {
         return blocks;
     }
 
-
     private void loadBlock(final int[] block, final int planeIndex, final int blockXOffset, final int blockYOffset, final V2i blockDim) {
         int srcX, srcY;
         for (int y = 0; y < blockDim.getY(); y++) {
             srcY = blockYOffset + y;
-
             // Row overflow
             if (srcY >= dims.getY()) {
-
-                if (wrappingStrategy == DataWrappingStrategy.LeaveBlank)
+                if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                     break;
-
-                if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                    final int srcRow = dims.getY() - 1;
-                    final int dstOffset = y * blockDim.getX();
-                    duplicateDataFromSrcRow(block, planeIndex, blockXOffset, blockDim, srcRow, dstOffset);
-                    continue;
+                } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
+                    srcY = dims.getY() - 1;
                 } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                    final int srcRow = dims.getY() - ((srcY - dims.getY()) + 1);
-                    final int dstOffset = y * blockDim.getX();
-                    duplicateDataFromSrcRow(block, planeIndex, blockXOffset, blockDim, srcRow, dstOffset);
+                    srcY = dims.getY() - ((srcY - dims.getY()) + 1);
                 }
             }
 
@@ -164,17 +155,12 @@ public abstract class BasicLoader {
 
                 // Column overflow.
                 if (srcX >= dims.getX()) {
-
-                    if (wrappingStrategy == DataWrappingStrategy.LeaveBlank)
+                    if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                         break;
-                    if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                        block[Block.index(x, y, blockDim.getX())] = valueAt(planeIndex, Block.index(dims.getX() - 1, srcY, dims.getX()));
-                        continue;
+                    } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
+                        srcX = dims.getX() - 1;
                     } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-
-                        block[Block.index(x, y, blockDim.getX())] =
-                                valueAt(planeIndex, Block.index(dims.getX() - ((srcX - dims.getX()) + 1), srcY, dims.getX()));
-                        continue;
+                        srcX = dims.getX() - ((srcX - dims.getX()) + 1);
                     }
                 }
                 block[Block.index(x, y, blockDim.getX())] = valueAt(planeIndex, Block.index(srcX, srcY, dims.getX()));
@@ -182,35 +168,6 @@ public abstract class BasicLoader {
         }
     }
 
-    private void duplicateDataFromSrcRow(final int[] block,
-                                         final int planeIndex,
-                                         final int blockXOffset,
-                                         final V2i blockDim,
-                                         final int srcRow,
-                                         final int dstOffset) {
-        int srcX;
-        for (int x = 0; x < blockDim.getX(); x++) {
-            srcX = (blockXOffset + x);
-            if (srcX >= dims.getX())
-                srcX = dims.getX() - 1;
-            block[dstOffset + x] = valueAt(planeIndex, Block.index(srcX, srcRow, dims.getX()));
-        }
-    }
-
-    private void duplicateDataFromSrcRow(final int[] block,
-                                         final int[] planeData,
-                                         final int blockXOffset,
-                                         final V2i blockDim,
-                                         final int srcRow,
-                                         final int dstOffset) {
-        int srcX;
-        for (int x = 0; x < blockDim.getX(); x++) {
-            srcX = (blockXOffset + x);
-            if (srcX >= dims.getX())
-                srcX = dims.getX() - 1;
-            block[dstOffset + x] = planeData[Block.index(srcX, srcRow, dims.getX())];
-        }
-    }
 
     private void loadBlock(final int[] block, final int[] planeData, final int blockXOffset, final int blockYOffset, final V2i blockDim) {
         int srcX, srcY;
@@ -218,36 +175,24 @@ public abstract class BasicLoader {
             srcY = blockYOffset + y;
             // Row overflow
             if (srcY >= dims.getY()) {
-
-                if (wrappingStrategy == DataWrappingStrategy.LeaveBlank)
+                if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                     break;
-
-                if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                    final int srcRow = dims.getY() - 1;
-                    final int dstOffset = y * blockDim.getX();
-                    duplicateDataFromSrcRow(block, planeData, blockXOffset, blockDim, srcRow, dstOffset);
-                    continue;
+                } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
+                    srcY = dims.getY() - 1;
                 } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                    final int srcRow = dims.getY() - ((srcY - dims.getY()) + 1);
-                    final int dstOffset = y * blockDim.getX();
-                    duplicateDataFromSrcRow(block, planeData, blockXOffset, blockDim, srcRow, dstOffset);
+                    srcY = dims.getY() - ((srcY - dims.getY()) + 1);
                 }
             }
             for (int x = 0; x < blockDim.getX(); x++) {
                 srcX = blockXOffset + x;
                 // Column overflow.
                 if (srcX >= dims.getX()) {
-
-                    if (wrappingStrategy == DataWrappingStrategy.LeaveBlank)
+                    if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                         break;
-                    if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                        block[Block.index(x, y, blockDim.getX())] = planeData[Block.index(dims.getX() - 1, srcY, dims.getX())];
-                        continue;
+                    } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
+                        srcX = dims.getX() - 1;
                     } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-
-                        block[Block.index(x, y, blockDim.getX())] =
-                                planeData[Block.index(dims.getX() - ((srcX - dims.getX()) + 1), srcY, dims.getX())];
-                        continue;
+                        srcX = dims.getX() - ((srcX - dims.getX()) + 1);
                     }
                 }
 
