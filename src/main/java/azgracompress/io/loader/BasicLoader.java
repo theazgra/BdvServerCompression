@@ -150,23 +150,12 @@ public abstract class BasicLoader {
                 if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
                     final int srcRow = dims.getY() - 1;
                     final int dstOffset = y * blockDim.getX();
-                    for (int x = 0; x < blockDim.getX(); x++) {
-                        srcX = (blockXOffset + x);
-                        if (srcX >= dims.getX())
-                            srcX = dims.getX() - 1;
-                        block[dstOffset + x] = valueAt(planeIndex, Block.index(srcX, srcRow, dims.getX()));
-                    }
+                    duplicateDataFromSrcRow(block, planeIndex, blockXOffset, blockDim, srcRow, dstOffset);
                     continue;
                 } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
                     final int srcRow = dims.getY() - ((srcY - dims.getY()) + 1);
                     final int dstOffset = y * blockDim.getX();
-                    for (int x = 0; x < blockDim.getX(); x++) {
-                        srcX = (blockXOffset + x);
-                        if (srcX >= dims.getX())
-                            srcX = dims.getX() - 1;
-                        block[dstOffset + x] = valueAt(planeIndex, Block.index(srcX, srcRow, dims.getX()));
-                    }
-                    continue;
+                    duplicateDataFromSrcRow(block, planeIndex, blockXOffset, blockDim, srcRow, dstOffset);
                 }
             }
 
@@ -193,6 +182,36 @@ public abstract class BasicLoader {
         }
     }
 
+    private void duplicateDataFromSrcRow(final int[] block,
+                                         final int planeIndex,
+                                         final int blockXOffset,
+                                         final V2i blockDim,
+                                         final int srcRow,
+                                         final int dstOffset) {
+        int srcX;
+        for (int x = 0; x < blockDim.getX(); x++) {
+            srcX = (blockXOffset + x);
+            if (srcX >= dims.getX())
+                srcX = dims.getX() - 1;
+            block[dstOffset + x] = valueAt(planeIndex, Block.index(srcX, srcRow, dims.getX()));
+        }
+    }
+
+    private void duplicateDataFromSrcRow(final int[] block,
+                                         final int[] planeData,
+                                         final int blockXOffset,
+                                         final V2i blockDim,
+                                         final int srcRow,
+                                         final int dstOffset) {
+        int srcX;
+        for (int x = 0; x < blockDim.getX(); x++) {
+            srcX = (blockXOffset + x);
+            if (srcX >= dims.getX())
+                srcX = dims.getX() - 1;
+            block[dstOffset + x] = planeData[Block.index(srcX, srcRow, dims.getX())];
+        }
+    }
+
     private void loadBlock(final int[] block, final int[] planeData, final int blockXOffset, final int blockYOffset, final V2i blockDim) {
         int srcX, srcY;
         for (int y = 0; y < blockDim.getY(); y++) {
@@ -206,23 +225,12 @@ public abstract class BasicLoader {
                 if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
                     final int srcRow = dims.getY() - 1;
                     final int dstOffset = y * blockDim.getX();
-                    for (int x = 0; x < blockDim.getX(); x++) {
-                        srcX = (blockXOffset + x);
-                        if (srcX >= dims.getX())
-                            srcX = dims.getX() - 1;
-                        block[dstOffset + x] = planeData[Block.index(srcX, srcRow, dims.getX())];
-                    }
+                    duplicateDataFromSrcRow(block, planeData, blockXOffset, blockDim, srcRow, dstOffset);
                     continue;
                 } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
                     final int srcRow = dims.getY() - ((srcY - dims.getY()) + 1);
                     final int dstOffset = y * blockDim.getX();
-                    for (int x = 0; x < blockDim.getX(); x++) {
-                        srcX = (blockXOffset + x);
-                        if (srcX >= dims.getX())
-                            srcX = dims.getX() - 1;
-                        block[dstOffset + x] = planeData[Block.index(srcX, srcRow, dims.getX())];
-                    }
-                    continue;
+                    duplicateDataFromSrcRow(block, planeData, blockXOffset, blockDim, srcRow, dstOffset);
                 }
             }
             for (int x = 0; x < blockDim.getX(); x++) {
@@ -247,6 +255,7 @@ public abstract class BasicLoader {
             }
         }
     }
+
 
     private void loadVoxel(final int[] voxel, final int voxelXOffset, final int voxelYOffset, final int voxelZOffset, final V3i voxelDim) {
         int srcX, srcY, srcZ;
@@ -301,6 +310,14 @@ public abstract class BasicLoader {
         }
     }
 
+    private int[][] allocateVoxelArray(final V3i voxelDim, final Range<Integer> planeRange) {
+        final int voxelElementCount = (int) voxelDim.multiplyTogether();
+        final int rangeSize = planeRange.getTo() - planeRange.getFrom();
+        final V3i srcVoxel = new V3i(dims.getX(), dims.getY(), rangeSize);
+        final int voxelCount = Voxel.calculateRequiredVoxelCount(srcVoxel, voxelDim);
+        return new int[voxelCount][voxelElementCount];
+    }
+
     /**
      * Load specified planes from dataset to voxel of specified dimensions.
      * This overload uses the valueAt function to read src data.
@@ -310,11 +327,7 @@ public abstract class BasicLoader {
      * @return Voxel data arranged in arrays.
      */
     protected int[][] loadVoxelsImplByValueAt(final V3i voxelDim, final Range<Integer> planeRange) {
-        final int voxelElementCount = (int) voxelDim.multiplyTogether();
-        final int rangeSize = planeRange.getTo() - planeRange.getFrom();
-        final V3i srcVoxel = new V3i(dims.getX(), dims.getY(), rangeSize);
-        final int voxelCount = Voxel.calculateRequiredVoxelCount(srcVoxel, voxelDim);
-        final int[][] voxels = new int[voxelCount][voxelElementCount];
+        final int[][] voxels = allocateVoxelArray(voxelDim, planeRange);
         int voxelIndex = 0;
 
         for (int voxelZOffset = planeRange.getFrom(); voxelZOffset < planeRange.getTo(); voxelZOffset += voxelDim.getZ()) {
@@ -346,13 +359,7 @@ public abstract class BasicLoader {
      * @return Voxel data arranged in arrays.
      */
     protected int[][] loadVoxelsImplByLoadPlaneData(final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
-        final int voxelElementCount = (int) voxelDim.multiplyTogether();
-        final int rangeSize = planeRange.getTo() - planeRange.getFrom();
-        final V3i srcVoxel = new V3i(dims.getX(), dims.getY(), rangeSize);
-        final int voxelCount = Voxel.calculateRequiredVoxelCount(srcVoxel, voxelDim);
-
-
-        final int[][] voxels = new int[voxelCount][voxelElementCount];
+        final int[][] voxels = allocateVoxelArray(voxelDim, planeRange);
         int voxelIndex = 0;
 
         final int[][] planesData = new int[voxelDim.getZ()][0];
