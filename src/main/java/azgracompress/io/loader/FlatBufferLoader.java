@@ -104,8 +104,7 @@ public class FlatBufferLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
-//        return loadVoxelsImplByValueAt(voxelDim, planeRange);
-        return experimentalLoadVoxelsImplByValueAt(voxelDim, planeRange);
+    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) {
+        return loadVoxelsImplByValueAt(voxelDim, planeRange);
     }
 }

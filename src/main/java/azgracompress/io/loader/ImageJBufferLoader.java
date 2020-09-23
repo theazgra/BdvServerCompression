@@ -25,7 +25,7 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
         return true;
     }
 
-    private void copyShortArrayIntoBuffer(short[] srcArray, int[] destBuffer, int destOffset, int copyLen) {
+    private void copyShortArrayIntoBuffer(final short[] srcArray, final int[] destBuffer, final int destOffset, final int copyLen) {
         for (int i = 0; i < copyLen; i++) {
             destBuffer[destOffset + i] = TypeConverter.shortToInt(srcArray[i]);
         }
@@ -39,12 +39,12 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
 
 
     @Override
-    protected int valueAt(int plane, int offset) {
+    protected int valueAt(final int plane, final int offset) {
         return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer(plane))[offset]);
     }
 
     @Override
-    public int[] loadPlanesU16Data(int[] planes) throws IOException {
+    public int[] loadPlanesU16Data(final int[] planes) throws IOException {
         if (planes.length < 1) {
             return new int[0];
         } else if (planes.length == 1) {
@@ -62,7 +62,7 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
 
         Arrays.sort(planes);
 
-        int[] destBuffer = new int[(int) totalValueCount];
+        final int[] destBuffer = new int[(int) totalValueCount];
         int destOffset = 0;
         for (final int planeIndex : planes) {
             final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(planeIndex);
@@ -82,7 +82,7 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
             throw new IOException("Unable to load all image data, file size is too big.");
         }
 
-        int[] destBuffer = new int[(int) totalValueCount];
+        final int[] destBuffer = new int[(int) totalValueCount];
         int destOffset = 0;
         for (int planeIndex = 0; planeIndex < imageDims.getZ(); planeIndex++) {
             final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(planeIndex);
@@ -98,14 +98,13 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
     }
 
     @Override
-    public int[][] loadBlocks(V2i blockDim, Range<Integer> planeRange) {
+    public int[][] loadBlocks(final V2i blockDim, final Range<Integer> planeRange) {
         return loadBlocksImplByValueAt(blockDim, planeRange);
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
-//        return loadVoxelsImplByValueAt(voxelDim, planeRange);
-        return experimentalLoadVoxelsImplByValueAt(voxelDim, planeRange);
+    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) {
+        return loadVoxelsImplByValueAt(voxelDim, planeRange);
     }
 }
 

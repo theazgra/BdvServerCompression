@@ -23,7 +23,7 @@ public abstract class BasicLoader {
         return wrappingStrategy;
     }
 
-    public void setWrappingStrategy(DataWrappingStrategy strategy) {
+    public void setWrappingStrategy(final DataWrappingStrategy strategy) {
         wrappingStrategy = strategy;
     }
 
@@ -47,7 +47,7 @@ public abstract class BasicLoader {
         final int rowVectorCount = (int) Math.ceil((double) dims.getX() / (double) vectorSize);
         final int planeCount = planeRange.getTo() - planeRange.getFrom();
         final int vectorCount = planeCount * dims.getY() * rowVectorCount;
-        int[][] rowVectors = new int[vectorCount][vectorSize];
+        final int[][] rowVectors = new int[vectorCount][vectorSize];
 
         int vectorIndex = 0;
         int baseX;
@@ -75,7 +75,7 @@ public abstract class BasicLoader {
         final int rowVectorCount = (int) Math.ceil((double) dims.getX() / (double) vectorSize);
         final int vectorCount = dims.getZ() * dims.getY() * rowVectorCount;
 
-        int[][] rowVectors = new int[vectorCount][vectorSize];
+        final int[][] rowVectors = new int[vectorCount][vectorSize];
 
         int vectorIndex = 0;
         int baseX;
@@ -103,7 +103,7 @@ public abstract class BasicLoader {
         final int planeCount = planeRange.getTo() - planeRange.getFrom();
         final int blockCount = planeCount * Block.calculateRequiredChunkCount(dims.toV2i(), blockDim);
 
-        int[][] blocks = new int[blockCount][blockSize];
+        final int[][] blocks = new int[blockCount][blockSize];
 
         int blockIndex = 0;
         for (int plane = planeRange.getFrom(); plane < planeRange.getTo(); plane++) {
@@ -122,7 +122,7 @@ public abstract class BasicLoader {
         final int planeCount = planeRange.getTo() - planeRange.getFrom();
         final int blockCount = planeCount * Block.calculateRequiredChunkCount(dims.toV2i(), blockDim);
 
-        int[][] blocks = new int[blockCount][blockSize];
+        final int[][] blocks = new int[blockCount][blockSize];
 
         int blockIndex = 0;
         for (int plane = planeRange.getFrom(); plane < planeRange.getTo(); plane++) {
@@ -248,11 +248,7 @@ public abstract class BasicLoader {
         }
     }
 
-    private void loadVoxel(final int[] voxel,
-                           final int voxelXOffset,
-                           final int voxelYOffset,
-                           final int voxelZOffset,
-                           final V3i voxelDim) {
+    private void loadVoxel(final int[] voxel, final int voxelXOffset, final int voxelYOffset, final int voxelZOffset, final V3i voxelDim) {
         int srcX, srcY, srcZ;
         for (int z = 0; z < voxelDim.getZ(); z++) {
             srcZ = voxelZOffset + z;
@@ -273,19 +269,54 @@ public abstract class BasicLoader {
                         break;
                     }
 
-                    voxel[Voxel.dataIndex(x, y, z, voxelDim)] = valueAt(srcZ, Block.index(x, y, dims.getX()));
+                    voxel[Voxel.dataIndex(x, y, z, voxelDim)] = valueAt(srcZ, Block.index(srcX, srcY, dims.getX()));
                 }
             }
         }
-
     }
 
-    protected int[][] experimentalLoadVoxelsImplByValueAt(final V3i voxelDim, final Range<Integer> planeRange) {
-        System.out.println("experimentalLoadVoxelsImplByValueAt");
-        final int voxelCount = Voxel.calculateRequiredVoxelCount(dims, voxelDim);
+    private void loadVoxel(final int[] voxel,
+                           final int[][] planesData,
+                           final int voxelXOffset,
+                           final int voxelYOffset,
+                           final V3i voxelDim) {
+        int srcX, srcY;
+        for (int z = 0; z < voxelDim.getZ(); z++) {
+            for (int y = 0; y < voxelDim.getY(); y++) {
+                srcY = voxelYOffset + y;
+                if (srcY >= dims.getY()) {
+                    // Handle row overflow.
+                    break;
+                }
+                for (int x = 0; x < voxelDim.getX(); x++) {
+                    srcX = voxelXOffset + x;
+                    if (srcX >= dims.getX()) {
+                        // Handle column overflow
+                        break;
+                    }
+
+                    voxel[Voxel.dataIndex(x, y, z, voxelDim)] = planesData[z][Block.index(srcX, srcY, dims.getX())];
+                }
+            }
+        }
+    }
+
+    /**
+     * Load specified planes from dataset to voxel of specified dimensions.
+     * This overload uses the valueAt function to read src data.
+     *
+     * @param voxelDim   Single voxel dimensions.
+     * @param planeRange Range of planes to load voxels from.
+     * @return Voxel data arranged in arrays.
+     */
+    protected int[][] loadVoxelsImplByValueAt(final V3i voxelDim, final Range<Integer> planeRange) {
         final int voxelElementCount = (int) voxelDim.multiplyTogether();
-        int[][] voxels = new int[voxelCount][voxelElementCount];
+        final int rangeSize = planeRange.getTo() - planeRange.getFrom();
+        final V3i srcVoxel = new V3i(dims.getX(), dims.getY(), rangeSize);
+        final int voxelCount = Voxel.calculateRequiredVoxelCount(srcVoxel, voxelDim);
+        final int[][] voxels = new int[voxelCount][voxelElementCount];
         int voxelIndex = 0;
+
         for (int voxelZOffset = planeRange.getFrom(); voxelZOffset < planeRange.getTo(); voxelZOffset += voxelDim.getZ()) {
             for (int voxelYOffset = 0; voxelYOffset < dims.getY(); voxelYOffset += voxelDim.getY()) {
                 for (int voxelXOffset = 0; voxelXOffset < dims.getX(); voxelXOffset += voxelDim.getX()) {
@@ -296,6 +327,15 @@ public abstract class BasicLoader {
         return voxels;
     }
 
+    private void preloadPlanesData(final int[][] planesData, final int planeOffset, final int count) throws IOException {
+
+        for (int i = 0; i < count; i++) {
+            if (planeOffset + i < dims.getZ())
+                planesData[i] = loadPlaneData(planeOffset + i);
+            else
+                planesData[i] = new int[dims.toV2i().multiplyTogether()];
+        }
+    }
 
     /**
      * Load specified planes from dataset to voxel of specified dimensions.
@@ -306,119 +346,25 @@ public abstract class BasicLoader {
      * @return Voxel data arranged in arrays.
      */
     protected int[][] loadVoxelsImplByLoadPlaneData(final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
-        final Voxel dstVoxel = new Voxel(voxelDim);
+        final int voxelElementCount = (int) voxelDim.multiplyTogether();
         final int rangeSize = planeRange.getTo() - planeRange.getFrom();
         final V3i srcVoxel = new V3i(dims.getX(), dims.getY(), rangeSize);
-        final int xVoxelCount = (int) Math.ceil((double) dims.getX() / (double) voxelDim.getX());
-        final int yVoxelCount = (int) Math.ceil((double) dims.getY() / (double) voxelDim.getY());
-
-        final int voxelIndexOffset = -((planeRange.getFrom() / voxelDim.getZ()) * (xVoxelCount * yVoxelCount));
-        int[][] voxels = new int[Voxel.calculateRequiredVoxelCount(srcVoxel, voxelDim)][(int) voxelDim.multiplyTogether()];
-
-        final int dimX = dims.getX();
-        final int dimY = dims.getY();
-        final int dimZ = planeRange.getTo();
-        final int voxelDimX = voxelDim.getX();
-        final int voxelDimY = voxelDim.getY();
-        final int voxelDimZ = voxelDim.getZ();
-
-        int dstZ, dstY, dstX, voxelX, voxelY, voxelZ, voxelIndex;
-        int[] planeData;
-
-        for (int srcZ = planeRange.getFrom(); srcZ < dimZ; srcZ++) {
-            planeData = loadPlaneData(srcZ);
-            dstZ = srcZ / voxelDimZ;
-            voxelZ = srcZ - (dstZ * voxelDimZ);
+        final int voxelCount = Voxel.calculateRequiredVoxelCount(srcVoxel, voxelDim);
 
 
-            for (int srcY = 0; srcY < dimY; srcY++) {
-                dstY = srcY / voxelDimY;
-                voxelY = srcY - (dstY * voxelDimY);
+        final int[][] voxels = new int[voxelCount][voxelElementCount];
+        int voxelIndex = 0;
 
-                for (int srcX = 0; srcX < dimX; srcX++) {
-                    dstX = srcX / voxelDimX;
-                    voxelX = srcX - (dstX * voxelDimX);
-                    voxelIndex = voxelIndexOffset + ((dstZ * (xVoxelCount * yVoxelCount)) + (dstY * xVoxelCount) + dstX);
+        final int[][] planesData = new int[voxelDim.getZ()][0];
 
-                    voxels[voxelIndex][dstVoxel.dataIndex(voxelX, voxelY, voxelZ, voxelDim)] = planeData[(srcY * dimX) + srcX];
+        for (int voxelZOffset = planeRange.getFrom(); voxelZOffset < planeRange.getTo(); voxelZOffset += voxelDim.getZ()) {
+            preloadPlanesData(planesData, voxelZOffset, voxelDim.getZ());
+            for (int voxelYOffset = 0; voxelYOffset < dims.getY(); voxelYOffset += voxelDim.getY()) {
+                for (int voxelXOffset = 0; voxelXOffset < dims.getX(); voxelXOffset += voxelDim.getX()) {
+                    loadVoxel(voxels[voxelIndex++], planesData, voxelXOffset, voxelYOffset, voxelDim);
                 }
             }
         }
-
-        return voxels;
-    }
-
-    /**
-     * Load specified planes from dataset to voxel of specified dimensions.
-     * This overload uses the valueAt function to read src data.
-     *
-     * @param voxelDim   Single voxel dimensions.
-     * @param planeRange Range of planes to load voxels from.
-     * @return Voxel data arranged in arrays.
-     * @throws IOException When fails to load plane data.
-     */
-    protected int[][] loadVoxelsImplByValueAt(final V3i voxelDim,
-                                              final Range<Integer> planeRange) throws IOException {
-
-        // TODO(Moravec): Improve performance of loading.
-        final Voxel dstVoxel = new Voxel(voxelDim);
-        final int rangeSize = planeRange.getTo() - planeRange.getFrom();
-        final V3i srcVoxel = new V3i(dims.getX(), dims.getY(), rangeSize);
-        final int xVoxelCount = (int) Math.ceil((double) dims.getX() / (double) voxelDim.getX());
-        final int yVoxelCount = (int) Math.ceil((double) dims.getY() / (double) voxelDim.getY());
-
-        // NOTE(Moravec):   We need voxelIndexOffset in case that planeRange is not the whole dataset.
-        //                  voxelIndex which is calculated inside the loop doesn't know that we are loading
-        //                  only some voxel layer. So we need to set the offset and start filling voxel data from the start.
-        final int voxelIndexOffset = -((planeRange.getFrom() / voxelDim.getZ()) * (xVoxelCount * yVoxelCount));
-        int[][] voxels = new int[Voxel.calculateRequiredVoxelCount(srcVoxel, voxelDim)][(int) voxelDim.multiplyTogether()];
-
-        final int workSize = rangeSize / threadCount;
-        final Thread[] threads = new Thread[threadCount];
-
-        for (int wId = 0; wId < threadCount; wId++) {
-            final int fromZ = wId * workSize;
-            final int toZ = (wId == threadCount - 1) ? rangeSize : (workSize + (wId * workSize));
-
-            threads[wId] = new Thread(() -> {
-                final int dimX = dims.getX();
-                final int dimY = dims.getY();
-                final int zBase = planeRange.getFrom();
-                final int voxelDimX = voxelDim.getX();
-                final int voxelDimY = voxelDim.getY();
-                final int voxelDimZ = voxelDim.getZ();
-
-                int srcZ, dstZ, dstY, dstX, voxelX, voxelY, voxelZ, voxelIndex;
-
-                for (int zOffset = fromZ; zOffset < toZ; zOffset++) {
-                    srcZ = zBase + zOffset;
-                    dstZ = srcZ / voxelDimZ;
-                    voxelZ = srcZ - (dstZ * voxelDimZ);
-
-                    for (int srcY = 0; srcY < dimY; srcY++) {
-                        dstY = srcY / voxelDimY;
-                        voxelY = srcY - (dstY * voxelDimY);
-
-                        for (int srcX = 0; srcX < dimX; srcX++) {
-                            dstX = srcX / voxelDimX;
-                            voxelX = srcX - (dstX * voxelDimX);
-                            voxelIndex = voxelIndexOffset + ((dstZ * (xVoxelCount * yVoxelCount)) + (dstY * xVoxelCount) + dstX);
-                            voxels[voxelIndex][dstVoxel.dataIndex(voxelX, voxelY, voxelZ, voxelDim)] = valueAt(srcZ, (srcY * dimX) + srcX);
-
-                        }
-                    }
-                }
-            });
-            threads[wId].start();
-        }
-        try {
-            for (int wId = 0; wId < threadCount; wId++) {
-                threads[wId].join();
-            }
-        } catch (InterruptedException e) {
-            throw new IOException("threads[wId].join() failed.", e);
-        }
-
         return voxels;
     }
 
