@@ -37,10 +37,62 @@ public abstract class BasicLoader {
      */
     public abstract int[] loadPlaneData(final int plane) throws IOException;
 
+    /**
+     * Read value from plane at specified offset.
+     *
+     * @param plane  Zero based plane index.
+     * @param offset Offset on flattened plane data.
+     * @return Plane value at the index.
+     */
     protected int valueAt(final int plane, final int offset) {
         new Exception().printStackTrace(System.err);
         assert (false) : "Unimplemented overload of BasicLoader::valueAt()";
         return Integer.MIN_VALUE;
+    }
+
+    /**
+     * Wrap column (x) index based on specified wrapping strategy.
+     *
+     * @param x Column index.
+     * @return Wrapped index.
+     */
+    private int wrapColumnIndex(final int x) {
+        if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
+            return dims.getX() - 1;
+        } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
+            return (dims.getX() - ((x - dims.getX()) + 1));
+        }
+        return x;
+    }
+
+    /**
+     * Wrap row (y) index based on specified wrapping strategy.
+     *
+     * @param y Row index.
+     * @return Wrapped index.
+     */
+    private int wrapRowIndex(final int y) {
+        if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
+            return dims.getY() - 1;
+        } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
+            return (dims.getY() - ((y - dims.getY()) + 1));
+        }
+        return y;
+    }
+
+    /**
+     * Wrap plane (z) index based on specified wrapping strategy.
+     *
+     * @param z Plane index.
+     * @return Wrapped index.
+     */
+    private int wrapPlaneIndex(final int z) {
+        if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
+            return dims.getZ() - 1;
+        } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
+            return (dims.getZ() - ((z - dims.getZ()) + 1));
+        }
+        return z;
     }
 
     protected int[][] loadRowVectorsImplByLoadPlaneData(final int vectorSize, final Range<Integer> planeRange) throws IOException {
@@ -50,7 +102,7 @@ public abstract class BasicLoader {
         final int[][] rowVectors = new int[vectorCount][vectorSize];
 
         int vectorIndex = 0;
-        int baseX;
+        int baseX, srcX;
 
         for (int plane = planeRange.getFrom(); plane < planeRange.getTo(); plane++) {
             final int[] planeData = loadPlaneData(plane);
@@ -60,9 +112,13 @@ public abstract class BasicLoader {
                     baseX = rowVectorIndex * vectorSize;
 
                     for (int vectorX = 0; vectorX < vectorSize; vectorX++) {
-                        if ((baseX + vectorX) >= dims.getY())
-                            break;
-                        rowVectors[vectorIndex][vectorX] = planeData[Block.index((baseX + vectorX), row, dims.getX())];
+                        srcX = baseX + vectorX;
+                        if (srcX >= dims.getX()) {
+                            if (wrappingStrategy == DataWrappingStrategy.LeaveBlank)
+                                break;
+                            srcX = wrapColumnIndex(srcX);
+                        }
+                        rowVectors[vectorIndex][vectorX] = planeData[Block.index(srcX, row, dims.getX())];
                     }
                     ++vectorIndex;
                 }
@@ -78,7 +134,7 @@ public abstract class BasicLoader {
         final int[][] rowVectors = new int[vectorCount][vectorSize];
 
         int vectorIndex = 0;
-        int baseX;
+        int baseX, srcX;
 
         for (int plane = planeRange.getFrom(); plane < planeRange.getTo(); plane++) {
             for (int row = 0; row < dims.getY(); row++) {
@@ -87,9 +143,13 @@ public abstract class BasicLoader {
                     baseX = rowVectorIndex * vectorSize;
 
                     for (int vectorX = 0; vectorX < vectorSize; vectorX++) {
-                        if (baseX + vectorX >= dims.getY())
-                            break;
-                        rowVectors[vectorIndex][vectorX] = valueAt(plane, Block.index((baseX + vectorX), row, dims.getY()));
+                        srcX = (baseX + vectorX);
+                        if (srcX >= dims.getX()) {
+                            if (wrappingStrategy == DataWrappingStrategy.LeaveBlank)
+                                break;
+                            srcX = wrapColumnIndex(srcX);
+                        }
+                        rowVectors[vectorIndex][vectorX] = valueAt(plane, Block.index(srcX, row, dims.getY()));
                     }
                     ++vectorIndex;
                 }
@@ -143,11 +203,8 @@ public abstract class BasicLoader {
             if (srcY >= dims.getY()) {
                 if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                     break;
-                } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                    srcY = dims.getY() - 1;
-                } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                    srcY = dims.getY() - ((srcY - dims.getY()) + 1);
                 }
+                srcY = wrapRowIndex(srcY);
             }
 
             for (int x = 0; x < blockDim.getX(); x++) {
@@ -157,11 +214,8 @@ public abstract class BasicLoader {
                 if (srcX >= dims.getX()) {
                     if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                         break;
-                    } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                        srcX = dims.getX() - 1;
-                    } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                        srcX = dims.getX() - ((srcX - dims.getX()) + 1);
                     }
+                    srcX = wrapColumnIndex(srcX);
                 }
                 block[Block.index(x, y, blockDim.getX())] = valueAt(planeIndex, Block.index(srcX, srcY, dims.getX()));
             }
@@ -177,11 +231,8 @@ public abstract class BasicLoader {
             if (srcY >= dims.getY()) {
                 if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                     break;
-                } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                    srcY = dims.getY() - 1;
-                } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                    srcY = dims.getY() - ((srcY - dims.getY()) + 1);
                 }
+                srcY = wrapRowIndex(srcY);
             }
             for (int x = 0; x < blockDim.getX(); x++) {
                 srcX = blockXOffset + x;
@@ -189,18 +240,14 @@ public abstract class BasicLoader {
                 if (srcX >= dims.getX()) {
                     if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                         break;
-                    } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                        srcX = dims.getX() - 1;
-                    } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                        srcX = dims.getX() - ((srcX - dims.getX()) + 1);
                     }
+                    srcX = wrapColumnIndex(srcX);
                 }
 
                 block[Block.index(x, y, blockDim.getX())] = planeData[Block.index(srcX, srcY, dims.getX())];
             }
         }
     }
-
 
     private void loadVoxel(final int[] voxel, final int voxelXOffset, final int voxelYOffset, final int voxelZOffset, final V3i voxelDim) {
         int srcX, srcY, srcZ;
@@ -211,11 +258,8 @@ public abstract class BasicLoader {
                 // Handle plane overflow.
                 if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                     break;
-                } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                    srcZ = dims.getZ() - 1;
-                } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                    srcZ = dims.getZ() - ((srcZ - dims.getZ()) + 1);
                 }
+                srcZ = wrapPlaneIndex(srcZ);
             }
 
             for (int y = 0; y < voxelDim.getY(); y++) {
@@ -225,11 +269,8 @@ public abstract class BasicLoader {
                     // Handle row overflow.
                     if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                         break;
-                    } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                        srcY = dims.getY() - 1;
-                    } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                        srcY = dims.getY() - ((srcY - dims.getY()) + 1);
                     }
+                    srcY = wrapRowIndex(srcY);
                 }
 
                 for (int x = 0; x < voxelDim.getX(); x++) {
@@ -239,11 +280,8 @@ public abstract class BasicLoader {
                         // Handle column overflow.
                         if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                             break;
-                        } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                            srcX = dims.getX() - 1;
-                        } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                            srcX = dims.getX() - ((srcX - dims.getX()) + 1);
                         }
+                        srcX = wrapColumnIndex(srcX);
                     }
 
                     voxel[Voxel.dataIndex(x, y, z, voxelDim)] = valueAt(srcZ, Block.index(srcX, srcY, dims.getX()));
@@ -267,11 +305,8 @@ public abstract class BasicLoader {
                     // Handle row overflow.
                     if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                         break;
-                    } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                        srcY = dims.getY() - 1;
-                    } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                        srcY = dims.getY() - ((srcY - dims.getY()) + 1);
                     }
+                    srcY = wrapRowIndex(srcY);
                 }
 
                 for (int x = 0; x < voxelDim.getX(); x++) {
@@ -281,11 +316,8 @@ public abstract class BasicLoader {
                         // Handle column overflow.
                         if (wrappingStrategy == DataWrappingStrategy.LeaveBlank) {
                             break;
-                        } else if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
-                            srcX = dims.getX() - 1;
-                        } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-                            srcX = dims.getX() - ((srcX - dims.getX()) + 1);
                         }
+                        srcX = wrapColumnIndex(srcX);
                     }
 
                     voxel[Voxel.dataIndex(x, y, z, voxelDim)] = planesData[z][Block.index(srcX, srcY, dims.getX())];
@@ -294,6 +326,13 @@ public abstract class BasicLoader {
         }
     }
 
+    /**
+     * Allocate 2D voxel data array for specified voxel layer.
+     *
+     * @param voxelDim   Single voxel dimension.
+     * @param planeRange Voxel layer depth.
+     * @return Allocated array.
+     */
     private int[][] allocateVoxelArray(final V3i voxelDim, final Range<Integer> planeRange) {
         final int voxelElementCount = (int) voxelDim.multiplyTogether();
         final int rangeSize = planeRange.getTo() - planeRange.getFrom();
