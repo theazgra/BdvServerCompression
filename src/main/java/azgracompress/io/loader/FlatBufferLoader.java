@@ -34,9 +34,9 @@ public class FlatBufferLoader extends BasicLoader implements IPlaneLoader {
         return true;
     }
 
-    private void copyShortArrayIntoBuffer(short[] srcArray,
+    private void copyShortArrayIntoBuffer(final short[] srcArray,
                                           final int srcOffset,
-                                          int[] destBuffer,
+                                          final int[] destBuffer,
                                           final int destOffset,
                                           final int copyLen) {
         for (int i = 0; i < copyLen; i++) {
@@ -77,7 +77,7 @@ public class FlatBufferLoader extends BasicLoader implements IPlaneLoader {
         Arrays.sort(planes);
 
         final short[] flatBuffer = (short[]) bufferInputData.getPixelBuffer();
-        int[] destBuffer = new int[(int) totalValueCount];
+        final int[] destBuffer = new int[(int) totalValueCount];
         int destOffset = 0;
         for (final int planeIndex : planes) {
             final int planeOffset = planeIndex * planePixelCount;
