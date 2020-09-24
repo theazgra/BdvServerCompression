@@ -24,7 +24,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     private VectorQuantizer cachedQuantizer = null;
     private Huffman cachedHuffman = null;
 
-    public VQImageCompressor(CompressionOptions options) {
+    public VQImageCompressor(final CompressionOptions options) {
         super(options);
     }
 
@@ -43,11 +43,11 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      */
     private VectorQuantizer trainVectorQuantizerFromPlaneVectors(final int[][] planeVectors) {
 
-        LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeVectors,
-                                                                  getCodebookSize(),
-                                                                  options.getWorkerCount(),
-                                                                  options.getQuantizationVector());
-        LBGResult vqResult = vqInitializer.findOptimalCodebook();
+        final LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeVectors,
+                                                                        getCodebookSize(),
+                                                                        options.getWorkerCount(),
+                                                                        options.getQuantizationVector());
+        final LBGResult vqResult = vqInitializer.findOptimalCodebook();
         return new VectorQuantizer(vqResult.getCodebook());
     }
 
@@ -59,7 +59,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException When unable to write quantizer.
      */
     private void writeQuantizerToCompressStream(final VectorQuantizer quantizer,
-                                                DataOutputStream compressStream) throws ImageCompressionException {
+                                                final DataOutputStream compressStream) throws ImageCompressionException {
         final int[][] codebook = quantizer.getCodebookVectors();
         try {
             for (final int[] entry : codebook) {
@@ -71,7 +71,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             for (final long symbolFrequency : frequencies) {
                 compressStream.writeLong(symbolFrequency);
             }
-        } catch (IOException ioEx) {
+        } catch (final IOException ioEx) {
             throw new ImageCompressionException("Unable to write codebook to compress stream.", ioEx);
         }
         if (options.isVerbose()) {
@@ -86,7 +86,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException when fails to read cached codebook.
      */
     private VectorQuantizer loadQuantizerFromCache() throws ImageCompressionException {
-        QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
+        final QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
         if (!cacheManager.doesVQCacheExists(options.getInputDataInfo().getCacheFileName(),
                                             getCodebookSize(),
@@ -112,7 +112,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @throws ImageCompressionException When compress process fails.
      */
     @Override
-    public long[] compress(DataOutputStream compressStream) throws ImageCompressionException {
+    public long[] compress(final DataOutputStream compressStream) throws ImageCompressionException {
         if (options.getQuantizationType() == QuantizationType.Vector3D) {
             return compressVoxels(compressStream, false, options.getInputDataInfo());
         }
@@ -121,7 +121,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     @Override
-    public long[] compressStreamChunk(DataOutputStream compressStream, final InputData inputData) throws ImageCompressionException {
+    public long[] compressStreamChunk(final DataOutputStream compressStream, final InputData inputData) throws ImageCompressionException {
         if (options.getQuantizationType() == QuantizationType.Vector3D) {
             return compressVoxels(compressStream, true, inputData);
         }
@@ -134,13 +134,13 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                                        final boolean streamMode,
                                        final InputData inputData) throws ImageCompressionException {
 
-        Stopwatch stopwatch = new Stopwatch();
+        final Stopwatch stopwatch = new Stopwatch();
         final boolean hasGeneralQuantizer = options.getCodebookType() != CompressionOptions.CodebookType.Individual;
         final IPlaneLoader planeLoader;
         final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
         try {
             planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputData);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new ImageCompressionException("Unable to create plane reader. " + e.getMessage());
         }
 
@@ -177,11 +177,11 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
                 // Write voxel layer in stream mode.
                 compressStream.writeShort(planeIndices.length);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 throw new ImageCompressionException("Failed to write short value to compression stream.", e);
             }
         }
-        long[] planeDataSizes = new long[planeIndices.length];
+        final long[] planeDataSizes = new long[planeIndices.length];
         int planeCounter = 0;
 
         for (final int planeIndex : planeIndices) {
@@ -224,11 +224,11 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final IPlaneLoader planeLoader;
         try {
             planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new ImageCompressionException("Unable to create plane reader. " + e.getMessage());
         }
 
-        int[][] trainingData;
+        final int[][] trainingData;
         if (options.getInputDataInfo().isPlaneIndexSet()) {
             reportStatusToListeners("VQ: Loading single plane data.");
             final int planeIndex = options.getInputDataInfo().getPlaneIndex();
@@ -243,22 +243,22 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         }
 
 
-        LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData,
-                                                                  getCodebookSize(),
-                                                                  options.getWorkerCount(),
-                                                                  options.getQuantizationVector());
+        final LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData,
+                                                                        getCodebookSize(),
+                                                                        options.getWorkerCount(),
+                                                                        options.getQuantizationVector());
 
         reportStatusToListeners("Starting LBG optimization.");
         vqInitializer.setStatusListener(this::reportStatusToListeners);
-        LBGResult lbgResult = vqInitializer.findOptimalCodebook();
+        final LBGResult lbgResult = vqInitializer.findOptimalCodebook();
         reportStatusToListeners("Learned the optimal codebook.");
 
 
-        QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
+        final QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
         try {
             final String cacheFilePath = cacheManager.saveCodebook(options.getInputDataInfo().getCacheFileName(), lbgResult.getCodebook());
             reportStatusToListeners("Saved cache file to %s", cacheFilePath);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new ImageCompressionException("Unable to write VQ cache.", e);
         }
         reportStatusToListeners("Operation completed.");
@@ -284,7 +284,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         try {
             planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputData);
             planeLoader.setWorkerCount(options.getWorkerCount());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new ImageCompressionException("Unable to create plane reader. " + e.getMessage());
         }
 
@@ -299,11 +299,11 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
                 // Write voxel layer in stream mode.
                 compressStream.writeShort(voxelLayerCount);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 throw new ImageCompressionException("Failed to write short value to compression stream.", e);
             }
         }
-        long[] voxelLayersSizes = new long[voxelLayerCount];
+        final long[] voxelLayersSizes = new long[voxelLayerCount];
 
         final VectorQuantizer quantizer = (cachedQuantizer != null) ? cachedQuantizer : loadQuantizerFromCache();
         final Huffman huffman = (cachedHuffman != null) ? cachedHuffman : createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
@@ -311,15 +311,11 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             writeQuantizerToCompressStream(quantizer, compressStream);
 
         int[][] voxelData;
-        Stopwatch stopwatch = new Stopwatch();
+        final Stopwatch stopwatch = new Stopwatch();
         for (int voxelLayerIndex = 0; voxelLayerIndex < voxelLayerCount; voxelLayerIndex++) {
             stopwatch.restart();
             final int fromZ = (voxelLayerIndex * voxelLayerDepth);
 
-            // TODO(Moravec):   There is a problem!
-            //                  If dataset.Z is not divisible by voxel.Z we end up creating a lot stupid voxels.
-            //                  Those stupid voxels have only one or two layers of actual data and the rest are zeros.
-            //                  This ends up increasing the file size because they have quite long Huffman codes.
             final int toZ = (voxelLayerIndex == voxelLayerCount - 1)
                     ? inputData.getDimensions().getZ()
                     : (voxelLayerDepth + (voxelLayerIndex * voxelLayerDepth));
@@ -329,11 +325,12 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             try {
                 voxelData = planeLoader.loadVoxels(options.getQuantizationVector(), voxelLayerRange);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 throw new ImageCompressionException("Unable to load voxels from voxel layer " + voxelLayerRange, e);
             }
 
             final int[] indices = quantizer.quantizeIntoIndices(voxelData, options.getWorkerCount());
+//            final int[] indices = quantizer.quantizeIntoIndicesUsingKDTree(voxelData, options.getWorkerCount());
             voxelLayersSizes[voxelLayerIndex] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
             stopwatch.stop();
             if (options.isConsoleApplication()) {

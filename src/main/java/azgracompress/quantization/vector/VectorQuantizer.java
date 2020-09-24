@@ -37,7 +37,7 @@ public class VectorQuantizer {
 
     public int[][] quantize(final int[][] dataVectors, final int workerCount) {
         assert (dataVectors.length > 0 && dataVectors[0].length % vectorSize == 0) : "Wrong vector size";
-        int[][] result = new int[dataVectors.length][vectorSize];
+        final int[][] result = new int[dataVectors.length][vectorSize];
 
         if (workerCount == 1) {
             for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
@@ -61,8 +61,9 @@ public class VectorQuantizer {
                                           final int maxWorkerCount,
                                           final QuantizeVectorMethod method) {
 
+
         assert (dataVectors.length > 0 && dataVectors[0].length == vectorSize) : "Wrong vector size";
-        int[] indices = new int[dataVectors.length];
+        final int[] indices = new int[dataVectors.length];
 
         if (maxWorkerCount == 1) {
             for (int vectorIndex = 0; vectorIndex < dataVectors.length; vectorIndex++) {
@@ -71,7 +72,7 @@ public class VectorQuantizer {
         } else {
             // Cap the worker count on 8
             final int workerCount = Math.min(maxWorkerCount, 8);
-            Thread[] workers = new Thread[workerCount];
+            final Thread[] workers = new Thread[workerCount];
             final int workSize = dataVectors.length / workerCount;
 
             for (int wId = 0; wId < workerCount; wId++) {
@@ -90,7 +91,7 @@ public class VectorQuantizer {
                 for (int wId = 0; wId < workerCount; wId++) {
                     workers[wId].join();
                 }
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
                 e.printStackTrace();
             }
         }
