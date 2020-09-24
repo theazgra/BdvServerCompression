@@ -412,19 +412,23 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
     @Override
     public short[] decompressStreamMode(final DataInputStream compressedStream,
                                         final QCMPFileHeader header) throws ImageDecompressionException {
-
         final short[] buffer = new short[(int) header.getImageDims().multiplyTogether()];
         if (header.getQuantizationType() == QuantizationType.Vector3D) {
             final V3i voxelDim = new V3i(header.getVectorSizeX(), header.getVectorSizeY(), header.getVectorSizeZ());
 
             decompressVoxelsStreamModeImpl(compressedStream, header, (voxel, voxelData, planeOffset) -> {
-                final ImageU16Dataset currentVoxelLayer = voxel.reconstructFromVoxelsToDataset(voxelDim, voxelData);
-                int offset = planeOffset * (voxelDim.getX() * voxelDim.getY());
 
-                for (int layer = 0; layer < voxel.getDims().getZ(); layer++) {
-                    final short[] voxelLayerData = currentVoxelLayer.getPlaneData(layer);
-                    System.arraycopy(voxelLayerData, 0, buffer, offset, voxelLayerData.length);
-                    offset += voxelLayerData.length;
+                final ImageU16Dataset decompressedVoxel = voxel.reconstructFromVoxelsToDataset(voxelDim, voxelData);
+                assert (decompressedVoxel.getPlaneCount() == voxel.getDims().getZ());
+                final int expectedVoxelPlaneSize = header.getImageSizeX() * header.getImageSizeY();
+
+                final int baseOffset = planeOffset * expectedVoxelPlaneSize;
+
+                for (int voxelLayerIndex = 0; voxelLayerIndex < decompressedVoxel.getPlaneCount(); voxelLayerIndex++) {
+                    final short[] voxelLayerData = decompressedVoxel.getPlaneData(voxelLayerIndex);
+                    assert (voxelLayerData.length == expectedVoxelPlaneSize);
+                    final int bufferPos = baseOffset + (voxelLayerIndex * expectedVoxelPlaneSize);
+                    System.arraycopy(voxelLayerData, 0, buffer, bufferPos, voxelLayerData.length);
                 }
             });
             return buffer;
