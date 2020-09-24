@@ -7,6 +7,7 @@ import azgracompress.quantization.scalar.SQCodebook;
 import azgracompress.quantization.vector.VQCodebook;
 
 import java.io.*;
+import java.util.ArrayList;
 
 
 public class QuantizationCacheManager {
@@ -54,7 +55,7 @@ public class QuantizationCacheManager {
         final File inputFile = new File(trainFile);
         final String cacheFileName = String.format("%s_%d_%dx%dx%d.qvc", inputFile.getName(), codebookSize,
                                                    vDim.getX(), vDim.getY(), vDim.getZ());
-//         System.out.println("getCacheFilePathForVQ()=" + cacheFileName);
+        //         System.out.println("getCacheFilePathForVQ()=" + cacheFileName);
         return new File(cacheFolder, cacheFileName);
     }
 
@@ -286,6 +287,39 @@ public class QuantizationCacheManager {
         return null;
     }
 
+
+    /**
+     * Tries to load all (different codebook sizes) available cache files for given file and quantization type.
+     *
+     * @param compressionParams Parameters used to find cache file.
+     * @return Cache files which are available for given file and quantization type.
+     */
+    public ArrayList<ICacheFile> loadAvailableCacheFiles(final CompressionOptions compressionParams) {
+        final ArrayList<ICacheFile> availableCacheFiles = new ArrayList<>();
+
+        final int originalBPCI = compressionParams.getBitsPerCodebookIndex();
+        try {
+
+            for (int bpci = 2; bpci < 9; bpci++) { // 2 to 8
+                compressionParams.setBitsPerCodebookIndex(bpci);
+                final ICacheFile bpciCacheFile = loadCacheFile(compressionParams);
+                if (bpciCacheFile != null) {
+                    availableCacheFiles.add(bpciCacheFile);
+                }
+            }
+        } finally {
+            compressionParams.setBitsPerCodebookIndex(originalBPCI);
+        }
+        return availableCacheFiles;
+    }
+
+    /**
+     * Tries to load cache file for specified file and quantization type. Also Bits Per Codebook index and quantization vector dimensions
+     * are used when searching for given cache file.
+     *
+     * @param compressionParams Parameters used to find cache file.
+     * @return Quantization cache file or null if requested file doesn't exist.
+     */
     public ICacheFile loadCacheFile(final CompressionOptions compressionParams) {
         final String path;
         final int codebookSize = (int) Math.pow(2, compressionParams.getBitsPerCodebookIndex());
