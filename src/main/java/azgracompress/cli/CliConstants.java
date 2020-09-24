@@ -56,9 +56,9 @@ public class CliConstants {
 
     @NotNull
     public static Options getOptions() {
-        Options options = new Options();
+        final Options options = new Options();
 
-        OptionGroup methodGroup = new OptionGroup();
+        final OptionGroup methodGroup = new OptionGroup();
         methodGroup.setRequired(true);
         methodGroup.addOption(new Option(CliConstants.COMPRESS_SHORT,
                                          CliConstants.COMPRESS_LONG,
@@ -90,7 +90,7 @@ public class CliConstants {
 
         methodGroup.addOption(new Option(CliConstants.HELP_SHORT, CliConstants.HELP_LONG, false, "Print help"));
 
-        OptionGroup compressionMethodGroup = new OptionGroup();
+        final OptionGroup compressionMethodGroup = new OptionGroup();
         compressionMethodGroup.addOption(createSQOption());
 
         compressionMethodGroup.addOption(createVQOption());
@@ -104,10 +104,7 @@ public class CliConstants {
                           false,
                           "Use middle plane for codebook creation");
 
-        options.addOption(new Option(CliConstants.VERBOSE_SHORT,
-                                     CliConstants.VERBOSE_LONG,
-                                     false,
-                                     "Make program verbose"));
+        options.addOption(createVerboseOption(false));
 
         options.addOption(new Option(CliConstants.WORKER_COUNT_SHORT,
                                      CliConstants.WORKER_COUNT_LONG,
@@ -145,4 +142,9 @@ public class CliConstants {
                           "Use vector quantization. Need to pass vector size eg. 9,9x1,3x3");
     }
 
+    public static Option createVerboseOption(final boolean onlyLongVersion) {
+        return onlyLongVersion
+                ? new Option(CliConstants.VERBOSE_LONG, false, "Make program verbose")
+                : new Option(CliConstants.VERBOSE_SHORT, CliConstants.VERBOSE_LONG, false, "Make program verbose");
+    }
 }

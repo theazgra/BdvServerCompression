@@ -5,13 +5,15 @@ import azgracompress.cache.QuantizationCacheManager;
 import azgracompress.cache.VQCacheFile;
 import azgracompress.compression.exception.ImageCompressionException;
 import azgracompress.data.Range;
-import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
 import azgracompress.huffman.Huffman;
 import azgracompress.io.InputData;
 import azgracompress.io.loader.IPlaneLoader;
 import azgracompress.io.loader.PlaneLoaderFactory;
-import azgracompress.quantization.vector.*;
+import azgracompress.quantization.vector.LBGResult;
+import azgracompress.quantization.vector.LBGVectorQuantizer;
+import azgracompress.quantization.vector.VQCodebook;
+import azgracompress.quantization.vector.VectorQuantizer;
 import azgracompress.utilities.Stopwatch;
 import azgracompress.utilities.Utils;
 import org.jetbrains.annotations.NotNull;
@@ -330,7 +332,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             }
 
             final int[] indices = quantizer.quantizeIntoIndices(voxelData, options.getWorkerCount());
-//            final int[] indices = quantizer.quantizeIntoIndicesUsingKDTree(voxelData, options.getWorkerCount());
+            // final int[] indices = quantizer.quantizeIntoIndicesUsingKDTree(voxelData, options.getWorkerCount());
             voxelLayersSizes[voxelLayerIndex] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
             stopwatch.stop();
             if (options.isConsoleApplication()) {
