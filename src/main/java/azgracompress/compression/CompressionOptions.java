@@ -74,7 +74,7 @@ public class CompressionOptions {
     }
 
 
-    public void setVerbose(boolean verbose) {
+    public void setVerbose(final boolean verbose) {
         this.verbose = verbose;
     }
 
@@ -88,7 +88,7 @@ public class CompressionOptions {
         return inputDataInfo;
     }
 
-    public void setInputDataInfo(InputData ifi) {
+    public void setInputDataInfo(final InputData ifi) {
         this.inputDataInfo = ifi;
     }
 
@@ -96,7 +96,7 @@ public class CompressionOptions {
         return outputFilePath;
     }
 
-    public void setOutputFilePath(String outputFilePath) {
+    public void setOutputFilePath(final String outputFilePath) {
         this.outputFilePath = outputFilePath;
     }
 
@@ -104,7 +104,7 @@ public class CompressionOptions {
         return quantizationType;
     }
 
-    public void setQuantizationType(QuantizationType quantizationType) {
+    public void setQuantizationType(final QuantizationType quantizationType) {
         this.quantizationType = quantizationType;
     }
 
@@ -112,7 +112,7 @@ public class CompressionOptions {
         return codebookCacheFolder;
     }
 
-    public void setCodebookCacheFolder(String codebookCacheFolder) {
+    public void setCodebookCacheFolder(final String codebookCacheFolder) {
         this.codebookCacheFolder = codebookCacheFolder;
     }
 
@@ -120,7 +120,7 @@ public class CompressionOptions {
         return bitsPerCodebookIndex;
     }
 
-    public void setBitsPerCodebookIndex(int bitsPerCodebookIndex) {
+    public void setBitsPerCodebookIndex(final int bitsPerCodebookIndex) {
         this.bitsPerCodebookIndex = bitsPerCodebookIndex;
     }
 
@@ -128,7 +128,7 @@ public class CompressionOptions {
         return quantizationVector;
     }
 
-    public void setQuantizationVector(V3i quantizationVector) {
+    public void setQuantizationVector(final V3i quantizationVector) {
         this.quantizationVector = quantizationVector;
     }
 
@@ -136,7 +136,7 @@ public class CompressionOptions {
         return workerCount;
     }
 
-    public void setWorkerCount(int workerCount) {
+    public void setWorkerCount(final int workerCount) {
         this.workerCount = workerCount;
     }
 
@@ -144,7 +144,7 @@ public class CompressionOptions {
         return codebookType;
     }
 
-    public void setCodebookType(CodebookType codebookType) {
+    public void setCodebookType(final CodebookType codebookType) {
         this.codebookType = codebookType;
     }
 
