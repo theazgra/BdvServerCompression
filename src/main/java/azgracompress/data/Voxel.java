@@ -128,7 +128,7 @@ public final class Voxel {
         reconstructFromVoxels(voxelDims, voxelData, reconstructedData, 0);
         return new ImageU16Dataset(dims.toV2i(), dims.getZ(), reconstructedData);
     }
-
+    /*
     public short[] reconstructFromVoxelsToVoxelArray(final V3i voxelDims, final int[][] voxelData) {
         final short[] reconstructedVoxel = new short[(int) dims.multiplyTogether()];
 
@@ -166,7 +166,7 @@ public final class Voxel {
                             final int indexInsideVoxel = dataIndex(voxelX, voxelY, voxelZ, voxelDims);
                             final int dstIndex = dataIndex(dstX, dstY, planeIndex);
                             if (dstIndex >= reconstructedVoxel.length) {
-                                System.out.printf("Fail\n");
+                                System.out.print("Fail\n");
                             }
                             reconstructedVoxel[dstIndex] =
                                     (short) voxelData[(voxelOffset + voxelIndex)][indexInsideVoxel];
@@ -180,7 +180,7 @@ public final class Voxel {
         }
         return reconstructedVoxel;
     }
-
+    */
     public final V3i getDims() {
         return dims;
     }
