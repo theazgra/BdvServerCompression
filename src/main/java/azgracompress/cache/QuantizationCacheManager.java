@@ -349,17 +349,32 @@ public class QuantizationCacheManager {
      * @return Cache file or null, if exception occurs.
      */
     private static ICacheFile readCacheFileImpl(final InputStream inputStream) {
-        try (final DataInputStream dis = new DataInputStream(inputStream)) {
-            final CacheFileHeader header = new CacheFileHeader();
-            header.readFromStream(dis);
+        final DataInputStream dis;
+        if (inputStream instanceof DataInputStream) {
+            dis = (DataInputStream) inputStream;
+        } else {
+            dis = new DataInputStream(inputStream);
+        }
 
-            final ICacheFile cacheFile = getCacheFile(header.getQuantizationType());
-            assert (cacheFile != null);
-            cacheFile.readFromStream(dis, header);
-            return cacheFile;
+        final CacheFileHeader header = new CacheFileHeader();
+        try {
+            header.readFromStream(dis);
         } catch (final IOException e) {
+            System.err.println("Failed to read CacheFileHeader from input stream");
+            e.printStackTrace();
             return null;
         }
+
+        final ICacheFile cacheFile = getCacheFile(header.getQuantizationType());
+        assert (cacheFile != null);
+        try {
+            cacheFile.readFromStream(dis, header);
+        } catch (final IOException e) {
+            System.err.println("Failed to read cache file from input stream.");
+            e.printStackTrace();
+            return null;
+        }
+        return cacheFile;
     }
 
     /**
