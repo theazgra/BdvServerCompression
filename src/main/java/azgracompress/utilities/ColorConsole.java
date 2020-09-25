@@ -36,14 +36,22 @@ public final class ColorConsole {
         }
     }
 
+    public static void printf(final Color color, final String format, final Object... args) {
+        fprintf(Target.stdout, color, String.format(format, args));
+    }
+
     public static void fprintf(final Target target, final Color color, final String format, final Object... args) {
+        fprintf(target, color, String.format(format, args));
+    }
+
+    public static void fprintf(final Target target, final Color color, final String string) {
 
         switch (target) {
             case stdout:
-                System.out.println(getColor(color) + String.format(format, args) + ANSI_RESET);
+                System.out.println(getColor(color) + string + ANSI_RESET);
                 break;
             case stderr:
-                System.err.println(getColor(color) + String.format(format, args) + ANSI_RESET);
+                System.err.println(getColor(color) + string + ANSI_RESET);
                 break;
         }
     }
