@@ -19,7 +19,7 @@ public class SQCacheFile implements ICacheFile {
         assert (header.getCodebookSize() == codebook.getCodebookSize());
     }
 
-    public void writeToStream(DataOutputStream outputStream) throws IOException {
+    public void writeToStream(final DataOutputStream outputStream) throws IOException {
         header.writeToStream(outputStream);
         final int[] quantizationValues = codebook.getCentroids();
         final long[] frequencies = codebook.getSymbolFrequencies();
@@ -32,13 +32,13 @@ public class SQCacheFile implements ICacheFile {
         }
     }
 
-    public void readFromStream(DataInputStream inputStream) throws IOException {
+    public void readFromStream(final DataInputStream inputStream) throws IOException {
         header = new CacheFileHeader();
         header.readFromStream(inputStream);
         readFromStream(inputStream, header);
     }
 
-    public void readFromStream(DataInputStream inputStream, CacheFileHeader header) throws IOException {
+    public void readFromStream(final DataInputStream inputStream, final CacheFileHeader header) throws IOException {
         this.header = header;
         final int codebookSize = header.getCodebookSize();
         final int[] centroids = new int[codebookSize];
@@ -62,7 +62,7 @@ public class SQCacheFile implements ICacheFile {
     }
 
     @Override
-    public void report(StringBuilder builder) {
+    public void report(final StringBuilder builder) {
 
         final int[] centroids = codebook.getCentroids();
         for (int i = 0; i < centroids.length; i++) {
@@ -72,5 +72,10 @@ public class SQCacheFile implements ICacheFile {
                 builder.append(centroids[i]).append('\n');
             }
         }
+    }
+
+    @Override
+    public String klass() {
+        return "SQCacheFile";
     }
 }

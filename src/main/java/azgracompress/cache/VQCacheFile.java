@@ -19,7 +19,7 @@ public class VQCacheFile implements ICacheFile {
         assert (header.getCodebookSize() == codebook.getCodebookSize());
     }
 
-    public void writeToStream(DataOutputStream outputStream) throws IOException {
+    public void writeToStream(final DataOutputStream outputStream) throws IOException {
         header.writeToStream(outputStream);
 
         final int[][] entries = codebook.getVectors();
@@ -35,14 +35,14 @@ public class VQCacheFile implements ICacheFile {
         }
     }
 
-    public void readFromStream(DataInputStream inputStream) throws IOException {
+    public void readFromStream(final DataInputStream inputStream) throws IOException {
         header = new CacheFileHeader();
         header.readFromStream(inputStream);
         readFromStream(inputStream, header);
     }
 
     @Override
-    public void readFromStream(DataInputStream inputStream, CacheFileHeader header) throws IOException {
+    public void readFromStream(final DataInputStream inputStream, final CacheFileHeader header) throws IOException {
         this.header = header;
         final int codebookSize = header.getCodebookSize();
 
@@ -72,13 +72,18 @@ public class VQCacheFile implements ICacheFile {
     }
 
     @Override
-    public void report(StringBuilder builder) {
+    public void report(final StringBuilder builder) {
         final int[][] vectors = codebook.getVectors();
-        for (int[] vector : vectors) {
+        for (final int[] vector : vectors) {
             builder.append("- - - - - - - - - - - - - - - - - - - - - - - - -\n");
             for (final int x : vector) {
                 builder.append(x).append(';');
             }
         }
+    }
+
+    @Override
+    public String klass() {
+        return "VQCacheFile";
     }
 }

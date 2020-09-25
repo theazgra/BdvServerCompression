@@ -15,4 +15,6 @@ public interface ICacheFile {
     CacheFileHeader getHeader();
 
     void report(StringBuilder builder);
+
+    String klass();
 }
