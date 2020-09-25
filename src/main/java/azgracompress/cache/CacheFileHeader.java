@@ -3,6 +3,7 @@ package azgracompress.cache;
 import azgracompress.data.V2i;
 import azgracompress.data.V3i;
 import azgracompress.fileformat.QuantizationType;
+import azgracompress.utilities.Utils;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -22,29 +23,29 @@ public class CacheFileHeader {
     private int vectorSizeY;
     private int vectorSizeZ;
 
-    public void setQuantizationType(QuantizationType quantizationType) {
+    public void setQuantizationType(final QuantizationType quantizationType) {
         this.quantizationType = quantizationType;
     }
 
-    public void setCodebookSize(int codebookSize) {
+    public void setCodebookSize(final int codebookSize) {
         this.codebookSize = codebookSize;
     }
 
 
-    public void setTrainFileName(String trainFileName) {
+    public void setTrainFileName(final String trainFileName) {
         this.trainFileName = trainFileName;
         this.trainFileNameSize = this.trainFileName.length();
     }
 
-    public void setVectorSizeX(int vectorSizeX) {
+    public void setVectorSizeX(final int vectorSizeX) {
         this.vectorSizeX = vectorSizeX;
     }
 
-    public void setVectorSizeY(int vectorSizeY) {
+    public void setVectorSizeY(final int vectorSizeY) {
         this.vectorSizeY = vectorSizeY;
     }
 
-    public void setVectorSizeZ(int vectorSizeZ) {
+    public void setVectorSizeZ(final int vectorSizeZ) {
         this.vectorSizeZ = vectorSizeZ;
     }
 
@@ -54,6 +55,10 @@ public class CacheFileHeader {
 
     public int getCodebookSize() {
         return codebookSize;
+    }
+
+    public int getBitsPerCodebookIndex() {
+        return (int) Utils.log2(codebookSize);
     }
 
     public int getTrainFileNameSize() {
@@ -86,7 +91,7 @@ public class CacheFileHeader {
      * @param outputStream Data output stream.
      * @throws IOException when fails to write the header to stream.
      */
-    public void writeToStream(DataOutputStream outputStream) throws IOException {
+    public void writeToStream(final DataOutputStream outputStream) throws IOException {
         outputStream.writeBytes(QCMP_CACHE_MAGIC_VALUE);
         outputStream.writeByte(quantizationType.getValue());
         outputStream.writeShort(codebookSize);
@@ -122,18 +127,23 @@ public class CacheFileHeader {
      *
      * @param inputStream Data input stream.
      */
-    public void readFromStream(DataInputStream inputStream) throws IOException {
+    public void readFromStream(final DataInputStream inputStream) throws IOException {
         final int MIN_AVAIL = 9;
         if (inputStream.available() < MIN_AVAIL) {
             throw new IOException("Invalid file. File too small.");
         }
 
-        byte[] magicBuffer = new byte[QCMP_CACHE_MAGIC_VALUE.length()];
+        final byte[] magicBuffer = new byte[QCMP_CACHE_MAGIC_VALUE.length()];
 
-        final int readFromMagic = inputStream.read(magicBuffer, 0, QCMP_CACHE_MAGIC_VALUE.length());
-        if (readFromMagic != QCMP_CACHE_MAGIC_VALUE.length()) {
-            throw new IOException("Invalid file type. Unable to read magic value");
+        int toRead = QCMP_CACHE_MAGIC_VALUE.length();
+        while (toRead > 0) {
+            final int read = inputStream.read(magicBuffer, QCMP_CACHE_MAGIC_VALUE.length() - toRead, toRead);
+            if (read < 0) {
+                throw new IOException("Invalid file type. Unable to read magic value");
+            }
+            toRead -= read;
         }
+
         magicValue = new String(magicBuffer);
         if (!magicValue.equals(QCMP_CACHE_MAGIC_VALUE)) {
             throw new IOException("Invalid file type. Wrong magic value.");
@@ -142,8 +152,15 @@ public class CacheFileHeader {
         codebookSize = inputStream.readUnsignedShort();
 
         trainFileNameSize = inputStream.readUnsignedShort();
-        byte[] fileNameBuffer = new byte[trainFileNameSize];
-        final int readBytes = inputStream.read(fileNameBuffer, 0, trainFileNameSize);
+        final byte[] fileNameBuffer = new byte[trainFileNameSize];
+
+
+        toRead = trainFileNameSize;
+        while (toRead > 0) {
+            toRead -= inputStream.read(fileNameBuffer, trainFileNameSize - toRead, toRead);
+        }
+
+
         trainFileName = new String(fileNameBuffer);
 
         vectorSizeX = inputStream.readUnsignedShort();

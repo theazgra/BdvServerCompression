@@ -65,12 +65,12 @@ public class QCMPFileHeader implements Cloneable {
     public QCMPFileHeader copyOf() {
         try {
             return (QCMPFileHeader) this.clone();
-        } catch (CloneNotSupportedException e) {
+        } catch (final CloneNotSupportedException e) {
             return null;
         }
     }
 
-    public void writeHeader(DataOutputStream outputStream) throws IOException {
+    public void writeHeader(final DataOutputStream outputStream) throws IOException {
         outputStream.writeBytes(QCMP_MAGIC_VALUE);
 
         outputStream.writeByte(quantizationType.getValue());
@@ -95,16 +95,21 @@ public class QCMPFileHeader implements Cloneable {
         }
     }
 
-    public boolean readHeader(DataInputStream inputStream) throws IOException {
+    public boolean readHeader(final DataInputStream inputStream) throws IOException {
         if (inputStream.available() < BASE_QCMP_HEADER_SIZE) {
             return false;
         }
 
-        byte[] magicBuffer = new byte[QCMP_MAGIC_VALUE.length()];
-        final int readFromMagic = inputStream.read(magicBuffer, 0, QCMP_MAGIC_VALUE.length());
-        if (readFromMagic != QCMP_MAGIC_VALUE.length()) {
-            // Invalid magic value.
-            return false;
+        final byte[] magicBuffer = new byte[QCMP_MAGIC_VALUE.length()];
+
+        int toRead = QCMP_MAGIC_VALUE.length();
+        while (toRead > 0) {
+            final int read = inputStream.read(magicBuffer, QCMP_MAGIC_VALUE.length() - toRead, toRead);
+            if (read < 0) {
+                // Invalid magic value.
+                return false;
+            }
+            toRead -= read;
         }
 
         magicValue = new String(magicBuffer);
@@ -142,7 +147,7 @@ public class QCMPFileHeader implements Cloneable {
         return quantizationType;
     }
 
-    public void setQuantizationType(QuantizationType quantizationType) {
+    public void setQuantizationType(final QuantizationType quantizationType) {
         this.quantizationType = quantizationType;
     }
 
@@ -150,7 +155,7 @@ public class QCMPFileHeader implements Cloneable {
         return bitsPerCodebookIndex;
     }
 
-    public void setBitsPerCodebookIndex(byte bitsPerCodebookIndex) {
+    public void setBitsPerCodebookIndex(final byte bitsPerCodebookIndex) {
         this.bitsPerCodebookIndex = bitsPerCodebookIndex;
     }
 
@@ -158,7 +163,7 @@ public class QCMPFileHeader implements Cloneable {
         return codebookPerPlane;
     }
 
-    public void setCodebookPerPlane(boolean codebookPerPlane) {
+    public void setCodebookPerPlane(final boolean codebookPerPlane) {
         this.codebookPerPlane = codebookPerPlane;
     }
 
@@ -166,7 +171,7 @@ public class QCMPFileHeader implements Cloneable {
         return imageSizeX;
     }
 
-    public void setImageSizeX(int imageSizeX) {
+    public void setImageSizeX(final int imageSizeX) {
         this.imageSizeX = imageSizeX;
     }
 
@@ -174,7 +179,7 @@ public class QCMPFileHeader implements Cloneable {
         return imageSizeY;
     }
 
-    public void setImageSizeY(int imageSizeY) {
+    public void setImageSizeY(final int imageSizeY) {
         this.imageSizeY = imageSizeY;
     }
 
@@ -186,7 +191,7 @@ public class QCMPFileHeader implements Cloneable {
         return new V3i(imageSizeX, imageSizeY, imageSizeZ);
     }
 
-    public void setImageSizeZ(int imageSizeZ) {
+    public void setImageSizeZ(final int imageSizeZ) {
         this.imageSizeZ = imageSizeZ;
     }
 
@@ -194,7 +199,7 @@ public class QCMPFileHeader implements Cloneable {
         return vectorSizeX;
     }
 
-    public void setVectorSizeX(int vectorSizeX) {
+    public void setVectorSizeX(final int vectorSizeX) {
         this.vectorSizeX = vectorSizeX;
     }
 
@@ -202,7 +207,7 @@ public class QCMPFileHeader implements Cloneable {
         return vectorSizeY;
     }
 
-    public void setVectorSizeY(int vectorSizeY) {
+    public void setVectorSizeY(final int vectorSizeY) {
         this.vectorSizeY = vectorSizeY;
     }
 
@@ -210,7 +215,7 @@ public class QCMPFileHeader implements Cloneable {
         return vectorSizeZ;
     }
 
-    public void setVectorSizeZ(int vectorSizeZ) {
+    public void setVectorSizeZ(final int vectorSizeZ) {
         this.vectorSizeZ = vectorSizeZ;
     }
 

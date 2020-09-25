@@ -22,9 +22,9 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
 
     @Override
     public int[] loadPlaneData(final int plane) throws IOException {
-        byte[] buffer;
+        final byte[] buffer;
 
-        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
+        try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
             final long planeSize = (long) dims.getX() * (long) dims.getY() * 2;
             final long expectedFileSize = planeSize * dims.getZ();
             final long fileSize = fileStream.getChannel().size();
@@ -41,15 +41,21 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
             if (fileStream.skip(planeOffset) != planeOffset) {
                 throw new IOException("Failed to skip.");
             }
-            if (fileStream.read(buffer, 0, (int) planeSize) != planeSize) {
-                throw new IOException("Read wrong number of bytes.");
+
+            int toRead = (int) planeSize;
+            while (toRead > 0) {
+                final int read = fileStream.read(buffer, (int) planeSize - toRead, toRead);
+                if (read < 0) {
+                    throw new IOException("Read wrong number of bytes.");
+                }
+                toRead -= read;
             }
         }
         return TypeConverter.unsignedShortBytesToIntArray(buffer);
     }
 
     @Override
-    public int[] loadPlanesU16Data(int[] planes) throws IOException {
+    public int[] loadPlanesU16Data(final int[] planes) throws IOException {
         if (planes.length < 1) {
             return new int[0];
         } else if (planes.length == 1) {
@@ -65,12 +71,12 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
             throw new IOException("Integer count is too big.");
         }
 
-        int[] values = new int[(int) totalValueCount];
+        final int[] values = new int[(int) totalValueCount];
 
         Arrays.sort(planes);
 
-        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
-             DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
+        try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
+             final DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 
             int lastIndex = 0;
             int valIndex = 0;
@@ -104,10 +110,10 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
             throw new IOException("RawFile size is too big.");
         }
 
-        int[] values = new int[(int) dataSize];
+        final int[] values = new int[(int) dataSize];
 
-        try (FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
-             DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
+        try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
+             final DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 
             for (int i = 0; i < (int) dataSize; i++) {
                 values[i] = dis.readUnsignedShort();
@@ -123,7 +129,7 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[][] loadBlocks(V2i blockDim, Range<Integer> planeRange) throws IOException {
+    public int[][] loadBlocks(final V2i blockDim, final Range<Integer> planeRange) throws IOException {
         return loadBlocksImplByLoadPlaneData(blockDim, planeRange);
     }
 

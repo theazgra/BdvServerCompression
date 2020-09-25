@@ -5,8 +5,8 @@ import java.io.InputStream;
 
 public class InBitStream implements AutoCloseable {
 
-    private InputStream inputStream;
-    private byte[] buffer;
+    private final InputStream inputStream;
+    private final byte[] buffer;
     private int bufferPosition;
     private int bytesAvailable;
 
@@ -17,7 +17,7 @@ public class InBitStream implements AutoCloseable {
 
     private boolean allowReadFromUnderlyingStream = true;
 
-    public InBitStream(InputStream inputStream, final int bitsPerValue, final int bufferSize) {
+    public InBitStream(final InputStream inputStream, final int bitsPerValue, final int bufferSize) {
         this.inputStream = inputStream;
         this.bitsPerValue = bitsPerValue;
 
@@ -29,8 +29,17 @@ public class InBitStream implements AutoCloseable {
         bitBufferSize = 0;
     }
 
+    /**
+     * Read whole buffer from input stream.
+     *
+     * @throws IOException when unable to read from input stream.
+     */
     public void readToBuffer() throws IOException {
-        bytesAvailable = inputStream.read(buffer, 0, buffer.length);
+        int toRead = buffer.length;
+        while (toRead > 0) {
+            toRead -= inputStream.read(buffer, buffer.length - toRead, toRead);
+        }
+        bytesAvailable = buffer.length;
         bufferPosition = 0;
     }
 
@@ -62,7 +71,7 @@ public class InBitStream implements AutoCloseable {
             readByteToBitBuffer();
         }
         --bitBufferSize;
-        int bit = bitBuffer & (1 << bitBufferSize);
+        final int bit = bitBuffer & (1 << bitBufferSize);
         return (bit > 0 ? 1 : 0);
     }
 
@@ -79,7 +88,7 @@ public class InBitStream implements AutoCloseable {
     }
 
     public int[] readNValues(final int n) throws IOException {
-        int[] values = new int[n];
+        final int[] values = new int[n];
         for (int i = 0; i < n; i++) {
             values[i] = readValue();
         }

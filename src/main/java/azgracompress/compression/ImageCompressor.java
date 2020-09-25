@@ -15,7 +15,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
     private final IImageCompressor imageCompressor;
 
-    public ImageCompressor(CompressionOptions options) {
+    public ImageCompressor(final CompressionOptions options) {
         super(options);
         imageCompressor = getImageCompressor();
     }
@@ -23,6 +23,10 @@ public class ImageCompressor extends CompressorDecompressorBase {
     public ImageCompressor(final CompressionOptions options, final ICacheFile codebookCacheFile) {
         this(options);
         imageCompressor.preloadGlobalCodebook(codebookCacheFile);
+    }
+
+    public int getBitsPerCodebookIndex() {
+        return this.options.getBitsPerCodebookIndex();
     }
 
     /**
@@ -43,7 +47,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
      * @return Correct implementation of image compressor or null if configuration is not valid.
      */
     private IImageCompressor getImageCompressor() {
-        IImageCompressor compressor;
+        final IImageCompressor compressor;
         switch (options.getQuantizationType()) {
             case Scalar:
                 compressor = new SQImageCompressor(options);
@@ -80,7 +84,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
         }
         try {
             imageCompressor.trainAndSaveCodebook();
-        } catch (ImageCompressionException e) {
+        } catch (final ImageCompressionException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
             return false;
@@ -91,7 +95,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
     public int streamCompressChunk(final OutputStream outputStream, final InputData inputData) {
         assert (imageCompressor != null);
 
-        try (DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(outputStream, 8192))) {
+        try (final DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(outputStream, 8192))) {
             final long[] chunkSizes = imageCompressor.compressStreamChunk(compressStream, inputData);
             for (final long chunkSize : chunkSizes) {
                 assert (chunkSize < U16.Max);
@@ -99,11 +103,11 @@ public class ImageCompressor extends CompressorDecompressorBase {
             }
 
             return (4 * 2) + ((int) Arrays.stream(chunkSizes).sum()) + (chunkSizes.length * 2);
-        } catch (ImageCompressionException ice) {
+        } catch (final ImageCompressionException ice) {
             System.err.println(ice.getMessage());
             return -1;
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
             return -1;
@@ -118,8 +122,8 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
         long[] planeDataSizes = null;
 
-        try (FileOutputStream fos = new FileOutputStream(options.getOutputFilePath(), false);
-             DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(fos, 8192))) {
+        try (final FileOutputStream fos = new FileOutputStream(options.getOutputFilePath(), false);
+             final DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(fos, 8192))) {
 
             final QCMPFileHeader header = createHeader();
             header.writeHeader(compressStream);
@@ -129,10 +133,10 @@ public class ImageCompressor extends CompressorDecompressorBase {
             if (options.isVerbose()) {
                 reportCompressionRatio(header, compressStream.size());
             }
-        } catch (ImageCompressionException ex) {
+        } catch (final ImageCompressionException ex) {
             System.err.println(ex.getMessage());
             return false;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
             return false;
         }
@@ -142,10 +146,10 @@ public class ImageCompressor extends CompressorDecompressorBase {
             return false;
         }
 
-        try (RandomAccessFile raf = new RandomAccessFile(options.getOutputFilePath(), "rw")) {
+        try (final RandomAccessFile raf = new RandomAccessFile(options.getOutputFilePath(), "rw")) {
             raf.seek(PLANE_DATA_SIZES_OFFSET);
             writePlaneDataSizes(raf, planeDataSizes);
-        } catch (IOException ex) {
+        } catch (final IOException ex) {
             ex.printStackTrace();
             return false;
         }
@@ -160,7 +164,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
      * @param planeDataSizes Written compressed plane sizes.
      * @throws IOException when fails to write plane data size.
      */
-    private void writePlaneDataSizes(RandomAccessFile outStream, final long[] planeDataSizes) throws IOException {
+    private void writePlaneDataSizes(final RandomAccessFile outStream, final long[] planeDataSizes) throws IOException {
         for (final long planeDataSize : planeDataSizes) {
             outStream.writeInt((int) planeDataSize);
         }
@@ -189,7 +193,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
      * @return Valid QCMPFile header for compressed file.
      */
     private QCMPFileHeader createHeader() {
-        QCMPFileHeader header = new QCMPFileHeader();
+        final QCMPFileHeader header = new QCMPFileHeader();
 
 
         header.setQuantizationType(options.getQuantizationType());
