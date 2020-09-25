@@ -8,7 +8,7 @@ import azgracompress.io.InputData;
 /**
  * Options for the compressor/decompressor.
  */
-public class CompressionOptions {
+public class CompressionOptions implements Cloneable {
 
     public enum CodebookType {
         Individual,
@@ -73,6 +73,23 @@ public class CompressionOptions {
         codebookType = CodebookType.Global;
     }
 
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    /**
+     * Create clone of this object.
+     *
+     * @return Cloned object.
+     */
+    public CompressionOptions createClone() {
+        try {
+            return (CompressionOptions) clone();
+        } catch (final CloneNotSupportedException e) {
+            return null;
+        }
+    }
 
     public void setVerbose(final boolean verbose) {
         this.verbose = verbose;
@@ -151,4 +168,5 @@ public class CompressionOptions {
     public boolean isConsoleApplication() {
         return false;
     }
+
 }
