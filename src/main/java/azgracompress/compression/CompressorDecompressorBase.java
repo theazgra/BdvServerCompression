@@ -21,9 +21,13 @@ public abstract class CompressorDecompressorBase {
     private ArrayList<IStatusListener> statusListeners;
     private ArrayList<IProgressListener> progressListeners;
 
-    public CompressorDecompressorBase(CompressionOptions options) {
+    public CompressorDecompressorBase(final CompressionOptions options) {
         this.options = options;
         this.codebookSize = (int) Math.pow(2, this.options.getBitsPerCodebookIndex());
+    }
+
+    public int getBitsPerCodebookIndex() {
+        return this.options.getBitsPerCodebookIndex();
     }
 
     public void addStatusListener(final IStatusListener listener) {
@@ -45,7 +49,7 @@ public abstract class CompressorDecompressorBase {
         this.progressListeners.clear();
     }
 
-    protected void duplicateAllListeners(IListenable other) {
+    protected void duplicateAllListeners(final IListenable other) {
         if (other == this)
             return;
 
@@ -89,7 +93,7 @@ public abstract class CompressorDecompressorBase {
     }
 
     protected int[] createHuffmanSymbols(final int codebookSize) {
-        int[] symbols = new int[codebookSize];
+        final int[] symbols = new int[codebookSize];
         for (int i = 0; i < codebookSize; i++) {
             symbols[i] = i;
         }
@@ -97,7 +101,7 @@ public abstract class CompressorDecompressorBase {
     }
 
     protected Huffman createHuffmanCoder(final int[] symbols, final long[] frequencies) {
-        Huffman huffman = new Huffman(symbols, frequencies);
+        final Huffman huffman = new Huffman(symbols, frequencies);
         huffman.buildHuffmanTree();
         return huffman;
     }
@@ -109,7 +113,7 @@ public abstract class CompressorDecompressorBase {
             final int from = inputData.getPlaneRange().getFrom();
             final int count = inputData.getPlaneRange().getTo() - from;
 
-            int[] indices = new int[count + 1];
+            final int[] indices = new int[count + 1];
             for (int i = 0; i <= count; i++) {
                 indices[i] = from + i;
             }
@@ -120,7 +124,7 @@ public abstract class CompressorDecompressorBase {
     }
 
     private int[] generateAllPlaneIndices(final int planeCount) {
-        int[] planeIndices = new int[planeCount];
+        final int[] planeIndices = new int[planeCount];
         for (int i = 0; i < planeCount; i++) {
             planeIndices[i] = i;
         }
@@ -152,15 +156,15 @@ public abstract class CompressorDecompressorBase {
      * @return Number of bytes written.
      * @throws ImageCompressionException when fails to write to compress stream.
      */
-    protected long writeHuffmanEncodedIndices(DataOutputStream compressStream,
+    protected long writeHuffmanEncodedIndices(final DataOutputStream compressStream,
                                               final Huffman huffman,
                                               final int[] indices) throws ImageCompressionException {
-        try (OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerCodebookIndex(), 2048)) {
+        try (final OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerCodebookIndex(), 2048)) {
             for (final int index : indices) {
                 outBitStream.write(huffman.getCode(index));
             }
             return outBitStream.getBytesWritten();
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw new ImageCompressionException("Unable to write indices to OutBitStream.", ex);
         }
     }

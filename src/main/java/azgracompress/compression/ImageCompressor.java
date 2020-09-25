@@ -25,10 +25,6 @@ public class ImageCompressor extends CompressorDecompressorBase {
         imageCompressor.preloadGlobalCodebook(codebookCacheFile);
     }
 
-    public int getBitsPerCodebookIndex() {
-        return this.options.getBitsPerCodebookIndex();
-    }
-
     /**
      * Set InputData object for compressor.
      *

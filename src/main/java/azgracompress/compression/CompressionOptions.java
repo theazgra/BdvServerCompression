@@ -70,6 +70,7 @@ public class CompressionOptions implements Cloneable {
     public CompressionOptions(final ICacheFile codebookCacheFile) {
         this();
         quantizationType = codebookCacheFile.getHeader().getQuantizationType();
+        bitsPerCodebookIndex = codebookCacheFile.getHeader().getBitsPerCodebookIndex();
         codebookType = CodebookType.Global;
     }
 
