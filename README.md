@@ -88,3 +88,6 @@ usage: azgracompress.DataCompressor [options] input
 - `-v`, `--verbose` - Make program output verbose.
 - `-o`, `--output` - Set the ouput of compression, decompression, codebook training, benchmark.
 - `-wc`, `--worker-count` - Set the number of worker threads.
+
+
+[GitHub mirror link](https://github.com/theazgra/BdvServerCompression)
