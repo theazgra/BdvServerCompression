@@ -6,4 +6,5 @@ out/
 *.raw
 *.qcmp
 *.QCMP
+*.MF
 dc.bat
