@@ -4,6 +4,78 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <name>QcmpCompression</name>
+    <description>QCMP compression library and CLI application.</description>
+    <url>https://code.it4i.cz/BioinformaticDataCompression</url>
+    <inceptionYear>2019</inceptionYear>
+
+    <organization>
+        <name>IT4I</name>
+        <url>https://www.it4i.cz/en</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License v3+</name>
+            <url>https://www.gnu.org/licenses/gpl.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>mor0146</id>
+            <name>Vojtech Moravec</name>
+            <url>https://code.it4i.cz/mor0146</url>
+            <roles>
+                <role>founder</role>
+                <role>lead</role>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
+                <role>support</role>
+                <role>maintainer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <issueManagement>
+        <system>GitLab Issues</system>
+        <url>https://code.it4i.cz/BioinformaticDataCompression/QcmpCompressionLibrary/-/issues</url>
+    </issueManagement>
+
+    <contributors>
+        <contributor>
+            <name>Vojtech Moravec</name>
+            <url>https://code.it4i.cz/mor0146</url>
+        </contributor>
+    </contributors>
+
+    <mailingLists>
+        <mailingList>
+            <name>None</name>
+            <archive>None</archive>
+        </mailingList>
+    </mailingLists>
+
+    <scm>
+        <connection>scm:git:git://code.it4i.cz/BioinformaticDataCompression/QcmpCompressionLibrary</connection>
+        <developerConnection>scm:git:git@code.it4i.cz:BioinformaticDataCompression/QcmpCompressionLibrary</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://code.it4i.cz/BioinformaticDataCompression/QcmpCompressionLibrary</url>
+    </scm>
+
+    <ciManagement>
+        <system>None</system>
+        <url>None</url>
+    </ciManagement>
+
+    <properties>
+        <package-name>QcmpCompression</package-name>
+        <license.licenseName>gpl_v3</license.licenseName>
+        <license.copyrightOwners>QcmpLibrary developers.</license.copyrightOwners>
+    </properties>
+
 
     <parent>
         <groupId>org.scijava</groupId>
@@ -11,10 +83,9 @@
         <version>27.0.1</version>
     </parent>
 
-    <!--    <groupId>org.scijava</groupId>-->
-    <groupId>org.azgra</groupId>
-    <artifactId>DataCompressor</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>cz.it4i</groupId>
+    <artifactId>QcmpCompression</artifactId>
+    <version>0.5-SNAPSHOT</version>
     <build>
         <plugins>
             <plugin>
@@ -33,18 +104,29 @@
             <id>scijava.public</id>
             <url>https://maven.scijava.org/content/groups/public</url>
         </repository>
+        <repository>
+            <id>gitlab-maven-qcmp-library</id>
+            <url>https://code.it4i.cz/api/v4/projects/932/packages/maven</url>
+        </repository>
     </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>gitlab-maven-qcmp-library</id>
+            <url>https://code.it4i.cz/api/v4/projects/932/packages/maven</url>
+        </repository>
+        <snapshotRepository>
+            <id>gitlab-maven-qcmp-library</id>
+            <url>https://code.it4i.cz/api/v4/projects/932/packages/maven</url>
+        </snapshotRepository>
+    </distributionManagement>
+
 
     <dependencies>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>3.6.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>1.3.2</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
