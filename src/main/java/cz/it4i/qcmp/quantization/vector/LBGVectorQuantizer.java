@@ -28,6 +28,10 @@ public class LBGVectorQuantizer {
     private IStatusListener statusListener = null;
     private double _mse = 0.0;
 
+    public interface CodebookFoundCallback {
+        void process(final VQCodebook trainedCodebook);
+    }
+
     public LBGVectorQuantizer(final int[][] vectors,
                               final int codebookSize,
                               final int workerCount,
@@ -108,19 +112,23 @@ public class LBGVectorQuantizer {
         return new LBGResult(vectorDimensions, codebook, frequencies, mse, psnr);
     }
 
+    public LBGResult findOptimalCodebook() {
+        return findOptimalCodebook(null);
+    }
+
     /**
      * Find the optimal codebook of vectors, used for vector quantization.
      *
      * @return Result of the search.
      */
-    public LBGResult findOptimalCodebook() {
+    public LBGResult findOptimalCodebook(final CodebookFoundCallback codebookCallback) {
         final Stopwatch stopwatch = Stopwatch.startNew("LBG::findOptimalCodebook()");
 
         if (uniqueVectorCount < codebookSize) {
             return createCodebookFromUniqueVectors();
         }
 
-        final LearningCodebookEntry[] codebook = initializeCodebook();
+        final LearningCodebookEntry[] codebook = initializeCodebook(codebookCallback);
         reportStatus("LBG::findOptimalCodebook() - Got initial codebook. Improving it...");
 
         LBG(codebook, EPSILON * 0.1);
@@ -131,7 +139,14 @@ public class LBGVectorQuantizer {
                      psnr);
         stopwatch.stop();
         reportStatus(stopwatch.toString());
-        return new LBGResult(vectorDimensions, learningCodebookToCodebook(codebook), frequencies, finalMse, psnr);
+
+        final LBGResult result = new LBGResult(vectorDimensions, learningCodebookToCodebook(codebook), frequencies, finalMse, psnr);
+
+        if (codebookCallback != null) {
+            codebookCallback.process(result.getCodebook());
+        }
+
+        return result;
     }
 
     /**
@@ -304,7 +319,7 @@ public class LBGVectorQuantizer {
      *
      * @return The initial codebook to be improved by LBG.
      */
-    private LearningCodebookEntry[] initializeCodebook() {
+    private LearningCodebookEntry[] initializeCodebook(final CodebookFoundCallback codebookFoundCallback) {
 
         int currentCodebookSize = 1;
         LearningCodebookEntry[] codebook = new LearningCodebookEntry[]{createInitialEntry()};
@@ -384,11 +399,22 @@ public class LBGVectorQuantizer {
             currentCodebookSize *= 2;
 
             // Execute LBG Algorithm on current codebook to improve it.
-            LBG(codebook);
 
+            final double eps = codebookFoundCallback == null ? EPSILON : EPSILON * 0.1;
+            LBG(codebook, eps);
 
             final double avgMse = averageMse(codebook);
             reportStatus("MSE of improved divided codebook: %f", avgMse);
+
+            if (codebookFoundCallback != null) {
+
+                final long[] codebookFrequencies = new long[codebook.length];
+                System.arraycopy(frequencies, 0, codebookFrequencies, 0, codebook.length);
+
+                codebookFoundCallback.process(new VQCodebook(vectorDimensions,
+                                                             learningCodebookToCodebook(codebook),
+                                                             codebookFrequencies));
+            }
         }
         return codebook;
     }

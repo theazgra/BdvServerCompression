@@ -88,6 +88,21 @@ public class ImageCompressor extends CompressorDecompressorBase {
         return true;
     }
 
+    public boolean trainAndSaveAllCodebooks() {
+        reportStatusToListeners("=== Training all codebooks ===");
+        if (imageCompressor == null) {
+            return false;
+        }
+        try {
+            imageCompressor.trainAndSaveAllCodebooks();
+        } catch (final ImageCompressionException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
     public int streamCompressChunk(final OutputStream outputStream, final InputData inputData) {
         assert (imageCompressor != null);
 

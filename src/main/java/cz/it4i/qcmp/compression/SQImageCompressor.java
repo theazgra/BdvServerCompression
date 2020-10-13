@@ -246,4 +246,9 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     public long[] compressStreamChunk(final DataOutputStream compressStream, final InputData inputData) throws ImageCompressionException {
         throw new ImageCompressionException("Not implemented yet");
     }
+
+    @Override
+    public void trainAndSaveAllCodebooks() throws ImageCompressionException {
+        throw new ImageCompressionException("Not implemented yet");
+    }
 }

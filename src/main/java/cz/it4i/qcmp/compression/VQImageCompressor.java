@@ -219,53 +219,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         return planeDataSizes;
     }
 
-    @Override
-    public void trainAndSaveCodebook() throws ImageCompressionException {
-        reportStatusToListeners("Loading image data...");
-
-        final IPlaneLoader planeLoader;
-        try {
-            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
-        } catch (final Exception e) {
-            throw new ImageCompressionException("Unable to create plane reader. " + e.getMessage());
-        }
-
-        final int[][] trainingData;
-        if (options.getInputDataInfo().isPlaneIndexSet()) {
-            reportStatusToListeners("VQ: Loading single plane data.");
-            final int planeIndex = options.getInputDataInfo().getPlaneIndex();
-            trainingData = planeLoader.loadVectorsFromPlaneRange(options, new Range<>(planeIndex, planeIndex + 1));
-        } else if (options.getInputDataInfo().isPlaneRangeSet()) {
-            reportStatusToListeners("VQ: Loading plane range data.");
-            trainingData = planeLoader.loadVectorsFromPlaneRange(options, options.getInputDataInfo().getPlaneRange());
-        } else {
-            reportStatusToListeners("VQ: Loading all planes data.");
-            trainingData = planeLoader.loadVectorsFromPlaneRange(options,
-                                                                 new Range<>(0, options.getInputDataInfo().getDimensions().getZ()));
-        }
-
-
-        final LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData,
-                                                                        getCodebookSize(),
-                                                                        options.getWorkerCount(),
-                                                                        options.getQuantizationVector());
-
-        reportStatusToListeners("Starting LBG optimization.");
-        vqInitializer.setStatusListener(this::reportStatusToListeners);
-        final LBGResult lbgResult = vqInitializer.findOptimalCodebook();
-        reportStatusToListeners("Learned the optimal codebook.");
-
-
-        final QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
-        try {
-            final String cacheFilePath = cacheManager.saveCodebook(options.getInputDataInfo().getCacheFileName(), lbgResult.getCodebook());
-            reportStatusToListeners("Saved cache file to %s", cacheFilePath);
-        } catch (final IOException e) {
-            throw new ImageCompressionException("Unable to write VQ cache.", e);
-        }
-        reportStatusToListeners("Operation completed.");
-    }
-
     /**
      * Calculate the number of voxel layers needed for dataset of plane count.
      *
@@ -346,6 +299,94 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         }
 
         return voxelLayersSizes;
+    }
+
+    @Override
+    public void trainAndSaveCodebook() throws ImageCompressionException {
+        reportStatusToListeners("Loading image data...");
+
+        final IPlaneLoader planeLoader;
+        try {
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
+        } catch (final Exception e) {
+            throw new ImageCompressionException("Unable to create plane reader. " + e.getMessage());
+        }
+
+        final int[][] trainingData = loadDataForCodebookTraining(planeLoader);
+
+
+        final LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData,
+                                                                        getCodebookSize(),
+                                                                        options.getWorkerCount(),
+                                                                        options.getQuantizationVector());
+
+        reportStatusToListeners("Starting LBG optimization.");
+        vqInitializer.setStatusListener(this::reportStatusToListeners);
+        final LBGResult lbgResult = vqInitializer.findOptimalCodebook();
+        reportStatusToListeners("Learned the optimal codebook.");
+
+
+        final QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
+        try {
+            final String cacheFilePath = cacheManager.saveCodebook(options.getInputDataInfo().getCacheFileName(), lbgResult.getCodebook());
+            reportStatusToListeners("Saved cache file to %s", cacheFilePath);
+        } catch (final IOException e) {
+            throw new ImageCompressionException("Unable to write VQ cache.", e);
+        }
+        reportStatusToListeners("Operation completed.");
+    }
+
+    @Override
+    public void trainAndSaveAllCodebooks() throws ImageCompressionException {
+        reportStatusToListeners("trainAndSaveAllCodebooks is starting with %d workers.", options.getWorkerCount());
+
+        reportStatusToListeners("Loading image data...");
+        final IPlaneLoader planeLoader;
+        try {
+            planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
+        } catch (final Exception e) {
+            throw new ImageCompressionException("Unable to create plane reader. " + e.getMessage());
+        }
+        final int[][] trainingData = loadDataForCodebookTraining(planeLoader);
+        reportStatusToListeners("Data loading is finished.");
+
+        final QuantizationCacheManager qcm = new QuantizationCacheManager(options.getCodebookCacheFolder());
+
+        final LBGVectorQuantizer codebookTrainer = new LBGVectorQuantizer(trainingData,
+                                                                          256,
+                                                                          options.getWorkerCount(),
+                                                                          options.getQuantizationVector());
+        codebookTrainer.findOptimalCodebook(vqCodebook -> {
+            try {
+                assert ((vqCodebook.getCodebookSize() == vqCodebook.getVectors().length) &&
+                        (vqCodebook.getCodebookSize() == vqCodebook.getVectorFrequencies().length))
+                        : "Codebook size, Vector count, Frequencies count mismatch";
+                qcm.saveCodebook(options.getInputDataInfo().getCacheFileName(), vqCodebook);
+            } catch (final IOException e) {
+                System.err.println("Failed to save trained codebook.");
+                e.printStackTrace();
+            }
+            reportStatusToListeners("Optimal codebook of size %d was found.", vqCodebook.getCodebookSize());
+        });
+
+        reportStatusToListeners("Trained all codebooks.");
+    }
+
+    int[][] loadDataForCodebookTraining(final IPlaneLoader planeLoader) throws ImageCompressionException {
+        final int[][] trainingData;
+        if (options.getInputDataInfo().isPlaneIndexSet()) {
+            reportStatusToListeners("VQ: Loading single plane data.");
+            final int planeIndex = options.getInputDataInfo().getPlaneIndex();
+            trainingData = planeLoader.loadVectorsFromPlaneRange(options, new Range<>(planeIndex, planeIndex + 1));
+        } else if (options.getInputDataInfo().isPlaneRangeSet()) {
+            reportStatusToListeners("VQ: Loading plane range data.");
+            trainingData = planeLoader.loadVectorsFromPlaneRange(options, options.getInputDataInfo().getPlaneRange());
+        } else {
+            reportStatusToListeners("VQ: Loading all planes data.");
+            trainingData = planeLoader.loadVectorsFromPlaneRange(options,
+                                                                 new Range<>(0, options.getInputDataInfo().getDimensions().getZ()));
+        }
+        return trainingData;
     }
 
 }

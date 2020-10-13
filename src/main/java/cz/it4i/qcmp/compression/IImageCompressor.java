@@ -38,6 +38,14 @@ public interface IImageCompressor extends IListenable {
     void trainAndSaveCodebook() throws ImageCompressionException;
 
     /**
+     * Train all codebook sizes from selected frames and save learned codebooks to cache files.
+     *
+     * @throws ImageCompressionException when training or saving of any file fails.
+     */
+    void trainAndSaveAllCodebooks() throws ImageCompressionException;
+
+
+    /**
      * Preload compressor codebook and Huffman tree for stream compressor from provided cache file.
      *
      * @param codebookCacheFile Codebook cache file.
