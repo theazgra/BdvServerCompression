@@ -1,9 +1,6 @@
 package cz.it4i.qcmp.io.loader;
 
-import cz.it4i.qcmp.io.BufferInputData;
-import cz.it4i.qcmp.io.FileInputData;
-import cz.it4i.qcmp.io.FlatBufferInputData;
-import cz.it4i.qcmp.io.InputData;
+import cz.it4i.qcmp.io.*;
 
 public final class PlaneLoaderFactory {
 
@@ -24,6 +21,8 @@ public final class PlaneLoaderFactory {
                 return new ImageJBufferLoader((BufferInputData) inputDataInfo);
             case FlatBufferLoader:
                 return new FlatBufferLoader((FlatBufferInputData) inputDataInfo);
+            case CallbackLoader:
+                return new CallbackLoader((CallbackInputData) inputDataInfo);
             default:
                 throw new Exception("Unsupported data loader.");
         }

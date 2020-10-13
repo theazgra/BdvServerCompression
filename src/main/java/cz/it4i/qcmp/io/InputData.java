@@ -11,7 +11,8 @@ public abstract class InputData {
         RawDataLoader,
         SCIFIOLoader,
         ImageJBufferLoader,
-        FlatBufferLoader
+        FlatBufferLoader,
+        CallbackLoader
     }
 
     public enum PixelType {
