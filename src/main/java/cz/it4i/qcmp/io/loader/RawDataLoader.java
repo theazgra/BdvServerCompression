@@ -21,6 +21,13 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
+    protected int valueAt(final int plane, final int x, final int y, final int width) {
+        new Exception().printStackTrace(System.err);
+        assert (false) : "RawDataLoader shouldn't use valueAt impl methods!";
+        return -1;
+    }
+
+    @Override
     public int[] loadPlaneData(final int plane) throws IOException {
         final byte[] buffer;
 

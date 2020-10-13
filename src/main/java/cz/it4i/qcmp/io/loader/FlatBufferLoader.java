@@ -1,5 +1,6 @@
 package cz.it4i.qcmp.io.loader;
 
+import cz.it4i.qcmp.data.Block;
 import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.data.V2i;
 import cz.it4i.qcmp.data.V3i;
@@ -44,9 +45,10 @@ public class FlatBufferLoader extends BasicLoader implements IPlaneLoader {
         }
     }
 
+
     @Override
-    protected int valueAt(final int plane, final int offset) {
-        return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer())[(plane * planePixelCount) + offset]);
+    protected int valueAt(final int plane, final int x, final int y, final int width) {
+        return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer())[(plane * planePixelCount) + Block.index(x, y, width)]);
     }
 
     @Override

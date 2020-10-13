@@ -37,18 +37,20 @@ public abstract class BasicLoader {
      */
     public abstract int[] loadPlaneData(final int plane) throws IOException;
 
-    /**
-     * Read value from plane at specified offset.
-     *
-     * @param plane  Zero based plane index.
-     * @param offset Offset on flattened plane data.
-     * @return Plane value at the index.
-     */
-    protected int valueAt(final int plane, final int offset) {
-        new Exception().printStackTrace(System.err);
-        assert (false) : "Unimplemented overload of BasicLoader::valueAt()";
-        return Integer.MIN_VALUE;
-    }
+    //    /**
+    //     * Read value from plane at specified offset.
+    //     *
+    //     * @param plane  Zero based plane index.
+    //     * @param offset Offset on flattened plane data.
+    //     * @return Plane value at the index.
+    //     */
+    //    protected int valueAt(final int plane, final int offset) {
+    //        new Exception().printStackTrace(System.err);
+    //        assert (false) : "Unimplemented overload of BasicLoader::valueAt()";
+    //        return Integer.MIN_VALUE;
+    //    }
+
+    protected abstract int valueAt(final int plane, final int x, final int y, final int width);
 
     /**
      * Wrap column (x) index based on specified wrapping strategy.
@@ -149,7 +151,9 @@ public abstract class BasicLoader {
                                 break;
                             srcX = wrapColumnIndex(srcX);
                         }
-                        rowVectors[vectorIndex][vectorX] = valueAt(plane, Block.index(srcX, row, dims.getY()));
+
+                        // TODO(Moravec): dims.getY() should probably be dims.getX()! Check this!
+                        rowVectors[vectorIndex][vectorX] = valueAt(plane, srcX, row, dims.getY());
                     }
                     ++vectorIndex;
                 }
@@ -217,7 +221,8 @@ public abstract class BasicLoader {
                     }
                     srcX = wrapColumnIndex(srcX);
                 }
-                block[Block.index(x, y, blockDim.getX())] = valueAt(planeIndex, Block.index(srcX, srcY, dims.getX()));
+
+                block[Block.index(x, y, blockDim.getX())] = valueAt(planeIndex, srcX, srcY, dims.getX());
             }
         }
     }
@@ -284,7 +289,7 @@ public abstract class BasicLoader {
                         srcX = wrapColumnIndex(srcX);
                     }
 
-                    voxel[Voxel.dataIndex(x, y, z, voxelDim)] = valueAt(srcZ, Block.index(srcX, srcY, dims.getX()));
+                    voxel[Voxel.dataIndex(x, y, z, voxelDim)] = valueAt(srcZ, srcX, srcY, dims.getX());
                 }
             }
         }

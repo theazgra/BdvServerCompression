@@ -1,5 +1,6 @@
 package cz.it4i.qcmp.io.loader;
 
+import cz.it4i.qcmp.data.Block;
 import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.data.V2i;
 import cz.it4i.qcmp.data.V3i;
@@ -36,11 +37,10 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
         final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(plane);
         return TypeConverter.shortArrayToIntArray(srcBuffer);
     }
-
-
+    
     @Override
-    protected int valueAt(final int plane, final int offset) {
-        return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer(plane))[offset]);
+    protected int valueAt(int plane, int x, int y, int width) {
+        return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer(plane))[Block.index(x, y, width)]);
     }
 
     @Override

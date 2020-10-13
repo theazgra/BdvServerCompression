@@ -30,6 +30,13 @@ public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
+    protected int valueAt(final int plane, final int x, final int y, final int width) {
+        new Exception().printStackTrace(System.err);
+        assert (false) : "SCIFIOLoader shouldn't use valueAt impl methods!";
+        return -1;
+    }
+
+    @Override
     public int[] loadPlaneData(final int plane) throws IOException {
         final byte[] planeBytes;
         try {
