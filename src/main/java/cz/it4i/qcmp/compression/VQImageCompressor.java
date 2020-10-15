@@ -26,6 +26,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     private VectorQuantizer cachedQuantizer = null;
     private Huffman cachedHuffman = null;
 
+    private boolean useKdTree = false;
+
     public VQImageCompressor(final CompressionOptions options) {
         super(options);
     }
@@ -35,6 +37,14 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final VQCodebook cachedCodebook = ((VQCacheFile) codebookCacheFile).getCodebook();
         cachedQuantizer = new VectorQuantizer(cachedCodebook);
         cachedHuffman = createHuffmanCoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()), cachedCodebook.getVectorFrequencies());
+    }
+
+    public boolean shouldUseKdTree() {
+        return useKdTree;
+    }
+
+    public void setUseKdTree(final boolean useKdTree) {
+        this.useKdTree = useKdTree;
     }
 
     /**
@@ -200,10 +210,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 writeQuantizerToCompressStream(quantizer, compressStream);
             }
 
-            // Use BestBinFirst KDTree for codebook lookup.
-            // final int[] indices = quantizer.quantizeIntoIndicesUsingKDTree(planeVectors, options.getWorkerCount());
-            // Use BruteForce for codebook lookup.
-            final int[] indices = quantizer.quantizeIntoIndices(planeVectors, options.getWorkerCount());
+            final int[] indices = quantizeVectorsImpl(quantizer, planeVectors, options.getWorkerCount());
 
             planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
 
@@ -217,6 +224,20 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             }
         }
         return planeDataSizes;
+    }
+
+    /**
+     * Quantize into indices call wrapper for KDTree switch.
+     *
+     * @param quantizer   Vector quantizer.
+     * @param srcVectors  Vectors to quantize.
+     * @param workerCount Maximum number of worker threads.
+     * @return Indices of codebook vectors.
+     */
+    private int[] quantizeVectorsImpl(final VectorQuantizer quantizer, final int[][] srcVectors, final int workerCount) {
+        if (useKdTree)
+            return quantizer.quantizeIntoIndicesUsingKDTree(srcVectors, workerCount);
+        return quantizer.quantizeIntoIndices(srcVectors, workerCount);
     }
 
     /**
@@ -284,8 +305,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 throw new ImageCompressionException("Unable to load voxels from voxel layer " + voxelLayerRange, e);
             }
 
-            final int[] indices = quantizer.quantizeIntoIndices(voxelData, options.getWorkerCount());
-            // final int[] indices = quantizer.quantizeIntoIndicesUsingKDTree(voxelData, options.getWorkerCount());
+            final int[] indices = quantizeVectorsImpl(quantizer, voxelData, options.getWorkerCount());
+            
             voxelLayersSizes[voxelLayerIndex] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
             stopwatch.stop();
             if (options.isConsoleApplication()) {

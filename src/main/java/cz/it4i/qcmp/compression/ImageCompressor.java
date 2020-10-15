@@ -197,6 +197,19 @@ public class ImageCompressor extends CompressorDecompressorBase {
         }
     }
 
+    /**
+     * Allow usage of the KD tree when looking for the best quantization vector.
+     *
+     * @return True if imageCompressor is VQImageCompressor and KD tree was enabled.
+     */
+    public boolean allowKdTreeVectorLookup() {
+        if ((imageCompressor != null) && (imageCompressor instanceof VQImageCompressor)) {
+            ((VQImageCompressor) imageCompressor).setUseKdTree(true);
+            return true;
+        }
+        return false;
+    }
+
 
     /**
      * Create QCMPFile header for compressed file.
