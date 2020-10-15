@@ -2,14 +2,14 @@ package cz.it4i.qcmp.utilities;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Duration;
-import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 
 public class Stopwatch {
 
     private final String name;
-    private Instant start;
-    Duration elapsed;
+    private boolean isMeasuring = false;
+    private long startTick;
+    private long elapsedTicks;
 
     @NotNull
     public static Stopwatch startNew(final String name) {
@@ -32,36 +32,36 @@ public class Stopwatch {
     }
 
     public void start() {
-        start = Instant.now();
+        isMeasuring = true;
+        startTick = System.nanoTime();
     }
 
     public void stop() {
-        final Instant end = Instant.now();
-        elapsed = Duration.between(start, end);
+        final long endTick = System.nanoTime();
+        isMeasuring = false;
+        elapsedTicks += endTick - startTick;
+    }
+
+    public void reset() {
+        isMeasuring = false;
+        elapsedTicks = 0;
     }
 
     public void restart() {
-        elapsed = null;
-        start = Instant.now();
+        isMeasuring = true;
+        elapsedTicks = 0;
+        startTick = System.nanoTime();
     }
 
-    public long totalElapsedNanoseconds() {
-        return elapsed.toNanos();
-    }
-
-    public long totalElapsedMilliseconds() {
-        return elapsed.toMillis();
-    }
-
-    public double totalElapsedSeconds() {
-        return (elapsed.toNanos() / 1_000_000_000.0);
+    public long getElapsedInUnit(final TimeUnit timeUnit) {
+        return timeUnit.convert(elapsedTicks, TimeUnit.NANOSECONDS);
     }
 
     public String getElapsedTimeString() {
-        if (elapsed == null) {
+        if (isMeasuring || (elapsedTicks == 0)) {
             return "No time measured yet.";
         }
-        double MS = (double) elapsed.toMillis();
+        double MS = (double) getElapsedInUnit(TimeUnit.MILLISECONDS);
         double M = 0;
         double S = 0;
         double H = 0;

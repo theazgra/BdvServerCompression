@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 
 @SuppressWarnings("DuplicatedCode")
@@ -232,7 +233,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             return false;
         }
         decompressionStopwatch.stop();
-        final double seconds = decompressionStopwatch.totalElapsedSeconds();
+        final double seconds = decompressionStopwatch.getElapsedInUnit(TimeUnit.SECONDS);
         final double MBSize = ((double) decompressedFileSize / 1000.0) / 1000.0;
         final double MBPerSec = MBSize / seconds;
         reportStatusToListeners("Decompression speed: %.4f MB/s", MBPerSec);
