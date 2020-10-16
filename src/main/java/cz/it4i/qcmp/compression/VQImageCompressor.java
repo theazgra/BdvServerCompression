@@ -58,7 +58,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(planeVectors,
                                                                         getCodebookSize(),
                                                                         options.getWorkerCount(),
-                                                                        options.getQuantizationVector());
+                                                                        options.getQuantizationVector(),
+                                                                        true);
         final LBGResult vqResult = vqInitializer.findOptimalCodebook();
         return new VectorQuantizer(vqResult.getCodebook());
     }
@@ -235,8 +236,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      * @return Indices of codebook vectors.
      */
     private int[] quantizeVectorsImpl(final VectorQuantizer quantizer, final int[][] srcVectors, final int workerCount) {
-        if (useKdTree)
-            return quantizer.quantizeIntoIndicesUsingKDTree(srcVectors, workerCount);
+        //        if (useKdTree)
+        //            return quantizer.quantizeIntoIndicesUsingKDTree(srcVectors, workerCount);
         return quantizer.quantizeIntoIndices(srcVectors, workerCount);
     }
 
@@ -339,9 +340,17 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final LBGVectorQuantizer vqInitializer = new LBGVectorQuantizer(trainingData,
                                                                         getCodebookSize(),
                                                                         options.getWorkerCount(),
-                                                                        options.getQuantizationVector());
+                                                                        options.getQuantizationVector(),
+                                                                        false);
 
         reportStatusToListeners("Starting LBG optimization.");
+        try {
+            System.out.println("Sleeping for 10 seconds...");
+            Thread.sleep(10000);
+        } catch (final InterruptedException e) {
+            e.printStackTrace();
+        }
+
         vqInitializer.setStatusListener(this::reportStatusToListeners);
         final LBGResult lbgResult = vqInitializer.findOptimalCodebook();
         reportStatusToListeners("Learned the optimal codebook.");
@@ -376,7 +385,9 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final LBGVectorQuantizer codebookTrainer = new LBGVectorQuantizer(trainingData,
                                                                           256,
                                                                           options.getWorkerCount(),
-                                                                          options.getQuantizationVector());
+                                                                          options.getQuantizationVector(),
+                                                                          false);
+
         codebookTrainer.findOptimalCodebook(vqCodebook -> {
             try {
                 assert ((vqCodebook.getCodebookSize() == vqCodebook.getVectors().length) &&

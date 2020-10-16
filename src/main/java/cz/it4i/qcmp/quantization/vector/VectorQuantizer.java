@@ -1,7 +1,5 @@
 package cz.it4i.qcmp.quantization.vector;
 
-import cz.it4i.qcmp.kdtree.KDTree;
-import cz.it4i.qcmp.kdtree.KDTreeBuilder;
 import cz.it4i.qcmp.utilities.Utils;
 
 public class VectorQuantizer {
@@ -15,14 +13,14 @@ public class VectorQuantizer {
     private final int vectorSize;
     private final long[] frequencies;
 
-    private final KDTree kdTree;
+    //    private final KDTree kdTree;
 
     public VectorQuantizer(final VQCodebook codebook) {
         this.codebookVectors = codebook.getVectors();
         this.vectorSize = codebook.getVectors()[0].length;
         this.frequencies = codebook.getVectorFrequencies();
 
-        kdTree = new KDTreeBuilder(this.vectorSize, 8).buildTree(codebook.getVectors());
+        //        kdTree = new KDTreeBuilder(this.vectorSize, 8).buildTree(codebook.getVectors());
     }
 
     public int[] quantize(final int[] dataVector) {
@@ -99,11 +97,11 @@ public class VectorQuantizer {
         return indices;
     }
 
-    public int[] quantizeIntoIndicesUsingKDTree(final int[][] dataVectors, final int maxWorkerCount) {
-
-        return quantizeIntoIndicesImpl(dataVectors, maxWorkerCount, (final int[] queryVector) ->
-                kdTree.findNearestBBF(queryVector, 8));
-    }
+    //    public int[] quantizeIntoIndicesUsingKDTree(final int[][] dataVectors, final int maxWorkerCount) {
+    //
+    //        return quantizeIntoIndicesImpl(dataVectors, maxWorkerCount, (final int[] queryVector) ->
+    //                kdTree.findNearestBBF(queryVector, 8));
+    //    }
 
     public int[] quantizeIntoIndices(final int[][] dataVectors, final int maxWorkerCount) {
 
