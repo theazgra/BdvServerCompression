@@ -166,6 +166,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 quantizer = loadQuantizerFromCache();
                 huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
                 reportStatusToListeners("Cached quantizer with huffman coder created.");
+                writeQuantizerToCompressStream(quantizer, compressStream);
             } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
                 stopwatch.restart();
                 reportStatusToListeners("Training vector quantizer from middle plane.");
@@ -175,8 +176,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
                 stopwatch.stop();
                 reportStatusToListeners("Middle plane codebook created in: " + stopwatch.getElapsedTimeString());
+                writeQuantizerToCompressStream(quantizer, compressStream);
             }
-            writeQuantizerToCompressStream(quantizer, compressStream);
         }
 
         final int[] planeIndices = getPlaneIndicesForCompression(inputData);
