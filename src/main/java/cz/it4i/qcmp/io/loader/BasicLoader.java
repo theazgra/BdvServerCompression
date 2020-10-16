@@ -62,7 +62,7 @@ public abstract class BasicLoader {
         if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
             return dims.getX() - 1;
         } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-            return (dims.getX() - ((x - dims.getX()) + 1));
+            return (dims.getX() - (1 + (x % dims.getX())));
         }
         return x;
     }
@@ -77,7 +77,7 @@ public abstract class BasicLoader {
         if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
             return dims.getY() - 1;
         } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-            return (dims.getY() - ((y - dims.getY()) + 1));
+            return (dims.getY() - (1 + (y % dims.getY())));
         }
         return y;
     }
@@ -92,7 +92,7 @@ public abstract class BasicLoader {
         if (wrappingStrategy == DataWrappingStrategy.ClampToEdge) {
             return dims.getZ() - 1;
         } else if (wrappingStrategy == DataWrappingStrategy.MirroredRepeat) {
-            return (dims.getZ() - ((z - dims.getZ()) + 1));
+            return (dims.getZ() - (1 + (z % dims.getZ())));
         }
         return z;
     }
