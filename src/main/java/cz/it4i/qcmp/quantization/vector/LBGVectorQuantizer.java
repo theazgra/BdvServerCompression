@@ -35,7 +35,8 @@ public class LBGVectorQuantizer {
     public LBGVectorQuantizer(final int[][] vectors,
                               final int codebookSize,
                               final int workerCount,
-                              final V3i vectorDimensions) {
+                              final V3i vectorDimensions,
+                              final boolean createCopyOfSrcVectors) {
         assert (vectors.length > 0) : "No training vectors provided";
 
         this.vectorDimensions = vectorDimensions;
@@ -44,7 +45,7 @@ public class LBGVectorQuantizer {
 
         this.trainingVectors = new TrainingVector[vectors.length];
         for (int i = 0; i < vectors.length; i++) {
-            trainingVectors[i] = new TrainingVector(Arrays.copyOf(vectors[i], vectorSize));
+            trainingVectors[i] = new TrainingVector(createCopyOfSrcVectors ? Arrays.copyOf(vectors[i], vectorSize) : vectors[i]);
         }
 
         this.codebookSize = codebookSize;
