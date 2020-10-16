@@ -181,7 +181,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         return planeDataSizes;
     }
 
-    private int[] loadConfiguredPlanesData() throws ImageCompressionException {
+    private int[] loadConfiguredPlanesData() throws ImageCompressionException, IOException {
         final InputData inputDataInfo = options.getInputDataInfo();
         final IPlaneLoader planeLoader;
         try {
@@ -191,36 +191,32 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         }
         int[] trainData = null;
 
-        if (inputDataInfo.isPlaneIndexSet()) {
-            try {
-                reportStatusToListeners("Loading single plane data.");
-                trainData = planeLoader.loadPlaneData(inputDataInfo.getPlaneIndex());
-            } catch (final IOException e) {
-                throw new ImageCompressionException("Failed to load plane data.", e);
-            }
+        if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
+            final int middlePlaneIndex = inputDataInfo.getDimensions().getZ() / 2;
+            reportStatusToListeners("Loading single plane data.");
+            trainData = planeLoader.loadPlaneData(middlePlaneIndex);
+        } else if (inputDataInfo.isPlaneIndexSet()) {
+            reportStatusToListeners("Loading single plane data.");
+            trainData = planeLoader.loadPlaneData(inputDataInfo.getPlaneIndex());
         } else if (inputDataInfo.isPlaneRangeSet()) {
             reportStatusToListeners("Loading plane range data.");
             final int[] planes = getPlaneIndicesForCompression(options.getInputDataInfo());
-            try {
-                trainData = planeLoader.loadPlanesU16Data(planes);
-            } catch (final IOException e) {
-                e.printStackTrace();
-                throw new ImageCompressionException("Failed to load plane range data.", e);
-            }
+            trainData = planeLoader.loadPlanesU16Data(planes);
         } else {
             reportStatusToListeners("Loading all planes data.");
-            try {
-                trainData = planeLoader.loadAllPlanesU16Data();
-            } catch (final IOException e) {
-                throw new ImageCompressionException("Failed to load all planes data.", e);
-            }
+            trainData = planeLoader.loadAllPlanesU16Data();
         }
         return trainData;
     }
 
     @Override
     public void trainAndSaveCodebook() throws ImageCompressionException {
-        final int[] trainData = loadConfiguredPlanesData();
+        final int[] trainData;
+        try {
+            trainData = loadConfiguredPlanesData();
+        } catch (final IOException e) {
+            throw new ImageCompressionException("Failed to load configured plane data in SQImageCompressor.");
+        }
 
         final LloydMaxU16ScalarQuantization lloydMax = new LloydMaxU16ScalarQuantization(trainData,
                                                                                          getCodebookSize(),
