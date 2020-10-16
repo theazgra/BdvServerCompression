@@ -103,7 +103,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         if (!cacheManager.doesVQCacheExists(options.getInputDataInfo().getCacheFileName(),
                                             getCodebookSize(),
                                             options.getQuantizationVector())) {
-            reportStatusToListeners("Quantization file doesn't exist");
+            reportStatusToListeners("Codebook cache not found.");
             trainAndSaveCodebook();
         }
 
@@ -216,7 +216,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
             stopwatch.stop();
             if (options.isConsoleApplication()) {
-                System.out.println("Is console app, whyy");
                 reportStatusToListeners("Finished compression of plane %d in %s.", planeIndex, stopwatch.getElapsedTimeString());
             } else {
                 reportProgressToListeners(planeIndex, planeIndices.length,
