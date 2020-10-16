@@ -9,9 +9,12 @@ import cz.it4i.qcmp.cli.functions.EntropyCalculation;
 import cz.it4i.qcmp.compression.ImageCompressor;
 import cz.it4i.qcmp.compression.ImageDecompressor;
 import cz.it4i.qcmp.fileformat.FileExtensions;
+import cz.it4i.qcmp.utilities.ColorConsole;
+import cz.it4i.qcmp.utilities.Stopwatch;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class DataCompressor {
     public static void main(final String[] args) {
@@ -36,28 +39,36 @@ public class DataCompressor {
             return;
         }
 
-        final CompressionOptionsCLIParser compressionOptionsCLIParser = new CompressionOptionsCLIParser(cmd);
+        final CompressionOptionsCLIParser compressionOptionsCLIParsed = new CompressionOptionsCLIParser(cmd);
         // NOTE(Moravec): From this point we need to dispose of possible existing SCIFIO context.
-        if (compressionOptionsCLIParser.parseError()) {
-            System.err.println(compressionOptionsCLIParser.getParseError());
+        if (compressionOptionsCLIParsed.parseError()) {
+            System.err.println(compressionOptionsCLIParsed.getParseError());
             ScifioWrapper.dispose();
             return;
         }
 
-        if (compressionOptionsCLIParser.isVerbose()) {
-            System.out.println(compressionOptionsCLIParser.report());
+        if (compressionOptionsCLIParsed.isVerbose()) {
+            System.out.println(compressionOptionsCLIParsed.report());
         }
 
-        switch (compressionOptionsCLIParser.getMethod()) {
+        switch (compressionOptionsCLIParsed.getMethod()) {
             case Compress: {
-                final ImageCompressor compressor = new ImageCompressor(compressionOptionsCLIParser);
+                final String label =
+                        compressionOptionsCLIParsed.getQuantizationType().toString() + " " + compressionOptionsCLIParsed.getQuantizationVector().toString();
+                final Stopwatch stopwatch = Stopwatch.startNew();
+                final ImageCompressor compressor = new ImageCompressor(compressionOptionsCLIParsed);
                 if (!compressor.compress()) {
                     System.err.println("Errors occurred during compression.");
                 }
+                stopwatch.stop();
+                ColorConsole.printf(ColorConsole.Color.Green, label);
+                ColorConsole.printf(ColorConsole.Color.Green,
+                                    "Compression completed in %d ms.",
+                                    stopwatch.getElapsedInUnit(TimeUnit.MILLISECONDS));
             }
             break;
             case Decompress: {
-                final ImageDecompressor decompressor = new ImageDecompressor(compressionOptionsCLIParser);
+                final ImageDecompressor decompressor = new ImageDecompressor(compressionOptionsCLIParsed);
                 if (!decompressor.decompressToFile()) {
                     System.err.println("Errors occurred during decompression.");
                 }
@@ -65,11 +76,11 @@ public class DataCompressor {
             break;
 
             case Benchmark: {
-                CompressionBenchmark.runBenchmark(compressionOptionsCLIParser);
+                CompressionBenchmark.runBenchmark(compressionOptionsCLIParsed);
             }
             break;
             case TrainCodebook: {
-                final ImageCompressor compressor = new ImageCompressor(compressionOptionsCLIParser);
+                final ImageCompressor compressor = new ImageCompressor(compressionOptionsCLIParsed);
                 if (!compressor.trainAndSaveCodebook()) {
                     System.err.println("Errors occurred during training/saving of codebook.");
                 }
@@ -79,7 +90,7 @@ public class DataCompressor {
                 // NOTE(Moravec): Custom function class here |
                 //                                           V
                 //CustomFunctionBase customFunction = new MeasurePlaneErrorFunction(parsedCliOptions);
-                final CustomFunctionBase customFunction = new EntropyCalculation(compressionOptionsCLIParser);
+                final CustomFunctionBase customFunction = new EntropyCalculation(compressionOptionsCLIParsed);
                 if (!customFunction.run()) {
                     System.err.println("Errors occurred during custom function.");
                 }
@@ -91,11 +102,11 @@ public class DataCompressor {
             }
             break;
             case InspectFile: {
-                if (compressionOptionsCLIParser.getInputDataInfo().getFilePath().endsWith(FileExtensions.CACHE_FILE_EXT)) {
-                    QuantizationCacheManager.inspectCacheFile(compressionOptionsCLIParser.getInputDataInfo().getFilePath(),
-                                                              compressionOptionsCLIParser.isVerbose());
+                if (compressionOptionsCLIParsed.getInputDataInfo().getFilePath().endsWith(FileExtensions.CACHE_FILE_EXT)) {
+                    QuantizationCacheManager.inspectCacheFile(compressionOptionsCLIParsed.getInputDataInfo().getFilePath(),
+                                                              compressionOptionsCLIParsed.isVerbose());
                 } else {
-                    final ImageDecompressor decompressor = new ImageDecompressor(compressionOptionsCLIParser);
+                    final ImageDecompressor decompressor = new ImageDecompressor(compressionOptionsCLIParsed);
                     try {
                         System.out.println(decompressor.inspectCompressedFile());
                     } catch (final IOException e) {
