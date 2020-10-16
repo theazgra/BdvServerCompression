@@ -306,7 +306,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             }
 
             final int[] indices = quantizeVectorsImpl(quantizer, voxelData, options.getWorkerCount());
-            
+
             voxelLayersSizes[voxelLayerIndex] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
             stopwatch.stop();
             if (options.isConsoleApplication()) {
@@ -395,7 +395,10 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
     int[][] loadDataForCodebookTraining(final IPlaneLoader planeLoader) throws ImageCompressionException {
         final int[][] trainingData;
-        if (options.getInputDataInfo().isPlaneIndexSet()) {
+        if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
+            final int middlePlaneIndex = (options.getInputDataInfo().getDimensions().getZ() / 2);
+            trainingData = planeLoader.loadVectorsFromPlaneRange(options, new Range<>(middlePlaneIndex, middlePlaneIndex + 1));
+        } else if (options.getInputDataInfo().isPlaneIndexSet()) {
             reportStatusToListeners("VQ: Loading single plane data.");
             final int planeIndex = options.getInputDataInfo().getPlaneIndex();
             trainingData = planeLoader.loadVectorsFromPlaneRange(options, new Range<>(planeIndex, planeIndex + 1));
