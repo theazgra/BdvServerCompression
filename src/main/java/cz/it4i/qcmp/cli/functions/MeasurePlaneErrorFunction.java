@@ -5,6 +5,7 @@ import cz.it4i.qcmp.cli.CustomFunctionBase;
 import cz.it4i.qcmp.data.V3i;
 import cz.it4i.qcmp.io.FileInputData;
 import cz.it4i.qcmp.io.loader.RawDataLoader;
+import cz.it4i.qcmp.utilities.Stopwatch;
 import cz.it4i.qcmp.utilities.Utils;
 
 import java.io.FileOutputStream;
@@ -17,221 +18,131 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
         super(options);
     }
 
-    private final String COMP_FILE_ch0 = "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_0_16bit.raw";
-    private final String COMP_FILE_ch1 = "D:\\biology\\tiff_data\\benchmark\\fused_tp_10_ch_1_16bit.raw";
+    private final String OriginalFileForChannel0 = "D:\\biology\\tiff_data\\fused_tp_10_ch_0_16bit.raw";
+    private final String OriginalFileForChannel1 = "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit.raw";
+    private final V3i ReferenceFileDimensions = new V3i(1041, 996, 946);
+
+    private int[][] loadPlanes(final String srcFile, final V3i imageDims) throws IOException {
+        final FileInputData inputDataInfo = new FileInputData(srcFile);
+        inputDataInfo.setDimension(imageDims);
+        final RawDataLoader loader = new RawDataLoader(inputDataInfo);
+
+        return loader.loadAllPlanesTo2DArray();
+    }
+
+    private int[][] loadReferenceData(final int channel) throws IOException {
+        assert (channel == 0 || channel == 1);
+        final String referenceFilePath = (channel == 0) ? OriginalFileForChannel0 : OriginalFileForChannel1;
+        return loadPlanes(referenceFilePath, ReferenceFileDimensions);
+    }
 
     @Override
     public boolean run() {
+        final int channel = 0;
+        final String srcFolder = "C:\\tmp";
 
-
-        boolean result = true;
-
-        result &= runPlaneDifferenceForAllBits(0, "sq", "file_codebook", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(0, "vq3x3", "file_codebook", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(0, "vq9x1", "file_codebook", "D:\\biology\\tiff_data\\quantized");
-
-        result &= runPlaneDifferenceForAllBits(1, "sq", "file_codebook", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(1, "vq3x3", "file_codebook", "D:\\biology\\tiff_data\\quantized");
-        result &= runPlaneDifferenceForAllBits(1, "vq9x1", "file_codebook", "D:\\biology\\tiff_data\\quantized");
-
-        //        result &= reportPlaneDifference(
-        //                String.format("%s\\%s\\fused_tp_10_ch_%d_16bit_%s_cb4.raw",
-        //                              "D:\\biology\\tiff_data\\quantized",
-        //                              "middle_frame",
-        //                              1,
-        //                              "sq"),
-        //                String.format("%s\\%s\\plane_diff_ch%d\\%s_cb4_plane_log.data",
-        //                              "D:\\biology\\tiff_data\\quantized",
-        //                              "middle_frame",
-        //                              1,
-        //                              "sq"),
-        //                COMP_FILE_ch1);
-
-        return result;
-    }
-
-    public boolean runPlaneDifferenceForAllBits(final int channel,
-                                                final String method,
-                                                final String type,
-                                                final String folder) {
-        System.out.println(
-                String.format("runPlaneDifferenceForAllBits\n\tChannel: %d\n\tMethod: %s\n\tType: %s",
-                              channel, type, folder));
-        //        final int channel = 0;
-        assert (channel == 0 || channel == 1);
-        final String comp_file = channel == 0 ? COMP_FILE_ch0 : COMP_FILE_ch1;
-        //        final String method = "sq";
-        //        final String type = "plane_codebook";
-        //        final String folder = "D:\\biology\\tiff_data\\quantized";
-
-        if (!reportPlaneDifference(
-                String.format("%s\\%s\\fused_tp_10_ch_%d_16bit_%s_cb256.raw", folder, type, channel, method),
-                String.format("%s\\%s\\plane_diff_ch%d\\%s_cb256_plane_log.data", folder, type, channel, method),
-                comp_file)) {
+        final Stopwatch stopwatch = Stopwatch.startNew("Load reference plane data.");
+        final int[][] referenceData;
+        try {
+            referenceData = loadReferenceData(channel);
+        } catch (final IOException e) {
+            e.printStackTrace();
             return false;
         }
+        stopwatch.stop();
+        System.out.println(stopwatch);
 
-        if (!reportPlaneDifference(
-                String.format("%s\\%s\\fused_tp_10_ch_%d_16bit_%s_cb128.raw", folder, type, channel, method),
-                String.format("%s\\%s\\plane_diff_ch%d\\%s_cb128_plane_log.data", folder, type, channel, method),
-                comp_file)) {
-            return false;
+        final String[] qMethods = {"sq", "vq9x1", "vq3x3", "vq3x3x3"};
+
+        String codebookType = "global_codebook";
+        for (final String qMethod : qMethods) {
+            if (!runPlaneDifferenceForAllBits(referenceData, channel, qMethod, codebookType, srcFolder))
+                return false;
         }
 
-        if (!reportPlaneDifference(
-                String.format("%s\\%s\\fused_tp_10_ch_%d_16bit_%s_cb64.raw", folder, type, channel, method),
-                String.format("%s\\%s\\plane_diff_ch%d\\%s_cb64_plane_log.data", folder, type, channel, method),
-                comp_file)) {
-            return false;
+        codebookType = "individual_codebook";
+        for (final String qMethod : qMethods) {
+            if (qMethod.equals("vq3x3x3"))
+                continue;
+            if (!runPlaneDifferenceForAllBits(referenceData, channel, qMethod, codebookType, srcFolder))
+                return false;
         }
 
-        if (!reportPlaneDifference(
-                String.format("%s\\%s\\fused_tp_10_ch_%d_16bit_%s_cb32.raw", folder, type, channel, method),
-                String.format("%s\\%s\\plane_diff_ch%d\\%s_cb32_plane_log.data", folder, type, channel, method),
-                comp_file)) {
-            return false;
-        }
-
-        if (!reportPlaneDifference(
-                String.format("%s\\%s\\fused_tp_10_ch_%d_16bit_%s_cb16.raw", folder, type, channel, method),
-                String.format("%s\\%s\\plane_diff_ch%d\\%s_cb16_plane_log.data", folder, type, channel, method),
-                comp_file)) {
-            return false;
-        }
-
-        if (!reportPlaneDifference(
-                String.format("%s\\%s\\fused_tp_10_ch_%d_16bit_%s_cb8.raw", folder, type, channel, method),
-                String.format("%s\\%s\\plane_diff_ch%d\\%s_cb8_plane_log.data", folder, type, channel, method),
-                comp_file)) {
-            return false;
-        }
-
-        if (!reportPlaneDifference(
-                String.format("%s\\%s\\fused_tp_10_ch_%d_16bit_%s_cb4.raw", folder, type, channel, method),
-                String.format("%s\\%s\\plane_diff_ch%d\\%s_cb4_plane_log.data", folder, type, channel, method),
-                comp_file)) {
-            return false;
+        codebookType = "middle_plane_codebook";
+        for (final String qMethod : qMethods) {
+            if (qMethod.equals("vq3x3x3"))
+                continue;
+            if (!runPlaneDifferenceForAllBits(referenceData, channel, qMethod, codebookType, srcFolder))
+                return false;
         }
 
 
         return true;
     }
 
-    private boolean reportPlaneDifference(final String compressedFile, final String reportFile, final String compFile) {
-        final int workerCount = 8;
-        final V3i dims = new V3i(1041, 996, 946);
-        final int planePixelCount = dims.getX() * dims.getY();
-
-        final PlaneError[] planeErrors = new PlaneError[dims.getZ()];
-
-        final FileInputData refFileInfo = new FileInputData(compFile);
-        refFileInfo.setDimension(dims);
-        final FileInputData compFileInfo = new FileInputData(compressedFile);
-        compFileInfo.setDimension(dims);
-
-        final RawDataLoader refPlaneloader = new RawDataLoader(refFileInfo);
-        final RawDataLoader compPlaneloader = new RawDataLoader(compFileInfo);
-
-        final Thread[] workers = new Thread[workerCount];
-        final int workSize = dims.getZ() / workerCount;
-
-        for (int wId = 0; wId < workerCount; wId++) {
-            final int fromIndex = wId * workSize;
-            final int toIndex = (wId == workerCount - 1) ? dims.getZ() : (workSize + (wId * workSize));
-
-            workers[wId] = new Thread(() -> {
+    public boolean runPlaneDifferenceForAllBits(final int[][] referenceData,
+                                                final int channel,
+                                                final String quantizationMethod,
+                                                final String codebookType,
+                                                final String srcFolder) {
 
 
-                int[] originalPlaneData, compressedPlaneData;
-                for (int planeIndex = fromIndex; planeIndex < toIndex; planeIndex++) {
-                    try {
-                        originalPlaneData = refPlaneloader.loadPlaneData(planeIndex);
-                        compressedPlaneData = compPlaneloader.loadPlaneData(planeIndex);
-                    } catch (final IOException e) {
-                        e.printStackTrace();
-                        break;
-                    }
+        final String reportFilePath = String.format("D:\\biology\\benchmark\\plane_diff_ch%d_%s_%s.log",
+                                                    channel, codebookType, quantizationMethod);
 
+        final Stopwatch stopwatch = Stopwatch.startNew(String.format("Channel=%d, CodebookType=%s, QMethod=%s",
+                                                                     channel, codebookType, quantizationMethod));
+        try (final FileOutputStream fos = new FileOutputStream(reportFilePath, false);
+             final OutputStreamWriter reportWriter = new OutputStreamWriter(fos)) {
 
-                    final int[] diffData = Utils.getDifference(originalPlaneData, compressedPlaneData);
-                    Utils.applyAbsFunction(diffData);
-
-                    final double absDiffSum = Arrays.stream(diffData).mapToDouble(v -> v).sum();
-                    final double meanPixelError = absDiffSum / (double) planePixelCount;
-
-                    planeErrors[planeIndex] = new PlaneError(planeIndex, absDiffSum, meanPixelError);
+            final String template = "%s\\%s\\fused_tp_10_ch_%d_16bit_%s_%db.raw";
+            final int[] bitsPerCodebookIndices = {2, 3, 4, 5, 6, 7, 8};
+            for (final int bitsPerCodebookIndex : bitsPerCodebookIndices) {
+                final String srcFile = String.format(template, srcFolder, codebookType, channel, quantizationMethod, bitsPerCodebookIndex);
+                System.out.printf("Running plane difference for '%s', '%s', bpci=%d\n",
+                                  codebookType,
+                                  quantizationMethod,
+                                  bitsPerCodebookIndex);
+                try {
+                    reportPlaneDifference(referenceData, srcFile, reportWriter);
+                } catch (final IOException e) {
+                    e.printStackTrace();
+                    return false;
                 }
-            });
-
-            workers[wId].start();
-        }
-        try {
-            for (int wId = 0; wId < workerCount; wId++) {
-                workers[wId].join();
-            }
-        } catch (final InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        try (final FileOutputStream fos = new FileOutputStream(reportFile, false);
-             final OutputStreamWriter writer = new OutputStreamWriter(fos)) {
-
-            writer.write("PlaneIndex\tErrorSum\tMeanError\n");
-
-            for (final PlaneError planeError : planeErrors) {
-                writer.write(String.format("%d\t%.4f\t%.4f\n",
-                                           planeError.getPlaneIndex(),
-                                           planeError.getAbsoluteError(),
-                                           planeError.getMeanAbsoluteError()));
             }
 
         } catch (final IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Finished reportPlaneDifference");
+
+        stopwatch.stop();
+        System.out.println(stopwatch);
         return true;
     }
 
-    /*
-    final String[] templates = new String[]{
-                "D:\\biology\\benchmark\\jpeg_comp\\jpeg2000\\ch0_400_cr%d.%s",
-                "D:\\biology\\benchmark\\jpeg_comp\\jpeg2000\\ch1_683_cr%d.%s"
-        };
-        final String[] referenceFiles = new String[]{
-                "D:\\biology\\benchmark\\jpeg_comp\\ch0_400.raw",
-                "D:\\biology\\benchmark\\jpeg_comp\\ch1_683.raw"
-        };
-        final int[] CRS = new int[]{1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30};
-        try {
+    private void reportPlaneDifference(final int[][] referenceData,
+                                       final String testFile,
+                                       final OutputStreamWriter reportWriter) throws IOException {
 
-            for (int i = 0; i < templates.length; i++) {
-                final String refFile = referenceFiles[i];
-                final int[] refData = loadImageData(refFile);
+        final int[][] testData = loadPlanes(testFile, ReferenceFileDimensions);
 
-                for (final int cr : CRS) {
-                    final String inputFile = String.format(templates[i], cr, "raw");
+        reportWriter.write("=========================================\n");
+        reportWriter.write(testFile);
+        reportWriter.write('\n');
+        reportWriter.write("=========================================\n");
+        reportWriter.write("PlaneIndex;ErrorSum;MeanError\n");
 
-                    final int[] imageData = loadImageData(inputFile);
+        final int planePixelCount = ReferenceFileDimensions.toV2i().multiplyTogether();
+        final int[] diffData = new int[planePixelCount];
 
-                    final int[] diff = Utils.getDifference(refData, imageData);
-                    final double mse = Utils.calculateMse(diff);
+        for (int plane = 0; plane < ReferenceFileDimensions.getZ(); plane++) {
+            Utils.differenceToArray(referenceData[plane], testData[plane], diffData);
+            Utils.applyAbsFunction(diffData);
 
-                    final double psnr = Utils.calculatePsnr(mse, U16.Max);
+            final double absDiffSum = Arrays.stream(diffData).mapToDouble(v -> v).sum();
+            final double meanPixelError = absDiffSum / (double) planePixelCount;
 
-                    final String channel = new File(inputFile).getName().substring(0, 3);
-                    DecimalFormat df = new DecimalFormat("#.####");
-
-                    System.out.println(String.format("%s CR: %d\n\tMSE: %s\n\tPSNR: %s\n",
-                                                     channel, cr, df.format(mse), df.format(psnr)));
-                }
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            ScifioWrapper.dispose();
+            reportWriter.write(String.format("%d;%.4f;%.4f\n", plane, absDiffSum, meanPixelError));
         }
-    * */
-
-
+    }
 }
