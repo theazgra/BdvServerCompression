@@ -55,12 +55,17 @@ public class Utils {
 
     public static int[] getDifference(final int[] original, final int[] transformed) {
         assert (original.length == transformed.length) : "Array lengths doesn't match";
-
         final int[] difference = new int[original.length];
-        for (int i = 0; i < original.length; i++) {
-            difference[i] = (original[i] - transformed[i]);
-        }
+        differenceToArray(original, transformed, difference);
         return difference;
+    }
+
+    public static void differenceToArray(final int[] original, final int[] transformed, final int[] result) {
+        assert (original.length == transformed.length) : "Array lengths doesn't match";
+        assert (original.length == result.length) : "Array lengths doesn't match with result array.";
+        for (int i = 0; i < original.length; i++) {
+            result[i] = (original[i] - transformed[i]);
+        }
     }
 
     public static int[] asAbsoluteValues(final int[] values) {
