@@ -6,7 +6,9 @@ import cz.it4i.qcmp.io.loader.IPlaneLoader;
 import cz.it4i.qcmp.io.loader.PlaneLoaderFactory;
 import cz.it4i.qcmp.utilities.Utils;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 public class EntropyCalculation extends CustomFunctionBase {
     /**
@@ -20,6 +22,7 @@ public class EntropyCalculation extends CustomFunctionBase {
 
     @Override
     public boolean run() {
+        System.out.println("Running EntropyCalculation for " + options.getInputDataInfo().getCacheFileName());
         final IPlaneLoader loader;
         try {
             loader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
@@ -28,18 +31,23 @@ public class EntropyCalculation extends CustomFunctionBase {
             return false;
         }
 
-        for (int planeIndex = 0; planeIndex < options.getInputDataInfo().getDimensions().getZ(); planeIndex++) {
-            final int[] planeData;
-            try {
-                planeData = loader.loadPlaneData(planeIndex);
-            } catch (final IOException e) {
-                System.err.printf("Failed to load plane %d data. %s", planeIndex, e.getMessage());
-                return false;
+        try (final FileOutputStream fos = new FileOutputStream(options.getOutputFilePath(), false);
+             final OutputStreamWriter reportWriter = new OutputStreamWriter(fos)) {
+
+            reportWriter.write("Plane;Entropy\n");
+
+            for (int planeIndex = 0; planeIndex < options.getInputDataInfo().getDimensions().getZ(); planeIndex++) {
+
+                final int[] planeData = loader.loadPlaneData(planeIndex);
+                final double planeEntropy = Utils.calculateEntropy(planeData);
+                reportWriter.write(String.format("%d;%.4f\n", planeIndex, planeEntropy));
             }
 
-            final double planeEntropy = Utils.calculateEntropy(planeData);
-            System.out.printf("P: %d\tE: %.4f\n", planeIndex, planeEntropy);
+        } catch (final IOException e) {
+            e.printStackTrace();
+            return false;
         }
+
 
         return true;
     }

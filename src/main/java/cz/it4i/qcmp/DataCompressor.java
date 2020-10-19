@@ -9,12 +9,9 @@ import cz.it4i.qcmp.cli.functions.EntropyCalculation;
 import cz.it4i.qcmp.compression.ImageCompressor;
 import cz.it4i.qcmp.compression.ImageDecompressor;
 import cz.it4i.qcmp.fileformat.FileExtensions;
-import cz.it4i.qcmp.utilities.ColorConsole;
-import cz.it4i.qcmp.utilities.Stopwatch;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 public class DataCompressor {
     public static void main(final String[] args) {
@@ -55,23 +52,28 @@ public class DataCompressor {
             case Compress: {
                 final String label =
                         compressionOptionsCLIParsed.getQuantizationType().toString() + " " + compressionOptionsCLIParsed.getQuantizationVector().toString();
-                final Stopwatch stopwatch = Stopwatch.startNew();
+                //                final Stopwatch stopwatch = Stopwatch.startNew();
                 final ImageCompressor compressor = new ImageCompressor(compressionOptionsCLIParsed);
                 if (!compressor.compress()) {
                     System.err.println("Errors occurred during compression.");
                 }
-                stopwatch.stop();
-                ColorConsole.printf(ColorConsole.Color.Green, label);
-                ColorConsole.printf(ColorConsole.Color.Green,
-                                    "Compression completed in %d ms.",
-                                    stopwatch.getElapsedInUnit(TimeUnit.MILLISECONDS));
+                //                stopwatch.stop();
+                //                ColorConsole.printf(ColorConsole.Color.Green, label);
+                //                ColorConsole.printf(ColorConsole.Color.Green,
+                //                                    "Compression completed in %d ms.",
+                //                                    stopwatch.getElapsedInUnit(TimeUnit.MILLISECONDS));
             }
             break;
             case Decompress: {
+                //                final Stopwatch stopwatch = Stopwatch.startNew();
                 final ImageDecompressor decompressor = new ImageDecompressor(compressionOptionsCLIParsed);
                 if (!decompressor.decompressToFile()) {
                     System.err.println("Errors occurred during decompression.");
                 }
+                //                stopwatch.stop();
+                //                ColorConsole.printf(ColorConsole.Color.Green,
+                //                                    "Decompression completed in %d ms.",
+                //                                    stopwatch.getElapsedInUnit(TimeUnit.MILLISECONDS));
             }
             break;
 
@@ -90,8 +92,9 @@ public class DataCompressor {
                 // NOTE(Moravec): Custom function class here |
                 //                                           V
                 //CustomFunctionBase customFunction = new MeasurePlaneErrorFunction(parsedCliOptions);
-                final CustomFunctionBase customFunction = new EntropyCalculation(compressionOptionsCLIParsed);
-                if (!customFunction.run()) {
+                // final CustomFunctionBase customFunction = new EntropyCalculation(compressionOptionsCLIParsed);
+                final CustomFunctionBase cf = new EntropyCalculation(compressionOptionsCLIParsed);
+                if (!cf.run()) {
                     System.err.println("Errors occurred during custom function.");
                 }
             }
