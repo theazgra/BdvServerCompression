@@ -130,6 +130,28 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
         return values;
     }
 
+    public int[][] loadAllPlanesTo2DArray() throws IOException {
+        final V3i imageDims = inputDataInfo.getDimensions();
+        final int planePixelCount = imageDims.getX() * imageDims.getY();
+        final int planeDataSize = planePixelCount * 2;
+        final int[][] result = new int[imageDims.getZ()][];
+
+        final byte[] planeBuffer = new byte[planeDataSize];
+        try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
+
+            for (int plane = 0; plane < imageDims.getZ(); plane++) {
+                int toRead = planeDataSize;
+                while (toRead > 0) {
+                    final int read = fileStream.read(planeBuffer, planeDataSize - toRead, toRead);
+                    assert (read > 0);
+                    toRead -= read;
+                }
+                result[plane] = TypeConverter.unsignedShortBytesToIntArray(planeBuffer);
+            }
+        }
+        return result;
+    }
+
     @Override
     public int[][] loadRowVectors(final int vectorSize, final Range<Integer> planeRange) throws IOException {
         return loadRowVectorsImplByLoadPlaneData(vectorSize, planeRange);
@@ -144,4 +166,6 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
     public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
         return loadVoxelsImplByLoadPlaneData(voxelDim, planeRange);
     }
+
+
 }
