@@ -148,10 +148,21 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         final int[] planeIndices = getPlaneIndicesForCompression(options.getInputDataInfo());
         final long[] planeDataSizes = new long[planeIndices.length];
         int planeCounter = 0;
+
+
+        //        final int[][] preloadedPlaneData;
+        //        try {
+        //            preloadedPlaneData = planeLoader.loadPlanesU16DataTo2dArray(planeIndices);
+        //        } catch (final IOException ex) {
+        //            throw new ImageCompressionException("Unable to preload plane data.", ex);
+        //        }
+
+        //        final int index = 0;
         for (final int planeIndex : planeIndices) {
             stopwatch.restart();
 
             final int[] planeData;
+            //            planeData = preloadedPlaneData[index++];
             try {
                 planeData = planeLoader.loadPlaneData(planeIndex);
             } catch (final IOException ex) {

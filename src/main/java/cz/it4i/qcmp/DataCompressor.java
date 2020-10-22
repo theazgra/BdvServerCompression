@@ -5,7 +5,7 @@ import cz.it4i.qcmp.cache.QuantizationCacheManager;
 import cz.it4i.qcmp.cli.CliConstants;
 import cz.it4i.qcmp.cli.CompressionOptionsCLIParser;
 import cz.it4i.qcmp.cli.CustomFunctionBase;
-import cz.it4i.qcmp.cli.functions.EntropyCalculation;
+import cz.it4i.qcmp.cli.functions.CalculateDifference;
 import cz.it4i.qcmp.compression.ImageCompressor;
 import cz.it4i.qcmp.compression.ImageDecompressor;
 import cz.it4i.qcmp.fileformat.FileExtensions;
@@ -93,7 +93,7 @@ public class DataCompressor {
                 //                                           V
                 //CustomFunctionBase customFunction = new MeasurePlaneErrorFunction(parsedCliOptions);
                 // final CustomFunctionBase customFunction = new EntropyCalculation(compressionOptionsCLIParsed);
-                final CustomFunctionBase cf = new EntropyCalculation(compressionOptionsCLIParsed);
+                final CustomFunctionBase cf = new CalculateDifference(compressionOptionsCLIParsed);
                 if (!cf.run()) {
                     System.err.println("Errors occurred during custom function.");
                 }
