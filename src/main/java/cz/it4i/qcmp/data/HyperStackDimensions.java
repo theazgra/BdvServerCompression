@@ -82,4 +82,9 @@ public class HyperStackDimensions {
     public final int getNumberOfTimepoints() {
         return numberOfTimepoints;
     }
+
+    @Override
+    public String toString() {
+        return String.format("X=%d;Y=%d;Z=%d;T=%d", width, height, sliceCount, numberOfTimepoints);
+    }
 }
