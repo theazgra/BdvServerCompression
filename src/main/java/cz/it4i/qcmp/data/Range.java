@@ -1,5 +1,7 @@
 package cz.it4i.qcmp.data;
 
+import java.util.Objects;
+
 public final class Range<T extends Comparable<T>> {
     /**
      * Start of the interval.
@@ -43,5 +45,18 @@ public final class Range<T extends Comparable<T>> {
     @Override
     public String toString() {
         return "Range: [" + from + " - " + to + "]";
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(from, to);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj instanceof Range<?>) {
+            return hashCode() == obj.hashCode();
+        }
+        return super.equals(obj);
     }
 }

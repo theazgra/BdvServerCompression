@@ -74,7 +74,7 @@ public class V2<T> {
     public boolean equals(final Object obj) {
         if (obj instanceof V2<?>) {
             final V2<?> other = (V2<?>) obj;
-            return ((x == other.x) && (y == other.y));
+            return (x.equals(other.x) && y.equals(other.y));
         } else {
             return super.equals(obj);
         }

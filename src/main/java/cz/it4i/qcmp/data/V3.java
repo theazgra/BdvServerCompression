@@ -52,7 +52,7 @@ public class V3<T> extends V2<T> {
     public boolean equals(final Object obj) {
         if (obj instanceof V3<?>) {
             final V3<?> other = (V3<?>) obj;
-            return ((getX() == other.getX()) && (getY() == other.getY()) && (z == other.z));
+            return (getX().equals(other.getX()) && getY().equals(other.getY()) && z.equals(other.z));
         } else {
             return super.equals(obj);
         }

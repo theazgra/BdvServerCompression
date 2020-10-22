@@ -147,13 +147,14 @@ public abstract class ParseUtils {
         y = maybeY.get();
 
         if (indexes.length > 1) {
-            final Optional<Integer> maybeZ = tryParseInt(string.substring(indexes[1], indexes.length > 2 ? indexes[2] : string.length()));
+            final Optional<Integer> maybeZ = tryParseInt(string.substring(indexes[1] + 1,
+                                                                          indexes.length > 2 ? indexes[2] : string.length()));
             if (!maybeZ.isPresent())
                 return Optional.empty();
             z = maybeZ.get();
 
             if (indexes.length > 2) {
-                final Optional<Integer> maybeT = tryParseInt(string.substring(indexes[2]));
+                final Optional<Integer> maybeT = tryParseInt(string.substring(indexes[2] + 1));
                 if (!maybeT.isPresent())
                     return Optional.empty();
                 t = maybeT.get();

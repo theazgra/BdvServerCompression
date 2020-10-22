@@ -1,5 +1,7 @@
 package cz.it4i.qcmp.data;
 
+import java.util.Objects;
+
 /**
  * Class representing dimensions of the Stack or Hyperstack.
  * This terminology is taken from the ImageJ.
@@ -9,7 +11,6 @@ public class HyperStackDimensions {
     private final int height;
     private final int sliceCount;
     private final int numberOfTimepoints;
-
 
     /**
      * Create HyperStackDimensions.
@@ -86,5 +87,20 @@ public class HyperStackDimensions {
     @Override
     public String toString() {
         return String.format("X=%d;Y=%d;Z=%d;T=%d", width, height, sliceCount, numberOfTimepoints);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(width, height, sliceCount, numberOfTimepoints);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj instanceof HyperStackDimensions) {
+            final HyperStackDimensions other = (HyperStackDimensions) obj;
+            return (width == other.width && height == other.height &&
+                    sliceCount == other.sliceCount && numberOfTimepoints == other.numberOfTimepoints);
+        }
+        return super.equals(obj);
     }
 }
