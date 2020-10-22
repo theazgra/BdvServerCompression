@@ -63,6 +63,20 @@ public interface IPlaneLoader {
     int[] loadPlanesU16Data(int[] planes) throws IOException;
 
     /**
+     * Load data of multiple specified planes. This functions exists, next to loadPlaneData, because some loaders
+     * can take advantage in loading multiple planes in one call context.
+     * <p>
+     * Data are stored in 2D array.
+     *
+     * @param planes Zero based plane indices.
+     * @return Planes data concatenated in single array.
+     * @throws IOException when fails to load plane data.
+     */
+    default int[][] loadPlanesU16DataTo2dArray(final int[] planes) throws IOException {
+        throw new IOException("Not Implemented in the current loader.");
+    }
+
+    /**
      * Load all planes data of the image dataset.
      *
      * @return Planes data concatenated in single array.

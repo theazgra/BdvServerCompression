@@ -15,6 +15,10 @@ import java.util.Arrays;
 public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
     private final FileInputData inputDataInfo;
 
+    private interface StorePlaneDataCallback {
+        void store(final int planeOffset, final int[] planeData);
+    }
+
     public RawDataLoader(final FileInputData inputDataInfo) {
         super(inputDataInfo.getDimensions());
         this.inputDataInfo = inputDataInfo;
@@ -61,51 +65,71 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
         return TypeConverter.unsignedShortBytesToIntArray(buffer);
     }
 
-    @Override
-    public int[] loadPlanesU16Data(final int[] planes) throws IOException {
+    private void loadPlanesU16DataImpl(final int[] planes, final StorePlaneDataCallback storeCallback) throws IOException {
         if (planes.length < 1) {
-            return new int[0];
+            return;
         } else if (planes.length == 1) {
-            return loadPlaneData(planes[0]);
+            storeCallback.store(0, loadPlaneData(planes[0]));
         }
 
         final int planeValueCount = inputDataInfo.getDimensions().getX() * inputDataInfo.getDimensions().getY();
-        final long planeDataSize = 2 * (long) planeValueCount;
+        final int planeDataSize = 2 * planeValueCount;
 
-        final long totalValueCount = (long) planeValueCount * planes.length;
-
-        if (totalValueCount > (long) Integer.MAX_VALUE) {
-            throw new IOException("Integer count is too big.");
-        }
-
-        final int[] values = new int[(int) totalValueCount];
+        final byte[] planeBuffer = new byte[planeDataSize];
 
         Arrays.sort(planes);
-
-        try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
-             final DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
-
+        int planeOffset = 0;
+        try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
             int lastIndex = 0;
-            int valIndex = 0;
-
             for (final int planeIndex : planes) {
                 // Skip specific number of bytes to get to the next plane.
                 final int requestedSkip = (planeIndex == 0) ? 0 : ((planeIndex - lastIndex) - 1) * (int) planeDataSize;
                 lastIndex = planeIndex;
 
-                final int actualSkip = dis.skipBytes(requestedSkip);
+                final long actualSkip = fileStream.skip(requestedSkip);
                 if (requestedSkip != actualSkip) {
                     throw new IOException("Skip operation failed.");
                 }
 
-                for (int i = 0; i < planeValueCount; i++) {
-                    values[valIndex++] = dis.readUnsignedShort();
+                int toRead = planeDataSize;
+                while (toRead > 0) {
+                    final int read = fileStream.read(planeBuffer, planeDataSize - toRead, toRead);
+                    assert (read > 0);
+                    toRead -= read;
                 }
 
+                storeCallback.store(planeOffset, TypeConverter.unsignedShortBytesToIntArray(planeBuffer));
+                ++planeOffset;
             }
         }
+    }
 
-        return values;
+    @Override
+    public int[][] loadPlanesU16DataTo2dArray(final int[] planes) throws IOException {
+        final int[][] data = new int[planes.length][];
+
+        loadPlanesU16DataImpl(planes, (index, planeData) -> {
+            data[index] = planeData;
+        });
+
+        return data;
+    }
+
+    @Override
+    public int[] loadPlanesU16Data(final int[] planes) throws IOException {
+
+        final int planeValueCount = inputDataInfo.getDimensions().getX() * inputDataInfo.getDimensions().getY();
+        final long totalValueCount = (long) planeValueCount * planes.length;
+        if (totalValueCount > (long) Integer.MAX_VALUE) {
+            throw new IOException("Integer count is too big.");
+        }
+        final int[] data = new int[(int) totalValueCount];
+
+        loadPlanesU16DataImpl(planes, (index, planeData) -> {
+            System.arraycopy(planeData, 0, data, (index * planeValueCount), planeValueCount);
+        });
+
+        return data;
     }
 
     @Override
