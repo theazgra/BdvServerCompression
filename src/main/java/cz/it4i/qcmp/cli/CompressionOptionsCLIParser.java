@@ -204,17 +204,15 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
 
 
     private void parseSCIFIOFileArguments(final StringBuilder errorBuilder, final String[] inputFileArguments) {
-        getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.SCIFIOLoader);
         final Reader reader;
         try {
-            reader = ScifioWrapper.getReader(getInputDataInfo().getFilePath());
+            reader = ScifioWrapper.getReader(inputFileArguments[0]);
         } catch (final IOException | FormatException e) {
             parseErrorOccurred = true;
             errorBuilder.append("Failed to get SCIFIO reader for file.\n");
             errorBuilder.append(e.getMessage());
             return;
         }
-
 
         final int imageCount = reader.getImageCount();
         if (imageCount != 1) {
@@ -255,6 +253,7 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
         setInputDataInfo(new FileInputData(inputFileArguments[0], new HyperStackDimensions((int) planeWidth,
                                                                                            (int) planeHeight,
                                                                                            (int) planeCount)));
+        getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.SCIFIOLoader);
 
         if (inputFileArguments.length > 1) {
             parseInputFilePlaneOptions(errorBuilder, inputFileArguments, 1);
