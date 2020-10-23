@@ -3,6 +3,7 @@ package cz.it4i.qcmp.cli;
 import cz.it4i.qcmp.ScifioWrapper;
 import cz.it4i.qcmp.compression.CompressionOptions;
 import cz.it4i.qcmp.compression.CompressorDecompressorBase;
+import cz.it4i.qcmp.data.HyperStackDimensions;
 import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.data.V2i;
 import cz.it4i.qcmp.data.V3i;
@@ -178,18 +179,17 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
             return;
         }
 
-        final FileInputData fileInputData = new FileInputData(inputFileArguments[0]);
-        setInputDataInfo(fileInputData);
 
         // Decompress and Inspect methods doesn't require additional file information.
         if ((method == ProgramMethod.Decompress) || (method == ProgramMethod.InspectFile)) {
+            setInputDataInfo(new FileInputData(inputFileArguments[0], null));
             return;
         }
 
         // Check if input file exists.
-        if (!new File(fileInputData.getFilePath()).exists()) {
+        if (!new File(inputFileArguments[0]).exists()) {
             parseErrorOccurred = true;
-            errorBuilder.append("Input file doesn't exist. Provided path: '").append(fileInputData.getFilePath()).append("'\n");
+            errorBuilder.append("Input file doesn't exist. Provided path: '").append(inputFileArguments[0]).append("'\n");
             return;
         }
 
@@ -214,6 +214,7 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
             errorBuilder.append(e.getMessage());
             return;
         }
+
 
         final int imageCount = reader.getImageCount();
         if (imageCount != 1) {
@@ -251,11 +252,9 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
             return;
         }
 
-        getInputDataInfo().setDimension(new V3i(
-                (int) planeWidth,
-                (int) planeHeight,
-                (int) planeCount
-        ));
+        setInputDataInfo(new FileInputData(inputFileArguments[0], new HyperStackDimensions((int) planeWidth,
+                                                                                           (int) planeHeight,
+                                                                                           (int) planeCount)));
 
         if (inputFileArguments.length > 1) {
             parseInputFilePlaneOptions(errorBuilder, inputFileArguments, 1);
@@ -272,10 +271,10 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
             return;
         }
         getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.RawDataLoader);
-        final Optional<V3i> parsedImageDims = ParseUtils.tryParseV3i(inputFileArguments[1], 'x');
 
-        if (parsedImageDims.isPresent()) {
-            getInputDataInfo().setDimension(parsedImageDims.get());
+        final Optional<HyperStackDimensions> parsedDatasetDims = ParseUtils.tryParseHyperStackDimensions(inputFileArguments[1], 'x');
+        if (parsedDatasetDims.isPresent()) {
+            setInputDataInfo(new FileInputData(inputFileArguments[0], parsedDatasetDims.get()));
         } else {
             parseErrorOccurred = true;
             errorBuilder.append("Failed to parse image dimensions of format DxDxD. Got: ")
