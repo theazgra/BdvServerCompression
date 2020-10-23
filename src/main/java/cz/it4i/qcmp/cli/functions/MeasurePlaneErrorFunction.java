@@ -2,7 +2,7 @@ package cz.it4i.qcmp.cli.functions;
 
 import cz.it4i.qcmp.cli.CompressionOptionsCLIParser;
 import cz.it4i.qcmp.cli.CustomFunctionBase;
-import cz.it4i.qcmp.data.V3i;
+import cz.it4i.qcmp.data.HyperStackDimensions;
 import cz.it4i.qcmp.io.FileInputData;
 import cz.it4i.qcmp.io.loader.RawDataLoader;
 import cz.it4i.qcmp.utilities.Stopwatch;
@@ -20,12 +20,10 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
 
     private final String OriginalFileForChannel0 = "D:\\biology\\tiff_data\\fused_tp_10_ch_0_16bit.raw";
     private final String OriginalFileForChannel1 = "D:\\biology\\tiff_data\\fused_tp_10_ch_1_16bit.raw";
-    private final V3i ReferenceFileDimensions = new V3i(1041, 996, 946);
+    private final HyperStackDimensions ReferenceFileDimensions = new HyperStackDimensions(1041, 996, 946);
 
-    private int[][] loadPlanes(final String srcFile, final V3i imageDims) throws IOException {
-        final FileInputData inputDataInfo = new FileInputData(srcFile);
-        inputDataInfo.setDimension(imageDims);
-        final RawDataLoader loader = new RawDataLoader(inputDataInfo);
+    private int[][] loadPlanes(final String srcFile, final HyperStackDimensions imageDims) throws IOException {
+        final RawDataLoader loader = new RawDataLoader(new FileInputData(srcFile, imageDims));
 
         return loader.loadAllPlanesTo2DArray();
     }
@@ -132,10 +130,10 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
         reportWriter.write("=========================================\n");
         reportWriter.write("PlaneIndex;ErrorSum;MeanError\n");
 
-        final int planePixelCount = ReferenceFileDimensions.toV2i().multiplyTogether();
+        final int planePixelCount = ReferenceFileDimensions.getNumberOfElementsInDimension(2);
         final int[] diffData = new int[planePixelCount];
 
-        for (int plane = 0; plane < ReferenceFileDimensions.getZ(); plane++) {
+        for (int plane = 0; plane < ReferenceFileDimensions.getPlaneCount(); plane++) {
             Utils.differenceToArray(referenceData[plane], testData[plane], diffData);
             Utils.applyAbsFunction(diffData);
 

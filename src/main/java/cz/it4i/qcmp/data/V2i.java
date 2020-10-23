@@ -22,6 +22,6 @@ public final class V2i extends V2<Integer> {
     }
 
     public final int multiplyTogether() {
-        return getX() * getY();
+        return Math.multiplyExact(getX(), getY());
     }
 }

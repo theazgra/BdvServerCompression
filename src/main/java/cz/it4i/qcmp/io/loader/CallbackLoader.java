@@ -8,7 +8,7 @@ import cz.it4i.qcmp.io.CallbackInputData;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class CallbackLoader extends BasicLoader implements IPlaneLoader {
+public class CallbackLoader extends GenericLoader implements IPlaneLoader {
 
     private final CallbackInputData callbackInputData;
     private final CallbackInputData.LoadCallback pixelLoad;
@@ -27,12 +27,12 @@ public class CallbackLoader extends BasicLoader implements IPlaneLoader {
 
     @Override
     public int[] loadPlaneData(final int plane) {
-        final int planePixelCount = dims.getX() * dims.getY();
+        final int planePixelCount = dims.getNumberOfElementsInDimension(2);
         final int[] planeData = new int[planePixelCount];
 
         int index = 0;
-        for (int y = 0; y < dims.getY(); y++) {
-            for (int x = 0; x < dims.getX(); x++) {
+        for (int y = 0; y < dims.getHeight(); y++) {
+            for (int x = 0; x < dims.getWidth(); x++) {
                 planeData[index++] = pixelLoad.getValueAt(x, y, plane);
             }
         }
@@ -45,10 +45,10 @@ public class CallbackLoader extends BasicLoader implements IPlaneLoader {
             return new int[0];
         } else if (planes.length == 1) {
             return loadPlaneData(planes[0]);
-        } else if (planes.length == dims.getZ()) {
+        } else if (planes.length == dims.getPlaneCount()) {
             return loadAllPlanesU16Data();
         }
-        final int planePixelCount = dims.getX() * dims.getY();
+        final int planePixelCount = dims.getNumberOfElementsInDimension(2);
         final long totalValueCount = (long) planePixelCount * (long) planes.length;
         if (totalValueCount > (long) Integer.MAX_VALUE) {
             throw new IOException("Unable to load image data for planes, file size is too big.");
@@ -59,8 +59,8 @@ public class CallbackLoader extends BasicLoader implements IPlaneLoader {
         final int[] destBuffer = new int[(int) totalValueCount];
         int index = 0;
         for (final int plane : planes) {
-            for (int y = 0; y < dims.getY(); y++) {
-                for (int x = 0; x < dims.getX(); x++) {
+            for (int y = 0; y < dims.getHeight(); y++) {
+                for (int x = 0; x < dims.getWidth(); x++) {
                     destBuffer[index++] = pixelLoad.getValueAt(x, y, plane);
                 }
             }
@@ -69,17 +69,14 @@ public class CallbackLoader extends BasicLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[] loadAllPlanesU16Data() throws IOException {
-        final long totalValueCount = dims.multiplyTogether();
-        if (totalValueCount > (long) Integer.MAX_VALUE) {
-            throw new IOException("Unable to load all image data, file size is too big.");
-        }
+    public int[] loadAllPlanesU16Data() {
+        final long totalValueCount = dims.getNumberOfElementsInDimension(3);
 
         final int[] destBuffer = new int[(int) totalValueCount];
         int index = 0;
-        for (int z = 0; z < dims.getZ(); z++) {
-            for (int y = 0; y < dims.getY(); y++) {
-                for (int x = 0; x < dims.getX(); x++) {
+        for (int z = 0; z < dims.getPlaneCount(); z++) {
+            for (int y = 0; y < dims.getHeight(); y++) {
+                for (int x = 0; x < dims.getWidth(); x++) {
                     destBuffer[index++] = pixelLoad.getValueAt(x, y, z);
                 }
             }

@@ -2,6 +2,7 @@ package cz.it4i.qcmp.io.loader;
 
 import cz.it4i.qcmp.compression.CompressionOptions;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
+import cz.it4i.qcmp.data.HyperStackDimensions;
 import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.data.V2i;
 import cz.it4i.qcmp.data.V3i;
@@ -41,7 +42,7 @@ public interface IPlaneLoader {
      *
      * @return Image of the loader image.
      */
-    V3i getImageDimensions();
+    HyperStackDimensions getDatasetDimensions();
 
     /**
      * Load specified plane data.
@@ -92,7 +93,7 @@ public interface IPlaneLoader {
      * @throws IOException When fails to load plane data.
      */
     default int[][] loadRowVectors(final int vectorSize) throws IOException {
-        return loadRowVectors(vectorSize, new Range<>(0, getImageDimensions().getZ()));
+        return loadRowVectors(vectorSize, new Range<>(0, getDatasetDimensions().getPlaneCount()));
     }
 
     /**
@@ -113,7 +114,7 @@ public interface IPlaneLoader {
      * @throws IOException When fails to load plane data.
      */
     default int[][] loadBlocks(final V2i blockDim) throws IOException {
-        return loadBlocks(blockDim, new Range<>(0, getImageDimensions().getZ()));
+        return loadBlocks(blockDim, new Range<>(0, getDatasetDimensions().getPlaneCount()));
     }
 
     /**
@@ -134,7 +135,7 @@ public interface IPlaneLoader {
      * @throws IOException when fails to load plane data.
      */
     default int[][] loadVoxels(final V3i voxelDim) throws IOException {
-        return loadVoxels(voxelDim, new Range<>(0, getImageDimensions().getZ()));
+        return loadVoxels(voxelDim, new Range<>(0, getDatasetDimensions().getPlaneCount()));
     }
 
     /**

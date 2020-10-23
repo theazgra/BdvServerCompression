@@ -54,7 +54,7 @@ public class SQBenchmark extends BenchmarkBase {
             quantizer = new ScalarQuantizer(codebook);
             System.out.println("Created quantizer from cache");
         } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
-            final int middlePlaneIndex = rawImageDims.getZ() / 2;
+            final int middlePlaneIndex = rawImageDims.getPlaneCount() / 2;
 
             final int[] middlePlaneData;
             try {

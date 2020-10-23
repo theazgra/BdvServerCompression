@@ -36,7 +36,7 @@ public class EntropyCalculation extends CustomFunctionBase {
 
             reportWriter.write("Plane;Entropy\n");
 
-            for (int planeIndex = 0; planeIndex < options.getInputDataInfo().getDimensions().getZ(); planeIndex++) {
+            for (int planeIndex = 0; planeIndex < options.getInputDataInfo().getDimensions().getPlaneCount(); planeIndex++) {
 
                 final int[] planeData = loader.loadPlaneData(planeIndex);
                 final double planeEntropy = Utils.calculateEntropy(planeData);

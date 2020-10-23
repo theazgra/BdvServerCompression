@@ -119,7 +119,7 @@ public abstract class CompressorDecompressorBase {
             }
             return indices;
         } else {
-            return generateAllPlaneIndices(inputData.getDimensions().getZ());
+            return generateAllPlaneIndices(inputData.getDimensions().getPlaneCount());
         }
     }
 
@@ -144,7 +144,7 @@ public abstract class CompressorDecompressorBase {
      * @return Index of the middle plane.
      */
     protected int getMiddlePlaneIndex() {
-        return (options.getInputDataInfo().getDimensions().getZ() / 2);
+        return (options.getInputDataInfo().getDimensions().getPlaneCount() / 2);
     }
 
     /**

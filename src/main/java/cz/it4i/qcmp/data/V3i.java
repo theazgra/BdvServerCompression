@@ -32,7 +32,7 @@ public final class V3i extends V3<Integer> {
         return new V2i(getX(), getY());
     }
 
-    public final long multiplyTogether() {
-        return ((long) getX() * (long) getY() * (long) getZ());
+    public final int multiplyTogether() {
+        return Math.multiplyExact(getZ(), Math.multiplyExact(getX(), getY()));
     }
 }

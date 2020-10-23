@@ -2,8 +2,8 @@ package cz.it4i.qcmp.benchmark;
 
 import cz.it4i.qcmp.cli.CompressionOptionsCLIParser;
 import cz.it4i.qcmp.compression.CompressionOptions;
+import cz.it4i.qcmp.data.HyperStackDimensions;
 import cz.it4i.qcmp.data.ImageU16;
-import cz.it4i.qcmp.data.V3i;
 import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.io.RawDataIO;
 import cz.it4i.qcmp.quantization.QTrainIteration;
@@ -26,7 +26,7 @@ abstract class BenchmarkBase {
     protected final String inputFile;
     protected final String outputDirectory;
     protected final int[] planes;
-    protected final V3i rawImageDims;
+    protected final HyperStackDimensions rawImageDims;
 
     protected final int codebookSize;
     protected final String cacheFolder;
@@ -60,9 +60,8 @@ abstract class BenchmarkBase {
                 this.planes[i] = from + i;
             }
         } else {
-            final int planeCount = ifi.getDimensions().getZ();
-            this.planes = new int[planeCount];
-            for (int i = 0; i < planeCount; i++) {
+            this.planes = new int[ifi.getDimensions().getPlaneCount()];
+            for (int i = 0; i < ifi.getDimensions().getPlaneCount(); i++) {
                 this.planes[i] = i;
             }
         }
@@ -118,11 +117,11 @@ abstract class BenchmarkBase {
      * @return True if file was saved.
      */
     protected boolean saveQuantizedPlaneData(final int[] data, final String filename) {
-        final ImageU16 img = new ImageU16(rawImageDims.getX(), rawImageDims.getY(), data);
+        final ImageU16 img = new ImageU16(rawImageDims.getWidth(), rawImageDims.getHeight(), data);
         try {
             // NOTE(Moravec): Use big endian so that FIJI can read the image.
             RawDataIO.writeImageU16(getFileNamePathIntoOutDir(filename), img, false);
-            System.out.println(String.format("Saved %s", filename));
+            System.out.printf("Saved %s\n", filename);
         } catch (final Exception e) {
             e.printStackTrace();
             return false;
@@ -146,8 +145,8 @@ abstract class BenchmarkBase {
         final String diffFilePath = getFileNamePathIntoOutDir(diffFile);
         final String absDiffFilePath = getFileNamePathIntoOutDir(absDiffFile);
 
-        final ImageU16 img = new ImageU16(rawImageDims.getX(),
-                                          rawImageDims.getY(),
+        final ImageU16 img = new ImageU16(rawImageDims.getWidth(),
+                                          rawImageDims.getHeight(),
                                           absDifferenceData);
         try {
             // NOTE(Moravec): Use little endian so that gnuplot can read the array.

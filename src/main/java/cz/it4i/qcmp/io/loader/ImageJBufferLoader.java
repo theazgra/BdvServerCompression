@@ -5,20 +5,17 @@ import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.data.V2i;
 import cz.it4i.qcmp.data.V3i;
 import cz.it4i.qcmp.io.BufferInputData;
-import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.utilities.TypeConverter;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoader {
+public final class ImageJBufferLoader extends GenericLoader implements IPlaneLoader {
     private final BufferInputData bufferInputData;
 
     public ImageJBufferLoader(final BufferInputData bufferDataInfo) {
         super(bufferDataInfo.getDimensions());
         this.bufferInputData = bufferDataInfo;
-        // FIXME: Support more pixel types.
-        assert (this.bufferInputData.getPixelType() == InputData.PixelType.Gray16);
     }
 
     @Override
@@ -37,9 +34,9 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
         final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(plane);
         return TypeConverter.shortArrayToIntArray(srcBuffer);
     }
-    
+
     @Override
-    protected int valueAt(int plane, int x, int y, int width) {
+    protected int valueAt(final int plane, final int x, final int y, final int width) {
         return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer(plane))[Block.index(x, y, width)]);
     }
 
@@ -49,20 +46,15 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
             return new int[0];
         } else if (planes.length == 1) {
             return loadPlaneData(planes[0]);
-        } else if (planes.length == bufferInputData.getDimensions().getZ()) { // Maybe?
+        } else if (planes.length == dims.getPlaneCount()) {
             return loadAllPlanesU16Data();
         }
-        final int planePixelCount =
-                bufferInputData.getDimensions().getX() * bufferInputData.getDimensions().getY();
-        final long totalValueCount = (long) planePixelCount * (long) planes.length;
-
-        if (totalValueCount > (long) Integer.MAX_VALUE) {
-            throw new IOException("Unable to load image data for planes, file size is too big.");
-        }
+        final int planePixelCount = dims.getNumberOfElementsInDimension(2);
+        final int totalValueCount = Math.multiplyExact(planePixelCount, planes.length);
 
         Arrays.sort(planes);
 
-        final int[] destBuffer = new int[(int) totalValueCount];
+        final int[] destBuffer = new int[totalValueCount];
         int destOffset = 0;
         for (final int planeIndex : planes) {
             final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(planeIndex);
@@ -74,17 +66,12 @@ public final class ImageJBufferLoader extends BasicLoader implements IPlaneLoade
 
     @Override
     public int[] loadAllPlanesU16Data() throws IOException {
-        final V3i imageDims = bufferInputData.getDimensions();
-        final long totalValueCount = imageDims.multiplyTogether();
-        final int planePixelCount = imageDims.getX() * imageDims.getY();
+        final int planePixelCount = dims.getNumberOfElementsInDimension(2);
+        final int totalValueCount = dims.getNumberOfElementsInDimension(3);
 
-        if (totalValueCount > (long) Integer.MAX_VALUE) {
-            throw new IOException("Unable to load all image data, file size is too big.");
-        }
-
-        final int[] destBuffer = new int[(int) totalValueCount];
+        final int[] destBuffer = new int[totalValueCount];
         int destOffset = 0;
-        for (int planeIndex = 0; planeIndex < imageDims.getZ(); planeIndex++) {
+        for (int planeIndex = 0; planeIndex < dims.getPlaneCount(); planeIndex++) {
             final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(planeIndex);
             copyShortArrayIntoBuffer(srcBuffer, destBuffer, destOffset, planePixelCount);
             destOffset += planePixelCount;

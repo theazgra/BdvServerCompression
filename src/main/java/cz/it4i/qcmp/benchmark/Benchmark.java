@@ -51,7 +51,7 @@ public class Benchmark extends BenchmarkBase {
             return;
         }
 
-        decompressOps.setInputDataInfo(new FileInputData(qcmpFilePath));
+        decompressOps.setInputDataInfo(new FileInputData(qcmpFilePath, null));
 
         final String decompressedFile = getFileNamePathIntoOutDir(String.format(QUANTIZED_FILE_TEMPLATE,
                                                                                 options.getInputDataInfo().getPlaneIndex(),

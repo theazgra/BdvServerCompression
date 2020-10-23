@@ -185,9 +185,9 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         if (streamMode) {
             try {
                 // Image dimensions
-                compressStream.writeShort(inputData.getDimensions().getX());
-                compressStream.writeShort(inputData.getDimensions().getY());
-                compressStream.writeShort(inputData.getDimensions().getZ());
+                compressStream.writeShort(inputData.getDimensions().getWidth());
+                compressStream.writeShort(inputData.getDimensions().getHeight());
+                compressStream.writeShort(inputData.getDimensions().getPlaneCount());
 
                 // Write voxel layer in stream mode.
                 compressStream.writeShort(planeIndices.length);
@@ -266,13 +266,13 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         }
 
         final int voxelLayerDepth = options.getQuantizationVector().getZ();
-        final int voxelLayerCount = calculateVoxelLayerCount(inputData.getDimensions().getZ(), voxelLayerDepth);
+        final int voxelLayerCount = calculateVoxelLayerCount(inputData.getDimensions().getPlaneCount(), voxelLayerDepth);
         if (streamMode) {
             try {
                 // Image dimensions
-                compressStream.writeShort(inputData.getDimensions().getX());
-                compressStream.writeShort(inputData.getDimensions().getY());
-                compressStream.writeShort(inputData.getDimensions().getZ());
+                compressStream.writeShort(inputData.getDimensions().getWidth());
+                compressStream.writeShort(inputData.getDimensions().getHeight());
+                compressStream.writeShort(inputData.getDimensions().getPlaneCount());
 
                 // Write voxel layer in stream mode.
                 compressStream.writeShort(voxelLayerCount);
@@ -294,7 +294,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             final int fromZ = (voxelLayerIndex * voxelLayerDepth);
 
             final int toZ = (voxelLayerIndex == voxelLayerCount - 1)
-                    ? inputData.getDimensions().getZ()
+                    ? inputData.getDimensions().getPlaneCount()
                     : (voxelLayerDepth + (voxelLayerIndex * voxelLayerDepth));
             assert (toZ >= fromZ);
 
@@ -407,7 +407,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     int[][] loadDataForCodebookTraining(final IPlaneLoader planeLoader) throws ImageCompressionException {
         final int[][] trainingData;
         if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
-            final int middlePlaneIndex = (options.getInputDataInfo().getDimensions().getZ() / 2);
+            final int middlePlaneIndex = getMiddlePlaneIndex();
             trainingData = planeLoader.loadVectorsFromPlaneRange(options, new Range<>(middlePlaneIndex, middlePlaneIndex + 1));
         } else if (options.getInputDataInfo().isPlaneIndexSet()) {
             reportStatusToListeners("VQ: Loading single plane data.");
@@ -419,7 +419,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         } else {
             reportStatusToListeners("VQ: Loading all planes data.");
             trainingData = planeLoader.loadVectorsFromPlaneRange(options,
-                                                                 new Range<>(0, options.getInputDataInfo().getDimensions().getZ()));
+                                                                 new Range<>(0,
+                                                                             options.getInputDataInfo().getDimensions().getPlaneCount()));
         }
         return trainingData;
     }

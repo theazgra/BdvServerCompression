@@ -131,7 +131,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
         }
         duplicateAllListeners(imageCompressor);
 
-        long[] planeDataSizes = null;
+        final long[] planeDataSizes;
 
         try (final FileOutputStream fos = new FileOutputStream(options.getOutputFilePath(), false);
              final DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(fos, 8192))) {
@@ -193,7 +193,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
             final Range<Integer> planeRange = options.getInputDataInfo().getPlaneRange();
             return ((planeRange.getTo() + 1) - planeRange.getFrom());
         } else {
-            return options.getInputDataInfo().getDimensions().getZ();
+            return options.getInputDataInfo().getDimensions().getPlaneCount();
         }
     }
 
@@ -225,8 +225,8 @@ public class ImageCompressor extends CompressorDecompressorBase {
 
         header.setCodebookPerPlane(options.getCodebookType() == CompressionOptions.CodebookType.Individual);
 
-        header.setImageSizeX(options.getInputDataInfo().getDimensions().getX());
-        header.setImageSizeY(options.getInputDataInfo().getDimensions().getY());
+        header.setImageSizeX(options.getInputDataInfo().getDimensions().getWidth());
+        header.setImageSizeY(options.getInputDataInfo().getDimensions().getHeight());
         header.setImageSizeZ(getNumberOfPlanes());
 
         header.setVectorDimension(options.getQuantizationVector());

@@ -9,71 +9,106 @@ import java.util.Objects;
 public class HyperStackDimensions {
     private final int width;
     private final int height;
-    private final int sliceCount;
+    private final int planeCount;
     private final int numberOfTimepoints;
 
     /**
      * Create HyperStackDimensions.
      *
-     * @param width              Width of the slice.
-     * @param height             Height of the slice.
-     * @param sliceCount         Slice count in the stack.
+     * @param width              Width of the plane.
+     * @param height             Height of the plane.
+     * @param planeCount         Plane count in the stack.
      * @param numberOfTimepoints Number of stack timepoints.
      */
-    public HyperStackDimensions(final int width, final int height, final int sliceCount, final int numberOfTimepoints) {
+    public HyperStackDimensions(final int width, final int height, final int planeCount, final int numberOfTimepoints) {
         this.width = width;
         this.height = height;
-        this.sliceCount = sliceCount;
+        this.planeCount = planeCount;
         this.numberOfTimepoints = numberOfTimepoints;
+    }
+
+    /**
+     * Get number of elements in hyperstack with dimensionality = dimension.
+     * When calculating the element count, overflow is checked. This is because result of this
+     * function is usually used in places where we want to allocate memory.
+     *
+     * @param dimension Maximum dimension.
+     * @return Number of elements.
+     */
+    @SuppressWarnings("DuplicateExpressions")
+    public int getNumberOfElementsInDimension(final int dimension) {
+        switch (dimension) {
+            case 1:
+                return width;
+            case 2:
+                return Math.multiplyExact(width, height);
+            case 3:
+                return Math.multiplyExact(planeCount, Math.multiplyExact(width, height));
+            case 4:
+                return Math.multiplyExact(numberOfTimepoints, Math.multiplyExact(planeCount, Math.multiplyExact(width, height)));
+            default:
+                assert (false) : "Wrong dimension in getNumberOfElementsInDimension";
+                return -1;
+        }
     }
 
     /**
      * Create HyperStackDimensions for single timepoint.
      *
-     * @param width      Width of the slice.
-     * @param height     Height of the slice.
-     * @param sliceCount Slice count in the stack.
+     * @param width      Width of the plane.
+     * @param height     Height of the plane.
+     * @param planeCount Plane count in the stack.
      */
-    public HyperStackDimensions(final int width, final int height, final int sliceCount) {
-        this(width, height, sliceCount, 1);
+    public HyperStackDimensions(final int width, final int height, final int planeCount) {
+        this(width, height, planeCount, 1);
     }
 
     /**
-     * Create HyperStackDimensions for single slice and single timepoint.
+     * Create HyperStackDimensions for single plane and single timepoint.
      *
-     * @param width  Width of the slice.
-     * @param height Height of the slice.
+     * @param width  Width of the plane.
+     * @param height Height of the plane.
      */
     public HyperStackDimensions(final int width, final int height) {
         this(width, height, 1, 1);
     }
 
     /**
-     * Get single slice width. (X)
+     * Get single plane width. (X)
      *
-     * @return Slice width.
+     * @return Plane width.
      */
     public final int getWidth() {
         return width;
     }
 
     /**
-     * Get single slice height. (Y)
+     * Get single plane height. (Y)
      *
-     * @return Slice height.
+     * @return Plane height.
      */
     public final int getHeight() {
         return height;
     }
 
     /**
-     * Get slice count. (Z, Plane Count)
+     * Get plane count. (Z)
      *
-     * @return Slice count.
+     * @return Plane count.
      */
-    public final int getSliceCount() {
-        return sliceCount;
+    public final int getPlaneCount() {
+        return planeCount;
     }
+
+    /**
+     * Get dimensions of the single plane.
+     *
+     * @return Plane dimensions.
+     */
+    public V2i getPlaneDimensions() {
+        return new V2i(width, height);
+    }
+
 
     /**
      * Get number of timepoints of the stack.
@@ -86,12 +121,12 @@ public class HyperStackDimensions {
 
     @Override
     public String toString() {
-        return String.format("X=%d;Y=%d;Z=%d;T=%d", width, height, sliceCount, numberOfTimepoints);
+        return String.format("X=%d;Y=%d;Z=%d;T=%d", width, height, planeCount, numberOfTimepoints);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(width, height, sliceCount, numberOfTimepoints);
+        return Objects.hash(width, height, planeCount, numberOfTimepoints);
     }
 
     @Override
@@ -99,7 +134,7 @@ public class HyperStackDimensions {
         if (obj instanceof HyperStackDimensions) {
             final HyperStackDimensions other = (HyperStackDimensions) obj;
             return (width == other.width && height == other.height &&
-                    sliceCount == other.sliceCount && numberOfTimepoints == other.numberOfTimepoints);
+                    planeCount == other.planeCount && numberOfTimepoints == other.numberOfTimepoints);
         }
         return super.equals(obj);
     }

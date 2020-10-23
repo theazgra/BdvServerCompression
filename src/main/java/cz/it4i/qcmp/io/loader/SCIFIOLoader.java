@@ -12,7 +12,7 @@ import io.scif.Reader;
 import java.io.IOException;
 import java.util.Arrays;
 
-public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
+public final class SCIFIOLoader extends GenericLoader implements IPlaneLoader {
     private final FileInputData inputDataInfo;
     private final Reader reader;
 
@@ -55,7 +55,7 @@ public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
             return loadPlaneData(planes[0]);
         }
 
-        final int planeValueCount = inputDataInfo.getDimensions().getX() * inputDataInfo.getDimensions().getY();
+        final int planeValueCount = dims.getNumberOfElementsInDimension(2);
         final long planeDataSize = 2 * (long) planeValueCount;
 
         final long totalValueCount = (long) planeValueCount * planes.length;
@@ -87,9 +87,8 @@ public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
 
     @Override
     public int[] loadAllPlanesU16Data() throws IOException {
-        final V3i imageDims = inputDataInfo.getDimensions();
-        final long planePixelCount = (long) imageDims.getX() * (long) imageDims.getY();
-        final long dataSize = planePixelCount * (long) imageDims.getZ();
+        final long planePixelCount = dims.getNumberOfElementsInDimension(2);
+        final long dataSize = planePixelCount * (long) dims.getPlaneCount();
 
         if (dataSize > (long) Integer.MAX_VALUE) {
             throw new IOException("FileSize is too big.");
@@ -97,7 +96,7 @@ public final class SCIFIOLoader extends BasicLoader implements IPlaneLoader {
 
         final int[] values = new int[(int) dataSize];
         byte[] planeBytes;
-        for (int plane = 0; plane < imageDims.getZ(); plane++) {
+        for (int plane = 0; plane < dims.getPlaneCount(); plane++) {
             try {
                 planeBytes = reader.openPlane(0, plane).getBytes();
             } catch (final FormatException e) {

@@ -203,7 +203,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         int[] trainData = null;
 
         if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
-            final int middlePlaneIndex = inputDataInfo.getDimensions().getZ() / 2;
+            final int middlePlaneIndex = getMiddlePlaneIndex();
             reportStatusToListeners("Loading single plane data.");
             trainData = planeLoader.loadPlaneData(middlePlaneIndex);
         } else if (inputDataInfo.isPlaneIndexSet()) {

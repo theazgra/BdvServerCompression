@@ -12,7 +12,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
+public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
     private final FileInputData inputDataInfo;
 
     private interface StorePlaneDataCallback {
@@ -36,8 +36,8 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
         final byte[] buffer;
 
         try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
-            final long planeSize = (long) dims.getX() * (long) dims.getY() * 2;
-            final long expectedFileSize = planeSize * dims.getZ();
+            final long planeSize = dims.getNumberOfElementsInDimension(2) * 2;
+            final long expectedFileSize = planeSize * dims.getPlaneCount();
             final long fileSize = fileStream.getChannel().size();
 
             if (expectedFileSize != fileSize) {
@@ -72,7 +72,7 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
             storeCallback.store(0, loadPlaneData(planes[0]));
         }
 
-        final int planeValueCount = inputDataInfo.getDimensions().getX() * inputDataInfo.getDimensions().getY();
+        final int planeValueCount = dims.getNumberOfElementsInDimension(2);
         final int planeDataSize = 2 * planeValueCount;
 
         final byte[] planeBuffer = new byte[planeDataSize];
@@ -117,13 +117,10 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
 
     @Override
     public int[] loadPlanesU16Data(final int[] planes) throws IOException {
+        final int planeValueCount = dims.getNumberOfElementsInDimension(2);
+        final int totalValueCount = dims.getNumberOfElementsInDimension(3);
 
-        final int planeValueCount = inputDataInfo.getDimensions().getX() * inputDataInfo.getDimensions().getY();
-        final long totalValueCount = (long) planeValueCount * planes.length;
-        if (totalValueCount > (long) Integer.MAX_VALUE) {
-            throw new IOException("Integer count is too big.");
-        }
-        final int[] data = new int[(int) totalValueCount];
+        final int[] data = new int[totalValueCount];
 
         loadPlanesU16DataImpl(planes, (index, planeData) -> {
             System.arraycopy(planeData, 0, data, (index * planeValueCount), planeValueCount);
@@ -134,19 +131,16 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
 
     @Override
     public int[] loadAllPlanesU16Data() throws IOException {
-        final V3i imageDims = inputDataInfo.getDimensions();
-        final long dataSize = (long) imageDims.getX() * (long) imageDims.getY() * (long) imageDims.getZ();
+        final int dataElementCount = dims.getNumberOfElementsInDimension(3);
 
-        if (dataSize > (long) Integer.MAX_VALUE) {
-            throw new IOException("RawFile size is too big.");
-        }
 
-        final int[] values = new int[(int) dataSize];
+        final int[] values = new int[(int) dataElementCount];
 
+        // TODO(Moravec): dis.readUnsignedShort() should be replaced with .read()!
         try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
              final DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 
-            for (int i = 0; i < (int) dataSize; i++) {
+            for (int i = 0; i < (int) dataElementCount; i++) {
                 values[i] = dis.readUnsignedShort();
             }
         }
@@ -155,15 +149,14 @@ public final class RawDataLoader extends BasicLoader implements IPlaneLoader {
     }
 
     public int[][] loadAllPlanesTo2DArray() throws IOException {
-        final V3i imageDims = inputDataInfo.getDimensions();
-        final int planePixelCount = imageDims.getX() * imageDims.getY();
+        final int planePixelCount = dims.getNumberOfElementsInDimension(2);
         final int planeDataSize = planePixelCount * 2;
-        final int[][] result = new int[imageDims.getZ()][];
+        final int[][] result = new int[dims.getPlaneCount()][];
 
         final byte[] planeBuffer = new byte[planeDataSize];
         try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
 
-            for (int plane = 0; plane < imageDims.getZ(); plane++) {
+            for (int plane = 0; plane < dims.getPlaneCount(); plane++) {
                 int toRead = planeDataSize;
                 while (toRead > 0) {
                     final int read = fileStream.read(planeBuffer, planeDataSize - toRead, toRead);

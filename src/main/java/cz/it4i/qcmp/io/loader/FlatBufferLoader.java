@@ -13,7 +13,7 @@ import java.util.Arrays;
 /**
  * This loader is used when the entire dataset is stored in single buffer (array).
  */
-public class FlatBufferLoader extends BasicLoader implements IPlaneLoader {
+public class FlatBufferLoader extends GenericLoader implements IPlaneLoader {
     /**
      * Flat buffer information.
      */
@@ -27,7 +27,7 @@ public class FlatBufferLoader extends BasicLoader implements IPlaneLoader {
     public FlatBufferLoader(final FlatBufferInputData bufferDataInfo) {
         super(bufferDataInfo.getDimensions());
         this.bufferInputData = bufferDataInfo;
-        planePixelCount = dims.getX() * dims.getY();
+        planePixelCount = dims.getNumberOfElementsInDimension(2);
     }
 
     @Override
@@ -68,18 +68,15 @@ public class FlatBufferLoader extends BasicLoader implements IPlaneLoader {
             return new int[0];
         } else if (planes.length == 1) {
             return loadPlaneData(planes[0]);
-        } else if (planes.length == bufferInputData.getDimensions().getZ()) { // Maybe?
+        } else if (planes.length == bufferInputData.getDimensions().getPlaneCount()) {
             return loadAllPlanesU16Data();
         }
-        final long totalValueCount = (long) planePixelCount * (long) planes.length;
-        if (totalValueCount > (long) Integer.MAX_VALUE) {
-            throw new IOException("Unable to load image data for planes, file size is too big.");
-        }
+        final int totalValueCount = Math.multiplyExact(planePixelCount, planes.length);
 
         Arrays.sort(planes);
 
         final short[] flatBuffer = (short[]) bufferInputData.getPixelBuffer();
-        final int[] destBuffer = new int[(int) totalValueCount];
+        final int[] destBuffer = new int[totalValueCount];
         int destOffset = 0;
         for (final int planeIndex : planes) {
             final int planeOffset = planeIndex * planePixelCount;
