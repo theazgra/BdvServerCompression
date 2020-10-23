@@ -1,6 +1,6 @@
 package cz.it4i.qcmp.io;
 
-import cz.it4i.qcmp.data.V3i;
+import cz.it4i.qcmp.data.HyperStackDimensions;
 
 /**
  * Input data backed by the buffer object.
@@ -17,19 +17,16 @@ public class BufferInputData extends InputData {
     /**
      * Create input data backed by buffer object.
      *
-     * @param imageBuffers    Image buffer references.
-     * @param imageDimensions Image dimensions.
-     * @param pixelType       Image pixel type.
-     * @param cacheHint       Name of the image used in caching.
+     * @param imageBuffers      Image buffer references.
+     * @param datasetDimensions Dataset dimensions.
+     * @param cacheHint         Name of the image used in caching.
      */
     public BufferInputData(final Object[] imageBuffers,
-                           final V3i imageDimensions,
-                           final PixelType pixelType,
+                           final HyperStackDimensions datasetDimensions,
                            final String cacheHint) {
+        super(datasetDimensions);
         this.imageBuffers = imageBuffers;
         setDataLoaderType(DataLoaderType.ImageJBufferLoader);
-        setDimension(imageDimensions);
-        setPixelType(pixelType);
         this.cacheHint = cacheHint;
     }
 

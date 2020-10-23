@@ -1,8 +1,7 @@
 package cz.it4i.qcmp.io;
 
-/**
- * Input data backed by the file.
- */
+import cz.it4i.qcmp.data.HyperStackDimensions;
+
 public class FileInputData extends InputData {
 
     /**
@@ -13,16 +12,19 @@ public class FileInputData extends InputData {
     /**
      * Create input data backed by data file.
      *
-     * @param filePath
+     * @param filePath          Path to the file.
+     * @param datasetDimensions Dataset dimensions.
      */
-    public FileInputData(final String filePath) {
+    public FileInputData(final String filePath,
+                         final HyperStackDimensions datasetDimensions) {
+        super(datasetDimensions);
         this.filePath = filePath;
     }
 
     /**
      * Get path to the data file.
      *
-     * @return
+     * @return Path to data file.
      */
     @Override
     public String getFilePath() {

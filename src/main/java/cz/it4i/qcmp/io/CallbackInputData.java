@@ -1,6 +1,6 @@
 package cz.it4i.qcmp.io;
 
-import cz.it4i.qcmp.data.V3i;
+import cz.it4i.qcmp.data.HyperStackDimensions;
 
 public class CallbackInputData extends InputData {
 
@@ -22,14 +22,21 @@ public class CallbackInputData extends InputData {
         int getValueAt(final int x, final int y, final int z);
     }
 
+    /**
+     * Create very generic loader, which load data by executing callbacks with parameters.
+     *
+     * @param pixelLoadCallback Object with callbacks.
+     * @param datasetDimensions Dataset dimensions.
+     * @param cacheHint         Qcmp cache file name.
+     */
     public CallbackInputData(final LoadCallback pixelLoadCallback,
-                             final V3i dimensions,
+                             final HyperStackDimensions datasetDimensions,
                              final String cacheHint) {
+        super(datasetDimensions);
         this.pixelLoadCallback = pixelLoadCallback;
         this.cacheHint = cacheHint;
         setDataLoaderType(DataLoaderType.CallbackLoader);
         setPixelType(PixelType.Gray16);
-        setDimension(dimensions);
     }
 
     @Override
@@ -37,6 +44,11 @@ public class CallbackInputData extends InputData {
         return cacheHint;
     }
 
+    /**
+     * Get the pixel value callback object.
+     *
+     * @return Callback object.
+     */
     public final LoadCallback getPixelLoadCallback() {
         return pixelLoadCallback;
     }

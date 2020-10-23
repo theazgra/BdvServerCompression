@@ -1,6 +1,6 @@
 package cz.it4i.qcmp.io;
 
-import cz.it4i.qcmp.data.V3i;
+import cz.it4i.qcmp.data.HyperStackDimensions;
 
 /**
  * Input data backed by the single buffer object.
@@ -20,19 +20,16 @@ public class FlatBufferInputData extends InputData {
     /**
      * Create input data backed by buffer object.
      *
-     * @param imageBuffer     Image buffer reference.
-     * @param imageDimensions Image dimensions.
-     * @param pixelType       Image pixel type.
-     * @param cacheHint       Name of the image used in caching.
+     * @param imageBuffer       Image buffer reference.
+     * @param datasetDimensions Dataset dimensions.
+     * @param cacheHint         Name of the image used in caching.
      */
     public FlatBufferInputData(final Object imageBuffer,
-                               final V3i imageDimensions,
-                               final PixelType pixelType,
+                               final HyperStackDimensions datasetDimensions,
                                final String cacheHint) {
+        super(datasetDimensions);
         this.imageBuffer = imageBuffer;
         setDataLoaderType(DataLoaderType.FlatBufferLoader);
-        setDimension(imageDimensions);
-        setPixelType(pixelType);
         this.cacheHint = cacheHint;
     }
 

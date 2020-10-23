@@ -1,7 +1,7 @@
 package cz.it4i.qcmp.io;
 
+import cz.it4i.qcmp.data.HyperStackDimensions;
 import cz.it4i.qcmp.data.Range;
-import cz.it4i.qcmp.data.V3i;
 
 /**
  * Information about the input file.
@@ -15,6 +15,7 @@ public abstract class InputData {
         CallbackLoader
     }
 
+    // NOTE(Moravec): Supporting this will need a lot of work. If only we had C++ templates.
     public enum PixelType {
         Gray16,
         AnythingElse
@@ -32,9 +33,9 @@ public abstract class InputData {
     private PixelType pixelType = PixelType.Gray16;
 
     /**
-     * Image dimension.
+     * Dataset dimensions.
      */
-    private V3i dimension;
+    private HyperStackDimensions dimension;
 
     /**
      * Index of the plane to compress.
@@ -46,6 +47,15 @@ public abstract class InputData {
      */
     Range<Integer> planeRange = null;
 
+    /**
+     * Create InputData object with dataset dimensions.
+     *
+     * @param datasetDimensions Dataset dimensions.
+     */
+    public InputData(final HyperStackDimensions datasetDimensions) {
+        this.dimension = datasetDimensions;
+    }
+
 
     public boolean isPlaneIndexSet() {
         return (planeIndex != null);
@@ -55,12 +65,11 @@ public abstract class InputData {
         return (planeRange != null);
     }
 
-    public void setDimension(final V3i dimension) {
+    public void setDimension(final HyperStackDimensions dimension) {
         this.dimension = dimension;
     }
 
-
-    public V3i getDimensions() {
+    public HyperStackDimensions getDimensions() {
         return dimension;
     }
 
@@ -96,11 +105,10 @@ public abstract class InputData {
         this.pixelType = pixelType;
     }
 
-
     /**
-     * Override in FileInputData!!!
+     * This is mostly used by loaders which are backed by file.
      *
-     * @return null!
+     * @return Basic non-overloaded versions always returns null.
      */
     public String getFilePath() {
         return null;
