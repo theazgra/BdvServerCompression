@@ -160,4 +160,36 @@ public class Utils {
         }
         return Math.sqrt(sum);
     }
+
+    /**
+     * Returns the product of the arguments,
+     * throwing an exception if the result overflows an {@code int}.
+     *
+     * @param numbers values to multiply
+     * @return the result
+     * @throws ArithmeticException if the result overflows an int
+     */
+    public static int multiplyExact(final int... numbers) throws ArithmeticException {
+        int result = numbers[0];
+        for (int i = 1; i < numbers.length; i++) {
+            result = Math.multiplyExact(result, numbers[i]);
+        }
+        return result;
+    }
+
+    /**
+     * Returns the product of the arguments,
+     * throwing an exception if the result overflows an {@code int}.
+     *
+     * @param numbers values to multiply
+     * @return the result
+     * @throws ArithmeticException if the result overflows an int
+     */
+    public static long multiplyExact(final long... numbers) throws ArithmeticException {
+        long result = numbers[0];
+        for (int i = 1; i < numbers.length; i++) {
+            result = Math.multiplyExact(result, numbers[i]);
+        }
+        return result;
+    }
 }

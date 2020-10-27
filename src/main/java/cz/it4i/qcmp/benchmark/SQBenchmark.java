@@ -37,6 +37,7 @@ public class SQBenchmark extends BenchmarkBase {
         if (planes.length < 1) {
             return;
         }
+
         final boolean dirCreated = new File(this.outputDirectory).mkdirs();
         System.out.println(String.format("|CODEBOOK| = %d", codebookSize));
         ScalarQuantizer quantizer = null;

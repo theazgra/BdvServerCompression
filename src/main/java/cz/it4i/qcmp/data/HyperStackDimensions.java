@@ -1,5 +1,7 @@
 package cz.it4i.qcmp.data;
 
+import cz.it4i.qcmp.utilities.Utils;
+
 import java.util.Objects;
 
 /**
@@ -11,6 +13,29 @@ public class HyperStackDimensions {
     private final int height;
     private final int planeCount;
     private final int numberOfTimepoints;
+    private final int numberOfChannels;
+
+    /**
+     * Create HyperStackDimensions.
+     *
+     * @param width              Width of the plane.
+     * @param height             Height of the plane.
+     * @param planeCount         Plane count in the stack.
+     * @param numberOfTimepoints Number of stack timepoints.
+     * @param channelCount       Number of image channels.
+     */
+    public HyperStackDimensions(final int width,
+                                final int height,
+                                final int planeCount,
+                                final int numberOfTimepoints,
+                                final int channelCount) {
+        assert (channelCount == 1) : "QcmpCompressionLibrary support only single channel datasets.";
+        this.width = width;
+        this.height = height;
+        this.planeCount = planeCount;
+        this.numberOfTimepoints = numberOfTimepoints;
+        this.numberOfChannels = channelCount;
+    }
 
     /**
      * Create HyperStackDimensions.
@@ -20,36 +45,11 @@ public class HyperStackDimensions {
      * @param planeCount         Plane count in the stack.
      * @param numberOfTimepoints Number of stack timepoints.
      */
-    public HyperStackDimensions(final int width, final int height, final int planeCount, final int numberOfTimepoints) {
-        this.width = width;
-        this.height = height;
-        this.planeCount = planeCount;
-        this.numberOfTimepoints = numberOfTimepoints;
-    }
-
-    /**
-     * Get number of elements in hyperstack with dimensionality = dimension.
-     * When calculating the element count, overflow is checked. This is because result of this
-     * function is usually used in places where we want to allocate memory.
-     *
-     * @param dimension Maximum dimension.
-     * @return Number of elements.
-     */
-    @SuppressWarnings("DuplicateExpressions")
-    public int getNumberOfElementsInDimension(final int dimension) {
-        switch (dimension) {
-            case 1:
-                return width;
-            case 2:
-                return Math.multiplyExact(width, height);
-            case 3:
-                return Math.multiplyExact(planeCount, Math.multiplyExact(width, height));
-            case 4:
-                return Math.multiplyExact(numberOfTimepoints, Math.multiplyExact(planeCount, Math.multiplyExact(width, height)));
-            default:
-                assert (false) : "Wrong dimension in getNumberOfElementsInDimension";
-                return -1;
-        }
+    public HyperStackDimensions(final int width,
+                                final int height,
+                                final int planeCount,
+                                final int numberOfTimepoints) {
+        this(width, height, planeCount, numberOfTimepoints, 1);
     }
 
     /**
@@ -60,7 +60,7 @@ public class HyperStackDimensions {
      * @param planeCount Plane count in the stack.
      */
     public HyperStackDimensions(final int width, final int height, final int planeCount) {
-        this(width, height, planeCount, 1);
+        this(width, height, planeCount, 1, 1);
     }
 
     /**
@@ -70,7 +70,46 @@ public class HyperStackDimensions {
      * @param height Height of the plane.
      */
     public HyperStackDimensions(final int width, final int height) {
-        this(width, height, 1, 1);
+        this(width, height, 1, 1, 1);
+    }
+
+    /**
+     * Create HyperStackDimensions from ij.ImagePlus dimensions array.
+     *
+     * @param imagePlusDimensions ImagePlus dimensions.
+     * @return Correct HyperStackDimensions.
+     */
+    public static HyperStackDimensions createFromImagePlusDimensions(final int[] imagePlusDimensions) {
+        // NOTE(Moravec):  ij.ImagePlus dimensions array = (width, height, nChannels, nSlices, nFrames)
+        return new HyperStackDimensions(imagePlusDimensions[0],
+                                        imagePlusDimensions[1],
+                                        imagePlusDimensions[3],
+                                        imagePlusDimensions[4],
+                                        imagePlusDimensions[2]);
+    }
+
+    /**
+     * Get number of elements in hyperstack with dimensionality = dimension.
+     * When calculating the element count, overflow is checked. This is because result of this
+     * function is usually used in places where we want to allocate memory.
+     *
+     * @param dimension Maximum dimension.
+     * @return Number of elements.
+     */
+    public int getNumberOfElementsInDimension(final int dimension) {
+        switch (dimension) {
+            case 1:
+                return width;
+            case 2:
+                return Math.multiplyExact(width, height);
+            case 3:
+                return Utils.multiplyExact(width, height, planeCount);
+            case 4:
+                return Utils.multiplyExact(width, height, planeCount, numberOfChannels);
+            default:
+                assert (false) : "Wrong dimension in getNumberOfElementsInDimension";
+                return -1;
+        }
     }
 
     /**
@@ -109,6 +148,14 @@ public class HyperStackDimensions {
         return new V2i(width, height);
     }
 
+    /**
+     * Get number of channels in the dataset.
+     *
+     * @return Channel count.
+     */
+    public int getNumberOfChannels() {
+        return numberOfChannels;
+    }
 
     /**
      * Get number of timepoints of the stack.

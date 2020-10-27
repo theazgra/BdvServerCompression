@@ -85,7 +85,7 @@
 
     <groupId>cz.it4i</groupId>
     <artifactId>QcmpCompression</artifactId>
-    <version>0.5-SNAPSHOT</version>
+    <version>0.5.5-EXP-SNAPSHOT</version>
     <build>
         <plugins>
             <plugin>
@@ -157,7 +157,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>RELEASE</version>
+            <version>5.7.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
