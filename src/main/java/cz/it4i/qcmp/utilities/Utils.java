@@ -13,8 +13,7 @@ public class Utils {
     }
 
     public static double calculatePsnr(final double mse, final int signalMax) {
-        final double psnr = 10.0 * Math.log10((Math.pow(signalMax, 2) / mse));
-        return psnr;
+        return (10.0 * Math.log10((Math.pow(signalMax, 2) / mse)));
     }
 
     public static <T> boolean arrayContains(final T[] array, final T element) {
@@ -141,8 +140,7 @@ public class Utils {
         for (final int val : difference) {
             sum += Math.pow(val, 2);
         }
-        final double mse = (sum / (double) difference.length);
-        return mse;
+        return (sum / (double) difference.length);
     }
 
     /**
