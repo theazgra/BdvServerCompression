@@ -14,6 +14,7 @@ import cz.it4i.qcmp.utilities.Utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 
 public class Benchmark extends BenchmarkBase {
@@ -79,15 +80,34 @@ public class Benchmark extends BenchmarkBase {
         final int[] quantizedData = TypeConverter.shortArrayToIntArray(maybeDataset.get().getPlaneData(0));
 
         final int[] diffArray = Utils.getDifference(originalData, quantizedData);
-        final double mse = Utils.calculateMse(diffArray);
-        final double PSNR = Utils.calculatePsnr(mse, U16.Max);
-        System.out.printf("MSE: %.4f\tPSNR: %.4f(dB)%n", mse, PSNR);
-
-        final int[] absDifferenceData = Utils.asAbsoluteValues(diffArray);
 
         final String diffFilePath = getFileNamePathIntoOutDir(String.format(DIFFERENCE_FILE_TEMPLATE,
                                                                             options.getInputDataInfo().getPlaneIndex(),
                                                                             codebookSize));
+
+        try {
+            RawDataIO.writeDataI32(diffFilePath, diffArray, true);
+            System.out.println("Saved difference to: " + diffFilePath);
+        } catch (final IOException e) {
+            e.printStackTrace();
+            System.err.println("Failed to save difference data to: " + diffFilePath);
+        }
+
+        final double mse = Utils.calculateMse(diffArray);
+        final double PSNR = Utils.calculatePsnr(mse, U16.Max);
+
+        assert (options.getInputDataInfo().getDimensions().toV2i().multiplyTogether() == diffArray.length);
+        Utils.applyAbsFunction(diffArray);
+        final double absDiffSum = Arrays.stream(diffArray).mapToDouble(v -> v).sum();
+        final double mae = absDiffSum / (double) quantizedData.length;
+
+
+        System.out.printf("BPCI: %d\tMAE: %.4f\tMSE: %.4f\tPSNR: %.4f(dB)\n", options.getBitsPerCodebookIndex(), mae, mse, PSNR);
+
+        //        System.out.printf("MSE: %.4f\tPSNR: %.4f(dB)%n", mse, PSNR);
+
+        final int[] absDifferenceData = Utils.asAbsoluteValues(diffArray);
+
 
         final String absDiffFilePath = getFileNamePathIntoOutDir(String.format(ABSOLUTE_DIFFERENCE_FILE_TEMPLATE,
                                                                                options.getInputDataInfo().getPlaneIndex(),
@@ -97,9 +117,6 @@ public class Benchmark extends BenchmarkBase {
             // NOTE(Moravec): Use little endian so that gnuplot can read the array.
             RawDataIO.writeBytesToFile(absDiffFilePath, TypeConverter.unsignedShortArrayToByteArray(absDifferenceData, true));
             System.out.println("Saved absolute difference to: " + absDiffFilePath);
-
-            RawDataIO.writeDataI32(diffFilePath, diffArray, true);
-            System.out.println("Saved difference to: " + absDiffFilePath);
         } catch (final IOException e) {
             System.err.println("Failed to save difference.");
             e.printStackTrace();
