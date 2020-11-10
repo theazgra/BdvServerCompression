@@ -27,7 +27,7 @@ public final class SCIFIOLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    protected int valueAt(final int plane, final int x, final int y, final int width) {
+    protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int width) {
         new Exception().printStackTrace(System.err);
         assert (false) : "SCIFIOLoader shouldn't use valueAt impl methods!";
         return -1;

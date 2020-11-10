@@ -70,11 +70,12 @@ public interface IPlaneLoader {
      * <p>
      * Data are stored in 2D array.
      *
-     * @param planes Zero based plane indices.
+     * @param timepoint Zero based timepoint.
+     * @param planes    Zero based plane indices.
      * @return Planes data concatenated in single array.
      * @throws IOException when fails to load plane data.
      */
-    default int[][] loadPlanesU16DataTo2dArray(final int[] planes) throws IOException {
+    default int[][] loadPlanesU16DataTo2dArray(final int timepoint, final int[] planes) throws IOException {
         throw new IOException("Not Implemented in the current loader.");
     }
 

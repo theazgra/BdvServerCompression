@@ -455,6 +455,8 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
 
 
         sb.append("InputFile: ").append(getInputDataInfo().getFilePath()).append('\n');
+        if (getInputDataInfo().getDimensions() != null)
+            sb.append("Dimensions: ").append(getInputDataInfo().getDimensions()).append('\n');
         sb.append("Output: ").append(getOutputFilePath()).append('\n');
         sb.append("BitsPerCodebookIndex: ").append(getBitsPerCodebookIndex()).append('\n');
 

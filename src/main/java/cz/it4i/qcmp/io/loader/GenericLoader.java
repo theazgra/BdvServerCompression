@@ -37,7 +37,7 @@ abstract class GenericLoader {
      */
     public abstract int[] loadPlaneData(final int timepoint, final int plane) throws IOException;
 
-    protected abstract int valueAt(final int plane, final int x, final int y, final int width);
+    protected abstract int valueAt(int timepoint, final int plane, final int x, final int y, final int width);
 
     /**
      * Wrap column (x) index based on specified wrapping strategy.
@@ -142,7 +142,7 @@ abstract class GenericLoader {
                         }
 
                         // TODO(Moravec): dims.getHeight() should probably be dims.getWidth()! Check this!
-                        rowVectors[vectorIndex][vectorX] = valueAt(plane, srcX, row, dims.getHeight());
+                        rowVectors[vectorIndex][vectorX] = valueAt(0, plane, srcX, row, dims.getHeight());
                     }
                     ++vectorIndex;
                 }
@@ -151,7 +151,9 @@ abstract class GenericLoader {
         return rowVectors;
     }
 
-    protected int[][] loadBlocksImplByLoadPlaneData(final int timepoint, final V2i blockDim, final Range<Integer> planeRange) throws IOException {
+    protected int[][] loadBlocksImplByLoadPlaneData(final int timepoint,
+                                                    final V2i blockDim,
+                                                    final Range<Integer> planeRange) throws IOException {
         final int blockSize = blockDim.multiplyTogether();
         final int planeCount = planeRange.getTo() - planeRange.getFrom();
         final int blockCount = planeCount * Block.calculateRequiredChunkCount(dims.getPlaneDimensions(), blockDim);
@@ -211,7 +213,7 @@ abstract class GenericLoader {
                     srcX = wrapColumnIndex(srcX);
                 }
 
-                block[Block.index(x, y, blockDim.getX())] = valueAt(planeIndex, srcX, srcY, dims.getWidth());
+                block[Block.index(x, y, blockDim.getX())] = valueAt(0, planeIndex, srcX, srcY, dims.getWidth());
             }
         }
     }
@@ -277,7 +279,7 @@ abstract class GenericLoader {
                         srcX = wrapColumnIndex(srcX);
                     }
 
-                    voxel[Voxel.dataIndex(x, y, z, voxelDim)] = valueAt(srcZ, srcX, srcY, dims.getWidth());
+                    voxel[Voxel.dataIndex(x, y, z, voxelDim)] = valueAt(0, srcZ, srcX, srcY, dims.getWidth());
                 }
             }
         }
@@ -356,7 +358,10 @@ abstract class GenericLoader {
         return voxels;
     }
 
-    private void preloadPlanesData(final int[][] planesData, final int timepoint, final int planeOffset, final int count) throws IOException {
+    private void preloadPlanesData(final int[][] planesData,
+                                   final int timepoint,
+                                   final int planeOffset,
+                                   final int count) throws IOException {
         for (int i = 0; i < count; i++) {
             if (planeOffset + i < dims.getPlaneCount())
                 planesData[i] = loadPlaneData(timepoint, planeOffset + i);
@@ -383,7 +388,9 @@ abstract class GenericLoader {
      * @param planeRange Range of planes to load voxels from.
      * @return Voxel data arranged in arrays.
      */
-    protected int[][] loadVoxelsImplByLoadPlaneData(final V3i voxelDim, final int timepoint, final Range<Integer> planeRange) throws IOException {
+    protected int[][] loadVoxelsImplByLoadPlaneData(final V3i voxelDim,
+                                                    final int timepoint,
+                                                    final Range<Integer> planeRange) throws IOException {
         final int[][] voxels = allocateVoxelArray(voxelDim, planeRange);
         int voxelIndex = 0;
 

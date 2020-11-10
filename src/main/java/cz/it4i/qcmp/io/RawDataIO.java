@@ -31,4 +31,7 @@ public class RawDataIO {
     }
 
 
+    public static void write(final String outFile, final int[] sliceData, final boolean littleEndian) throws IOException {
+        writeBytesToFile(outFile, TypeConverter.unsignedShortArrayToByteArray(sliceData, littleEndian));
+    }
 }
