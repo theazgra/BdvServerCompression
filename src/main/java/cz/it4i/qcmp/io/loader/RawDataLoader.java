@@ -6,14 +6,12 @@ import cz.it4i.qcmp.data.V3i;
 import cz.it4i.qcmp.io.FileInputData;
 import cz.it4i.qcmp.utilities.TypeConverter;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 
 public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
     private final FileInputData inputDataInfo;
+    private final int planeDataSize;
 
     private interface StorePlaneDataCallback {
         void store(final int planeOffset, final int[] planeData);
@@ -22,40 +20,46 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
     public RawDataLoader(final FileInputData inputDataInfo) {
         super(inputDataInfo.getDimensions());
         this.inputDataInfo = inputDataInfo;
+        planeDataSize = Math.multiplyExact(inputDataInfo.getDimensions().getNumberOfElementsInDimension(2), 2);
     }
 
     @Override
-    protected int valueAt(final int plane, final int x, final int y, final int width) {
+    protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int width) {
         new Exception().printStackTrace(System.err);
         assert (false) : "RawDataLoader shouldn't use valueAt impl methods!";
         return -1;
     }
 
+    /**
+     * Calculate offset in the file to read plane at specified timepoint and plane index.
+     *
+     * @param timepoint Zero based timepoint.
+     * @param plane     Zero based plane index.
+     * @return Offset in the file.
+     */
+    private int calculatePlaneDataOffset(final int timepoint, final int plane) {
+        return (2 * timepoint * dims.getNumberOfElementsInDimension(3)) + (plane * planeDataSize);
+    }
+
+
     @Override
     public int[] loadPlaneData(final int timepoint, final int plane) throws IOException {
         final byte[] buffer;
+        final long expectedFileSize = dims.getDataSize();
 
         try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
-            final long planeSize = dims.getNumberOfElementsInDimension(2) * 2;
-            final long expectedFileSize = dims.getDataSize();
-            final long fileSize = fileStream.getChannel().size();
-
-
-            if (expectedFileSize != fileSize) {
-                throw new IOException(
-                        "File specified by `rawFile` doesn't contains raw data for image of dimensions " + dims.toString());
+            if (expectedFileSize != fileStream.getChannel().size()) {
+                throw new IOException("Specified RAW file dimensions '" + dims + "' are nor correct.");
             }
 
-            final long planeOffset = plane * planeSize;
+            final long planeOffset = calculatePlaneDataOffset(timepoint, plane);
 
-            buffer = new byte[(int) planeSize];
-            if (fileStream.skip(planeOffset) != planeOffset) {
-                throw new IOException("Failed to skip.");
-            }
+            buffer = new byte[(int) planeDataSize];
+            forceSkip(fileStream, planeOffset);
 
-            int toRead = (int) planeSize;
+            int toRead = planeDataSize;
             while (toRead > 0) {
-                final int read = fileStream.read(buffer, (int) planeSize - toRead, toRead);
+                final int read = fileStream.read(buffer, planeDataSize - toRead, toRead);
                 if (read < 0) {
                     throw new IOException("Read wrong number of bytes.");
                 }
@@ -65,31 +69,44 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
         return TypeConverter.unsignedShortBytesToIntArray(buffer);
     }
 
-    private void loadPlanesU16DataImpl(final int[] planes, final StorePlaneDataCallback storeCallback) throws IOException {
+    /**
+     * Force skip requested number of bytes in file stream.
+     *
+     * @param fileStream Stream to skip in.
+     * @param byteCount  Number of bytes to skip.
+     * @throws IOException when skip fails.
+     */
+    private void forceSkip(final InputStream fileStream, final long byteCount) throws IOException {
+        if (fileStream.skip(byteCount) != byteCount) {
+            throw new IOException("Skip operation failed. Didn't skip requested number of bytes.");
+        }
+    }
+
+    private void loadPlanesU16DataImpl(final int timepoint,
+                                       final int[] planes,
+                                       final StorePlaneDataCallback storeCallback) throws IOException {
         if (planes.length < 1) {
             return;
         } else if (planes.length == 1) {
-            storeCallback.store(0, loadPlaneData(0, planes[0]));
+            storeCallback.store(0, loadPlaneData(timepoint, planes[0]));
         }
-
-        final int planeValueCount = dims.getNumberOfElementsInDimension(2);
-        final int planeDataSize = 2 * planeValueCount;
+        Arrays.sort(planes);
 
         final byte[] planeBuffer = new byte[planeDataSize];
 
-        Arrays.sort(planes);
-        int planeOffset = 0;
+        int callbackPlaneOffset = 0;
         try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
+
+            // Skip to requested timepoint.
+            forceSkip(fileStream, calculatePlaneDataOffset(timepoint, 0));
+
             int lastIndex = 0;
             for (final int planeIndex : planes) {
                 // Skip specific number of bytes to get to the next plane.
-                final int requestedSkip = (planeIndex == 0) ? 0 : ((planeIndex - lastIndex) - 1) * (int) planeDataSize;
+                final int requestedSkip = (planeIndex == 0) ? 0 : ((planeIndex - lastIndex) - 1) * planeDataSize;
                 lastIndex = planeIndex;
 
-                final long actualSkip = fileStream.skip(requestedSkip);
-                if (requestedSkip != actualSkip) {
-                    throw new IOException("Skip operation failed.");
-                }
+                forceSkip(fileStream, requestedSkip);
 
                 int toRead = planeDataSize;
                 while (toRead > 0) {
@@ -98,17 +115,17 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
                     toRead -= read;
                 }
 
-                storeCallback.store(planeOffset, TypeConverter.unsignedShortBytesToIntArray(planeBuffer));
-                ++planeOffset;
+                storeCallback.store(callbackPlaneOffset, TypeConverter.unsignedShortBytesToIntArray(planeBuffer));
+                ++callbackPlaneOffset;
             }
         }
     }
 
     @Override
-    public int[][] loadPlanesU16DataTo2dArray(final int[] planes) throws IOException {
+    public int[][] loadPlanesU16DataTo2dArray(final int timepoint, final int[] planes) throws IOException {
         final int[][] data = new int[planes.length][];
 
-        loadPlanesU16DataImpl(planes, (index, planeData) -> {
+        loadPlanesU16DataImpl(timepoint, planes, (index, planeData) -> {
             data[index] = planeData;
         });
 
@@ -122,7 +139,7 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
 
         final int[] data = new int[totalValueCount];
 
-        loadPlanesU16DataImpl(planes, (index, planeData) -> {
+        loadPlanesU16DataImpl(timepoint, planes, (index, planeData) -> {
             System.arraycopy(planeData, 0, data, (index * planeValueCount), planeValueCount);
         });
 
@@ -136,11 +153,13 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
 
         final int[] values = new int[(int) dataElementCount];
 
-        // TODO(Moravec): dis.readUnsignedShort() should be replaced with .read()!
+        // TODO(Moravec): Should dis.readUnsignedShort() be replaced with .read() ?
         try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
              final DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 
-            for (int i = 0; i < (int) dataElementCount; i++) {
+            forceSkip(dis, calculatePlaneDataOffset(timepoint, 0));
+
+            for (int i = 0; i < dataElementCount; i++) {
                 values[i] = dis.readUnsignedShort();
             }
         }
@@ -183,6 +202,4 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
     public int[][] loadVoxels(final int timepoint, final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
         return loadVoxelsImplByLoadPlaneData(voxelDim, timepoint, planeRange);
     }
-
-
 }
