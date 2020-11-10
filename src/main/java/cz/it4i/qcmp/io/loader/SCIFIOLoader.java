@@ -1,32 +1,29 @@
 package cz.it4i.qcmp.io.loader;
 
-import cz.it4i.qcmp.ScifioWrapper;
 import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.data.V2i;
 import cz.it4i.qcmp.data.V3i;
 import cz.it4i.qcmp.io.FileInputData;
 import cz.it4i.qcmp.utilities.TypeConverter;
-import io.scif.FormatException;
-import io.scif.Reader;
 
 import java.io.IOException;
 import java.util.Arrays;
 
 public final class SCIFIOLoader extends GenericLoader implements IPlaneLoader {
     private final FileInputData inputDataInfo;
-    private final Reader reader;
+    //    private final Reader reader;
 
     /**
      * Create SCIFIO reader from input file.
      *
      * @param inputDataInfo Input file info.
-     * @throws IOException     When fails to create SCIFIO reader.
-     * @throws FormatException When fails to create SCIFIO reader.
+     * @throws IOException When fails to create SCIFIO reader.
      */
-    public SCIFIOLoader(final FileInputData inputDataInfo) throws IOException, FormatException {
+    public SCIFIOLoader(final FileInputData inputDataInfo) throws Exception {
         super(inputDataInfo.getDimensions());
         this.inputDataInfo = inputDataInfo;
-        this.reader = ScifioWrapper.getReader(this.inputDataInfo.getFilePath());
+        throw new Exception("You are currently on a branch without SCIFIO library.");
+        //        this.reader = ScifioWrapper.getReader(this.inputDataInfo.getFilePath());
     }
 
     @Override
@@ -38,12 +35,12 @@ public final class SCIFIOLoader extends GenericLoader implements IPlaneLoader {
 
     @Override
     public int[] loadPlaneData(final int plane) throws IOException {
-        final byte[] planeBytes;
-        try {
-            planeBytes = reader.openPlane(0, plane).getBytes();
-        } catch (final FormatException e) {
-            throw new IOException("Unable to open plane with the reader. " + e.getMessage());
-        }
+        final byte[] planeBytes = null;
+        //        try {
+        //            planeBytes = reader.openPlane(0, plane).getBytes();
+        //        } catch (final FormatException e) {
+        //            throw new IOException("Unable to open plane with the reader. " + e.getMessage());
+        //        }
         return TypeConverter.unsignedShortBytesToIntArray(planeBytes);
     }
 
@@ -71,16 +68,16 @@ public final class SCIFIOLoader extends GenericLoader implements IPlaneLoader {
         for (int i = 0; i < planes.length; i++) {
             final int plane = planes[i];
 
-            try {
-                planeBytes = reader.openPlane(0, plane).getBytes();
-            } catch (final FormatException e) {
-                throw new IOException("Unable to open plane.");
-            }
-            if (planeBytes.length != planeDataSize) {
-                throw new IOException("Bad byte count read from plane.");
-            }
+            //            try {
+            //                planeBytes = reader.openPlane(0, plane).getBytes();
+            //            } catch (final FormatException e) {
+            //                throw new IOException("Unable to open plane.");
+            //            }
+            //            if (planeBytes.length != planeDataSize) {
+            //                throw new IOException("Bad byte count read from plane.");
+            //            }
 
-            TypeConverter.unsignedShortBytesToIntArray(planeBytes, values, (i * planeValueCount));
+            //            TypeConverter.unsignedShortBytesToIntArray(planeBytes, values, (i * planeValueCount));
         }
         return values;
     }
@@ -97,15 +94,15 @@ public final class SCIFIOLoader extends GenericLoader implements IPlaneLoader {
         final int[] values = new int[(int) dataSize];
         byte[] planeBytes;
         for (int plane = 0; plane < dims.getPlaneCount(); plane++) {
-            try {
-                planeBytes = reader.openPlane(0, plane).getBytes();
-            } catch (final FormatException e) {
-                throw new IOException("Unable to open plane.");
-            }
-            if (planeBytes.length != 2 * planePixelCount) {
-                throw new IOException("Bad byte count read from plane.");
-            }
-            TypeConverter.unsignedShortBytesToIntArray(planeBytes, values, (int) (plane * planePixelCount));
+            //            try {
+            //                planeBytes = reader.openPlane(0, plane).getBytes();
+            //            } catch (final FormatException e) {
+            //                throw new IOException("Unable to open plane.");
+            //            }
+            //            if (planeBytes.length != 2 * planePixelCount) {
+            //                throw new IOException("Bad byte count read from plane.");
+            //            }
+            //            TypeConverter.unsignedShortBytesToIntArray(planeBytes, values, (int) (plane * planePixelCount));
         }
 
         return values;

@@ -11,14 +11,10 @@ import cz.it4i.qcmp.fileformat.FileExtensions;
 import cz.it4i.qcmp.fileformat.QuantizationType;
 import cz.it4i.qcmp.io.FileInputData;
 import cz.it4i.qcmp.io.InputData;
-import io.scif.FormatException;
-import io.scif.Plane;
-import io.scif.Reader;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Optional;
 
@@ -204,55 +200,17 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
 
 
     private void parseSCIFIOFileArguments(final StringBuilder errorBuilder, final String[] inputFileArguments) {
-        final Reader reader;
+        final HyperStackDimensions inspectionResult;
         try {
-            reader = ScifioWrapper.getReader(inputFileArguments[0]);
-        } catch (final IOException | FormatException e) {
+            inspectionResult = ScifioWrapper.inspectFileWithScifio(inputFileArguments[0]);
+        } catch (final Exception e) {
             parseErrorOccurred = true;
-            errorBuilder.append("Failed to get SCIFIO reader for file.\n");
-            errorBuilder.append(e.getMessage());
+            errorBuilder.append("Failed to inspect input file with SCIFIO.");
+            errorBuilder.append(e);
             return;
         }
 
-        final int imageCount = reader.getImageCount();
-        if (imageCount != 1) {
-            parseErrorOccurred = true;
-            errorBuilder.append("We are currently not supporting files with multiple images.\n");
-            return;
-        }
-
-        final long planeCount = reader.getPlaneCount(0);
-        if (planeCount > (long) Integer.MAX_VALUE) {
-            parseErrorOccurred = true;
-            errorBuilder.append("Too many planes.\n");
-        }
-
-        final long planeWidth;
-        final long planeHeight;
-        try {
-            final Plane plane = reader.openPlane(0, 0);
-            planeWidth = plane.getLengths()[0];
-            planeHeight = plane.getLengths()[1];
-
-            if ((planeWidth > (long) Integer.MAX_VALUE) ||
-                    (planeHeight > (long) Integer.MAX_VALUE)) {
-                parseErrorOccurred = true;
-                errorBuilder.append(
-                        "We are currently supporting planes with maximum size of Integer.MAX_VALUE x Integer" +
-                                ".MAX_VALUE");
-            }
-
-
-        } catch (final FormatException | IOException e) {
-            parseErrorOccurred = true;
-            errorBuilder.append("Unable to open first plane of the first image.\n")
-                    .append(e.getMessage());
-            return;
-        }
-
-        setInputDataInfo(new FileInputData(inputFileArguments[0], new HyperStackDimensions((int) planeWidth,
-                                                                                           (int) planeHeight,
-                                                                                           (int) planeCount)));
+        setInputDataInfo(new FileInputData(inputFileArguments[0], inspectionResult));
         getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.SCIFIOLoader);
 
         if (inputFileArguments.length > 1) {
