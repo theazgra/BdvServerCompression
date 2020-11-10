@@ -30,7 +30,7 @@ public final class ImageJBufferLoader extends GenericLoader implements IPlaneLoa
     }
 
     @Override
-    public int[] loadPlaneData(final int plane) {
+    public int[] loadPlaneData(final int timepoint, final int plane) {
         final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(plane);
         return TypeConverter.shortArrayToIntArray(srcBuffer);
     }
@@ -41,13 +41,13 @@ public final class ImageJBufferLoader extends GenericLoader implements IPlaneLoa
     }
 
     @Override
-    public int[] loadPlanesU16Data(final int[] planes) throws IOException {
+    public int[] loadPlanesU16Data(final int timepoint, final int[] planes) throws IOException {
         if (planes.length < 1) {
             return new int[0];
         } else if (planes.length == 1) {
-            return loadPlaneData(planes[0]);
+            return loadPlaneData(0, planes[0]);
         } else if (planes.length == dims.getPlaneCount()) {
-            return loadAllPlanesU16Data();
+            return loadAllPlanesU16Data(0);
         }
         final int planePixelCount = dims.getNumberOfElementsInDimension(2);
         final int totalValueCount = Math.multiplyExact(planePixelCount, planes.length);
@@ -65,7 +65,7 @@ public final class ImageJBufferLoader extends GenericLoader implements IPlaneLoa
     }
 
     @Override
-    public int[] loadAllPlanesU16Data() throws IOException {
+    public int[] loadAllPlanesU16Data(final int timepoint) throws IOException {
         final int planePixelCount = dims.getNumberOfElementsInDimension(2);
         final int totalValueCount = dims.getNumberOfElementsInDimension(3);
 
@@ -80,17 +80,17 @@ public final class ImageJBufferLoader extends GenericLoader implements IPlaneLoa
     }
 
     @Override
-    public int[][] loadRowVectors(final int vectorSize, final Range<Integer> planeRange) {
+    public int[][] loadRowVectors(final int timepoint, final int vectorSize, final Range<Integer> planeRange) {
         return loadRowVectorsImplByValueAt(vectorSize, planeRange);
     }
 
     @Override
-    public int[][] loadBlocks(final V2i blockDim, final Range<Integer> planeRange) {
+    public int[][] loadBlocks(final int timepoint, final V2i blockDim, final Range<Integer> planeRange) {
         return loadBlocksImplByValueAt(blockDim, planeRange);
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) {
+    public int[][] loadVoxels(final int timepoint, final V3i voxelDim, final Range<Integer> planeRange) {
         return loadVoxelsImplByValueAt(voxelDim, planeRange);
     }
 }

@@ -59,7 +59,7 @@ public class SQBenchmark extends BenchmarkBase {
 
             final int[] middlePlaneData;
             try {
-                middlePlaneData = planeLoader.loadPlaneData(middlePlaneIndex);
+                middlePlaneData = planeLoader.loadPlaneData(0, middlePlaneIndex);
             } catch (final IOException e) {
                 e.printStackTrace();
                 System.err.println("Failed to load middle plane data.");
@@ -74,7 +74,7 @@ public class SQBenchmark extends BenchmarkBase {
             // NOTE(Moravec): Actual planeIndex is zero based.
             final int[] planeData;
             try {
-                planeData = planeLoader.loadPlaneData(planeIndex);
+                planeData = planeLoader.loadPlaneData(0, planeIndex);
             } catch (final IOException e) {
                 e.printStackTrace();
                 System.err.println("Failed to load plane data.");

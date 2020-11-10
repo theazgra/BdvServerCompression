@@ -69,7 +69,7 @@ public class Benchmark extends BenchmarkBase {
         final int[] originalData;
         try {
             final IPlaneLoader loader = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo());
-            originalData = loader.loadPlaneData(options.getInputDataInfo().getPlaneIndex());
+            originalData = loader.loadPlaneData(0, options.getInputDataInfo().getPlaneIndex());
         } catch (final Exception e) {
             System.err.println("Failed to get plane loader. " + e.getMessage());
             e.printStackTrace();

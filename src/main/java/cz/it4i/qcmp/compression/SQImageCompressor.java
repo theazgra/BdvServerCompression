@@ -131,7 +131,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             final int[] middlePlaneData;
             final int middlePlaneIndex = getMiddlePlaneIndex();
             try {
-                middlePlaneData = planeLoader.loadPlaneData(middlePlaneIndex);
+                middlePlaneData = planeLoader.loadPlaneData(0, middlePlaneIndex);
             } catch (final IOException ex) {
                 throw new ImageCompressionException("Unable to load middle plane data.", ex);
             }
@@ -164,7 +164,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             final int[] planeData;
             //            planeData = preloadedPlaneData[index++];
             try {
-                planeData = planeLoader.loadPlaneData(planeIndex);
+                planeData = planeLoader.loadPlaneData(0, planeIndex);
             } catch (final IOException ex) {
                 throw new ImageCompressionException("Unable to load plane data.", ex);
             }
@@ -205,17 +205,17 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
             final int middlePlaneIndex = getMiddlePlaneIndex();
             reportStatusToListeners("Loading single plane data.");
-            trainData = planeLoader.loadPlaneData(middlePlaneIndex);
+            trainData = planeLoader.loadPlaneData(0, middlePlaneIndex);
         } else if (inputDataInfo.isPlaneIndexSet()) {
             reportStatusToListeners("Loading single plane data.");
-            trainData = planeLoader.loadPlaneData(inputDataInfo.getPlaneIndex());
+            trainData = planeLoader.loadPlaneData(0, inputDataInfo.getPlaneIndex());
         } else if (inputDataInfo.isPlaneRangeSet()) {
             reportStatusToListeners("Loading plane range data.");
             final int[] planes = getPlaneIndicesForCompression(options.getInputDataInfo());
-            trainData = planeLoader.loadPlanesU16Data(planes);
+            trainData = planeLoader.loadPlanesU16Data(0, planes);
         } else {
             reportStatusToListeners("Loading all planes data.");
-            trainData = planeLoader.loadAllPlanesU16Data();
+            trainData = planeLoader.loadAllPlanesU16Data(0);
         }
         return trainData;
     }

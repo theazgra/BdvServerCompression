@@ -113,6 +113,15 @@ public class HyperStackDimensions {
     }
 
     /**
+     * Get data size of U16 dataset with this dimensions.
+     *
+     * @return Data size.
+     */
+    public long getDataSize() {
+        return (long) 2 * width * height * planeCount * numberOfTimepoints * numberOfChannels;
+    }
+
+    /**
      * Get single plane width. (X)
      *
      * @return Plane width.

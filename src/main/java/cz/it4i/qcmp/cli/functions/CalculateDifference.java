@@ -30,7 +30,7 @@ public class CalculateDifference extends CustomFunctionBase {
         final String directory = options.getOutputFilePath();
         final int[] referenceData;
         try {
-            referenceData = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo()).loadPlaneData(planeIndex);
+            referenceData = PlaneLoaderFactory.getPlaneLoaderForInputFile(options.getInputDataInfo()).loadPlaneData(0, planeIndex);
         } catch (final Exception e) {
             e.printStackTrace();
             return false;

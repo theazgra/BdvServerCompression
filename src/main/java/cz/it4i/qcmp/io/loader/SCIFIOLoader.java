@@ -34,7 +34,7 @@ public final class SCIFIOLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[] loadPlaneData(final int plane) throws IOException {
+    public int[] loadPlaneData(final int timepoint, final int plane) throws IOException {
         final byte[] planeBytes = null;
         //        try {
         //            planeBytes = reader.openPlane(0, plane).getBytes();
@@ -45,11 +45,11 @@ public final class SCIFIOLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[] loadPlanesU16Data(final int[] planes) throws IOException {
+    public int[] loadPlanesU16Data(final int timepoint, final int[] planes) throws IOException {
         if (planes.length < 1) {
             return new int[0];
         } else if (planes.length == 1) {
-            return loadPlaneData(planes[0]);
+            return loadPlaneData(0, planes[0]);
         }
 
         final int planeValueCount = dims.getNumberOfElementsInDimension(2);
@@ -83,7 +83,7 @@ public final class SCIFIOLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[] loadAllPlanesU16Data() throws IOException {
+    public int[] loadAllPlanesU16Data(final int timepoint) throws IOException {
         final long planePixelCount = dims.getNumberOfElementsInDimension(2);
         final long dataSize = planePixelCount * (long) dims.getPlaneCount();
 
@@ -109,17 +109,17 @@ public final class SCIFIOLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[][] loadRowVectors(final int vectorSize, final Range<Integer> planeRange) throws IOException {
-        return loadRowVectorsImplByLoadPlaneData(vectorSize, planeRange);
+    public int[][] loadRowVectors(final int timepoint, final int vectorSize, final Range<Integer> planeRange) throws IOException {
+        return loadRowVectorsImplByLoadPlaneData(timepoint, vectorSize, planeRange);
     }
 
     @Override
-    public int[][] loadBlocks(final V2i blockDim, final Range<Integer> planeRange) throws IOException {
-        return loadBlocksImplByLoadPlaneData(blockDim, planeRange);
+    public int[][] loadBlocks(final int timepoint, final V2i blockDim, final Range<Integer> planeRange) throws IOException {
+        return loadBlocksImplByLoadPlaneData(timepoint, blockDim, planeRange);
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
-        return loadVoxelsImplByLoadPlaneData(voxelDim, planeRange);
+    public int[][] loadVoxels(final int timepoint, final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
+        return loadVoxelsImplByLoadPlaneData(voxelDim, timepoint, planeRange);
     }
 }

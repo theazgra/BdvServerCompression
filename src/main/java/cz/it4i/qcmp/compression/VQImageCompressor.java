@@ -171,7 +171,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
                 stopwatch.restart();
                 reportStatusToListeners("Training vector quantizer from middle plane.");
-                final int[][] refPlaneVectors = planeLoader.loadVectorsFromPlaneRange(options,
+                final int[][] refPlaneVectors = planeLoader.loadVectorsFromPlaneRange(0, options,
                                                                                       Utils.singlePlaneRange(getMiddlePlaneIndex()));
                 quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
                 huffman = createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
@@ -202,7 +202,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             stopwatch.restart();
 
 
-            final int[][] planeVectors = planeLoader.loadVectorsFromPlaneRange(options, Utils.singlePlaneRange(planeIndex));
+            final int[][] planeVectors = planeLoader.loadVectorsFromPlaneRange(0, options, Utils.singlePlaneRange(planeIndex));
 
 
             if (!streamMode && !hasGeneralQuantizer) {
@@ -301,7 +301,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             final Range<Integer> voxelLayerRange = new Range<>(fromZ, toZ);
 
             try {
-                voxelData = planeLoader.loadVoxels(options.getQuantizationVector(), voxelLayerRange);
+                voxelData = planeLoader.loadVoxels(0, options.getQuantizationVector(), voxelLayerRange);
             } catch (final IOException e) {
                 throw new ImageCompressionException("Unable to load voxels from voxel layer " + voxelLayerRange, e);
             }
@@ -408,17 +408,17 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final int[][] trainingData;
         if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
             final int middlePlaneIndex = getMiddlePlaneIndex();
-            trainingData = planeLoader.loadVectorsFromPlaneRange(options, new Range<>(middlePlaneIndex, middlePlaneIndex + 1));
+            trainingData = planeLoader.loadVectorsFromPlaneRange(0, options, new Range<>(middlePlaneIndex, middlePlaneIndex + 1));
         } else if (options.getInputDataInfo().isPlaneIndexSet()) {
             reportStatusToListeners("VQ: Loading single plane data.");
             final int planeIndex = options.getInputDataInfo().getPlaneIndex();
-            trainingData = planeLoader.loadVectorsFromPlaneRange(options, new Range<>(planeIndex, planeIndex + 1));
+            trainingData = planeLoader.loadVectorsFromPlaneRange(0, options, new Range<>(planeIndex, planeIndex + 1));
         } else if (options.getInputDataInfo().isPlaneRangeSet()) {
             reportStatusToListeners("VQ: Loading plane range data.");
-            trainingData = planeLoader.loadVectorsFromPlaneRange(options, options.getInputDataInfo().getPlaneRange());
+            trainingData = planeLoader.loadVectorsFromPlaneRange(0, options, options.getInputDataInfo().getPlaneRange());
         } else {
             reportStatusToListeners("VQ: Loading all planes data.");
-            trainingData = planeLoader.loadVectorsFromPlaneRange(options,
+            trainingData = planeLoader.loadVectorsFromPlaneRange(0, options,
                                                                  new Range<>(0,
                                                                              options.getInputDataInfo().getDimensions().getPlaneCount()));
         }

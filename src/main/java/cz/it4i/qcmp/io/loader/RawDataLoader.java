@@ -32,18 +32,18 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[] loadPlaneData(final int plane) throws IOException {
+    public int[] loadPlaneData(final int timepoint, final int plane) throws IOException {
         final byte[] buffer;
 
         try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath())) {
             final long planeSize = dims.getNumberOfElementsInDimension(2) * 2;
-            final long expectedFileSize = planeSize * dims.getPlaneCount();
+            final long expectedFileSize = dims.getDataSize();
             final long fileSize = fileStream.getChannel().size();
+
 
             if (expectedFileSize != fileSize) {
                 throw new IOException(
-                        "File specified by `rawFile` doesn't contains raw data for image of dimensions " +
-                                "`rawDataDimension`");
+                        "File specified by `rawFile` doesn't contains raw data for image of dimensions " + dims.toString());
             }
 
             final long planeOffset = plane * planeSize;
@@ -69,7 +69,7 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
         if (planes.length < 1) {
             return;
         } else if (planes.length == 1) {
-            storeCallback.store(0, loadPlaneData(planes[0]));
+            storeCallback.store(0, loadPlaneData(0, planes[0]));
         }
 
         final int planeValueCount = dims.getNumberOfElementsInDimension(2);
@@ -116,7 +116,7 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[] loadPlanesU16Data(final int[] planes) throws IOException {
+    public int[] loadPlanesU16Data(final int timepoint, final int[] planes) throws IOException {
         final int planeValueCount = dims.getNumberOfElementsInDimension(2);
         final int totalValueCount = dims.getNumberOfElementsInDimension(3);
 
@@ -130,7 +130,7 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[] loadAllPlanesU16Data() throws IOException {
+    public int[] loadAllPlanesU16Data(final int timepoint) throws IOException {
         final int dataElementCount = dims.getNumberOfElementsInDimension(3);
 
 
@@ -170,18 +170,18 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    public int[][] loadRowVectors(final int vectorSize, final Range<Integer> planeRange) throws IOException {
-        return loadRowVectorsImplByLoadPlaneData(vectorSize, planeRange);
+    public int[][] loadRowVectors(final int timepoint, final int vectorSize, final Range<Integer> planeRange) throws IOException {
+        return loadRowVectorsImplByLoadPlaneData(timepoint, vectorSize, planeRange);
     }
 
     @Override
-    public int[][] loadBlocks(final V2i blockDim, final Range<Integer> planeRange) throws IOException {
-        return loadBlocksImplByLoadPlaneData(blockDim, planeRange);
+    public int[][] loadBlocks(final int timepoint, final V2i blockDim, final Range<Integer> planeRange) throws IOException {
+        return loadBlocksImplByLoadPlaneData(timepoint, blockDim, planeRange);
     }
 
     @Override
-    public int[][] loadVoxels(final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
-        return loadVoxelsImplByLoadPlaneData(voxelDim, planeRange);
+    public int[][] loadVoxels(final int timepoint, final V3i voxelDim, final Range<Integer> planeRange) throws IOException {
+        return loadVoxelsImplByLoadPlaneData(voxelDim, timepoint, planeRange);
     }
 
 

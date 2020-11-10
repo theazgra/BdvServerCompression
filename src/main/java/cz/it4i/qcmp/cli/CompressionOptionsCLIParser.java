@@ -227,7 +227,6 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
                     .append("e.g.: 1920x1080x1\n");
             return;
         }
-        getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.RawDataLoader);
 
         final Optional<HyperStackDimensions> parsedDatasetDims = ParseUtils.tryParseHyperStackDimensions(inputFileArguments[1], 'x');
         if (parsedDatasetDims.isPresent()) {
@@ -239,6 +238,7 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
                     .append('\n');
             return;
         }
+        getInputDataInfo().setDataLoaderType(InputData.DataLoaderType.RawDataLoader);
 
         // User specified plane index or plane range.
         if (inputFileArguments.length > 2) {
