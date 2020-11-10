@@ -62,6 +62,8 @@ public class CompressionOptions implements Cloneable {
      */
     private boolean verbose = false;
 
+    private boolean processAllTimepoints = false;
+
     public CompressionOptions() {
         final int cores = Runtime.getRuntime().availableProcessors();
         this.workerCount = (cores / 2);
@@ -168,6 +170,14 @@ public class CompressionOptions implements Cloneable {
 
     public boolean isConsoleApplication() {
         return false;
+    }
+
+    public boolean shouldProcessAllTimepoints() {
+        return processAllTimepoints;
+    }
+
+    public void setProcessAllTimepoints(final boolean processAllTimepoints) {
+        this.processAllTimepoints = processAllTimepoints;
     }
 
 }

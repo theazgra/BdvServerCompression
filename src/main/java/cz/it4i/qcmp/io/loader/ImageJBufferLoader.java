@@ -29,15 +29,20 @@ public final class ImageJBufferLoader extends GenericLoader implements IPlaneLoa
         }
     }
 
+    private int getBufferIndex(final int timepoint, final int plane) {
+        return (timepoint * bufferInputData.getDimensions().getPlaneCount()) + plane;
+    }
+
     @Override
     public int[] loadPlaneData(final int timepoint, final int plane) {
-        final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(plane);
+        final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(getBufferIndex(timepoint, plane));
         return TypeConverter.shortArrayToIntArray(srcBuffer);
     }
 
     @Override
     protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int width) {
-        return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer(plane))[Block.index(x, y, width)]);
+        return TypeConverter.shortToInt(
+                ((short[]) bufferInputData.getPixelBuffer(getBufferIndex(timepoint, plane)))[Block.index(x, y, width)]);
     }
 
     @Override
@@ -45,9 +50,9 @@ public final class ImageJBufferLoader extends GenericLoader implements IPlaneLoa
         if (planes.length < 1) {
             return new int[0];
         } else if (planes.length == 1) {
-            return loadPlaneData(0, planes[0]);
+            return loadPlaneData(timepoint, planes[0]);
         } else if (planes.length == dims.getPlaneCount()) {
-            return loadAllPlanesU16Data(0);
+            return loadAllPlanesU16Data(timepoint);
         }
         final int planePixelCount = dims.getNumberOfElementsInDimension(2);
         final int totalValueCount = Math.multiplyExact(planePixelCount, planes.length);
@@ -57,7 +62,7 @@ public final class ImageJBufferLoader extends GenericLoader implements IPlaneLoa
         final int[] destBuffer = new int[totalValueCount];
         int destOffset = 0;
         for (final int planeIndex : planes) {
-            final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(planeIndex);
+            final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(getBufferIndex(timepoint, planeIndex));
             copyShortArrayIntoBuffer(srcBuffer, destBuffer, destOffset, planePixelCount);
             destOffset += planePixelCount;
         }
@@ -72,7 +77,7 @@ public final class ImageJBufferLoader extends GenericLoader implements IPlaneLoa
         final int[] destBuffer = new int[totalValueCount];
         int destOffset = 0;
         for (int planeIndex = 0; planeIndex < dims.getPlaneCount(); planeIndex++) {
-            final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(planeIndex);
+            final short[] srcBuffer = (short[]) bufferInputData.getPixelBuffer(getBufferIndex(timepoint, planeIndex));
             copyShortArrayIntoBuffer(srcBuffer, destBuffer, destOffset, planePixelCount);
             destOffset += planePixelCount;
         }
