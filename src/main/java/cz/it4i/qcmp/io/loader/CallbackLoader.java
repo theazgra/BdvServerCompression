@@ -21,7 +21,7 @@ public class CallbackLoader extends GenericLoader implements IPlaneLoader {
 
     @Override
     protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int width) {
-        return pixelLoad.getValueAt(x, y, plane);
+        return pixelLoad.getValueAt(x, y, plane, timepoint);
     }
 
 
@@ -33,7 +33,7 @@ public class CallbackLoader extends GenericLoader implements IPlaneLoader {
         int index = 0;
         for (int y = 0; y < dims.getHeight(); y++) {
             for (int x = 0; x < dims.getWidth(); x++) {
-                planeData[index++] = pixelLoad.getValueAt(x, y, plane);
+                planeData[index++] = pixelLoad.getValueAt(x, y, plane, timepoint);
             }
         }
         return planeData;
@@ -61,7 +61,7 @@ public class CallbackLoader extends GenericLoader implements IPlaneLoader {
         for (final int plane : planes) {
             for (int y = 0; y < dims.getHeight(); y++) {
                 for (int x = 0; x < dims.getWidth(); x++) {
-                    destBuffer[index++] = pixelLoad.getValueAt(x, y, plane);
+                    destBuffer[index++] = pixelLoad.getValueAt(x, y, plane, timepoint);
                 }
             }
         }
@@ -77,7 +77,7 @@ public class CallbackLoader extends GenericLoader implements IPlaneLoader {
         for (int z = 0; z < dims.getPlaneCount(); z++) {
             for (int y = 0; y < dims.getHeight(); y++) {
                 for (int x = 0; x < dims.getWidth(); x++) {
-                    destBuffer[index++] = pixelLoad.getValueAt(x, y, z);
+                    destBuffer[index++] = pixelLoad.getValueAt(x, y, z, timepoint);
                 }
             }
         }

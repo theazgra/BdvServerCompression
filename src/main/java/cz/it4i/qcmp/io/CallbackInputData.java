@@ -16,10 +16,11 @@ public class CallbackInputData extends InputData {
          *
          * @param x X position.
          * @param y Y position.
-         * @param z Z position.
+         * @param z Plane index.
+         * @param t Timepoint index.
          * @return Pixel value at specified position.
          */
-        int getValueAt(final int x, final int y, final int z);
+        int getValueAt(final int x, final int y, final int z, final int t);
     }
 
     /**
