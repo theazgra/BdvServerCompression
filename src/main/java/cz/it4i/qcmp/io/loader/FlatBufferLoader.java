@@ -24,10 +24,13 @@ public class FlatBufferLoader extends GenericLoader implements IPlaneLoader {
      */
     private final int planePixelCount;
 
+    private final int stackPixelCount;
+
     public FlatBufferLoader(final FlatBufferInputData bufferDataInfo) {
         super(bufferDataInfo.getDimensions());
         this.bufferInputData = bufferDataInfo;
         planePixelCount = dims.getNumberOfElementsInDimension(2);
+        stackPixelCount = dims.getNumberOfElementsInDimension(3);
     }
 
     @Override
@@ -45,19 +48,31 @@ public class FlatBufferLoader extends GenericLoader implements IPlaneLoader {
         }
     }
 
-
-    @Override
-    protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int width) {
-        return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer())[(plane * planePixelCount) + Block.index(x, y, width)]);
+    /**
+     * Calculate offset in the flat buffer to read plane at specified timepoint and plane index.
+     *
+     * @param timepoint Zero based timepoint.
+     * @param plane     Zero based plane index.
+     * @return Offset in the flat buffer..
+     */
+    private int calculateDataOffset(final int timepoint, final int plane) {
+        return (timepoint * stackPixelCount) + (plane * planePixelCount);
     }
 
     @Override
-    public int[] loadPlaneData(final int timepoint, final int plane) throws IOException {
+    protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int width) {
+        //                     BaseOffset                            + PlaneOffset
+        final int dataOffset = calculateDataOffset(timepoint, plane) + Block.index(x, y, width);
+        return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer())[dataOffset]);
+    }
+
+    @Override
+    public int[] loadPlaneData(final int timepoint, final int plane) {
         final short[] flatBuffer = ((short[]) bufferInputData.getPixelBuffer());
-        final int offset = plane * planePixelCount;
+        final int baseOffset = calculateDataOffset(timepoint, plane);
         final int[] planeData = new int[planePixelCount];
         for (int i = 0; i < planePixelCount; i++) {
-            planeData[i] = TypeConverter.shortToInt(flatBuffer[offset + i]);
+            planeData[i] = TypeConverter.shortToInt(flatBuffer[baseOffset + i]);
         }
         return planeData;
     }
@@ -67,20 +82,21 @@ public class FlatBufferLoader extends GenericLoader implements IPlaneLoader {
         if (planes.length < 1) {
             return new int[0];
         } else if (planes.length == 1) {
-            return loadPlaneData(0, planes[0]);
+            return loadPlaneData(timepoint, planes[0]);
         } else if (planes.length == bufferInputData.getDimensions().getPlaneCount()) {
-            return loadAllPlanesU16Data(0);
+            return loadAllPlanesU16Data(timepoint);
         }
-        final int totalValueCount = Math.multiplyExact(planePixelCount, planes.length);
 
         Arrays.sort(planes);
+        final int totalValueCount = Math.multiplyExact(planePixelCount, planes.length);
+
 
         final short[] flatBuffer = (short[]) bufferInputData.getPixelBuffer();
         final int[] destBuffer = new int[totalValueCount];
         int destOffset = 0;
         for (final int planeIndex : planes) {
-            final int planeOffset = planeIndex * planePixelCount;
-            copyShortArrayIntoBuffer(flatBuffer, planeOffset, destBuffer, destOffset, planePixelCount);
+            final int baseOffset = calculateDataOffset(timepoint, planeIndex);
+            copyShortArrayIntoBuffer(flatBuffer, baseOffset, destBuffer, destOffset, planePixelCount);
             destOffset += planePixelCount;
         }
         return destBuffer;
@@ -89,21 +105,27 @@ public class FlatBufferLoader extends GenericLoader implements IPlaneLoader {
     @Override
     public int[] loadAllPlanesU16Data(final int timepoint) {
         final short[] flatBuffer = (short[]) bufferInputData.getPixelBuffer();
-        return TypeConverter.shortArrayToIntArray(flatBuffer);
+
+        final int baseOffset = calculateDataOffset(timepoint, 0);
+        final int[] result = new int[stackPixelCount];
+        for (int i = 0; i < stackPixelCount; i++) {
+            result[i] = TypeConverter.shortToInt(flatBuffer[baseOffset + i]);
+        }
+        return result;
     }
 
     @Override
     public int[][] loadRowVectors(final int timepoint, final int vectorSize, final Range<Integer> planeRange) {
-        return loadRowVectorsImplByValueAt(vectorSize, planeRange);
+        return loadRowVectorsImplByValueAt(timepoint, vectorSize, planeRange);
     }
 
     @Override
     public int[][] loadBlocks(final int timepoint, final V2i blockDim, final Range<Integer> planeRange) {
-        return loadBlocksImplByValueAt(blockDim, planeRange);
+        return loadBlocksImplByValueAt(timepoint, blockDim, planeRange);
     }
 
     @Override
     public int[][] loadVoxels(final int timepoint, final V3i voxelDim, final Range<Integer> planeRange) {
-        return loadVoxelsImplByValueAt(voxelDim, planeRange);
+        return loadVoxelsImplByValueAt(timepoint, voxelDim, planeRange);
     }
 }

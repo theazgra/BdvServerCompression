@@ -86,17 +86,17 @@ public final class ImageJBufferLoader extends GenericLoader implements IPlaneLoa
 
     @Override
     public int[][] loadRowVectors(final int timepoint, final int vectorSize, final Range<Integer> planeRange) {
-        return loadRowVectorsImplByValueAt(vectorSize, planeRange);
+        return loadRowVectorsImplByValueAt(timepoint, vectorSize, planeRange);
     }
 
     @Override
     public int[][] loadBlocks(final int timepoint, final V2i blockDim, final Range<Integer> planeRange) {
-        return loadBlocksImplByValueAt(blockDim, planeRange);
+        return loadBlocksImplByValueAt(timepoint, blockDim, planeRange);
     }
 
     @Override
     public int[][] loadVoxels(final int timepoint, final V3i voxelDim, final Range<Integer> planeRange) {
-        return loadVoxelsImplByValueAt(voxelDim, planeRange);
+        return loadVoxelsImplByValueAt(timepoint, voxelDim, planeRange);
     }
 }
 
