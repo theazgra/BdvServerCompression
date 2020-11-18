@@ -8,6 +8,9 @@ abstract class GenericLoader {
     protected final HyperStackDimensions dims;
     protected int threadCount = 1;
 
+    /**
+     * Default data wrapping strategy.
+     */
     private DataWrappingStrategy wrappingStrategy = DataWrappingStrategy.MirroredRepeat;
 
     protected GenericLoader(final HyperStackDimensions datasetDims) {
@@ -37,6 +40,16 @@ abstract class GenericLoader {
      */
     public abstract int[] loadPlaneData(final int timepoint, final int plane) throws IOException;
 
+    /**
+     * Abstract method to load specified pixel value.
+     *
+     * @param timepoint Zero based timepoint.
+     * @param plane     Zero based plane index.
+     * @param x         X location.
+     * @param y         Y location.
+     * @param width     Width of the image. // TODO(Moravec): There is 'better' word than 'width'.
+     * @return Pixel value at specified location.
+     */
     protected abstract int valueAt(int timepoint, final int plane, final int x, final int y, final int width);
 
     /**
@@ -350,7 +363,7 @@ abstract class GenericLoader {
      * Load specified planes from dataset to voxel of specified dimensions.
      * This overload uses the valueAt function to read src data.
      *
-     * @param timepoint
+     * @param timepoint  Zero based timepoint index.
      * @param voxelDim   Single voxel dimensions.
      * @param planeRange Range of planes to load voxels from.
      * @return Voxel data arranged in arrays.
