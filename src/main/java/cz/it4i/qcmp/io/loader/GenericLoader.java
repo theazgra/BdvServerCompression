@@ -154,8 +154,7 @@ abstract class GenericLoader {
                             srcX = wrapColumnIndex(srcX);
                         }
 
-                        // TODO(Moravec): dims.getHeight() should probably be dims.getWidth()! Check this!
-                        rowVectors[vectorIndex][vectorX] = valueAt(timepoint, plane, srcX, row, dims.getHeight());
+                        rowVectors[vectorIndex][vectorX] = valueAt(timepoint, plane, srcX, row, dims.getWidth());
                     }
                     ++vectorIndex;
                 }
