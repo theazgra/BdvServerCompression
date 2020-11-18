@@ -10,12 +10,10 @@ import java.util.Arrays;
 
 public class CallbackLoader extends GenericLoader implements IPlaneLoader {
 
-    private final CallbackInputData callbackInputData;
     private final CallbackInputData.LoadCallback pixelLoad;
 
     public CallbackLoader(final CallbackInputData callbackInputData) {
         super(callbackInputData.getDimensions());
-        this.callbackInputData = callbackInputData;
         this.pixelLoad = callbackInputData.getPixelLoadCallback();
     }
 
@@ -44,9 +42,9 @@ public class CallbackLoader extends GenericLoader implements IPlaneLoader {
         if (planes.length < 1) {
             return new int[0];
         } else if (planes.length == 1) {
-            return loadPlaneData(0, planes[0]);
+            return loadPlaneData(timepoint, planes[0]);
         } else if (planes.length == dims.getPlaneCount()) {
-            return loadAllPlanesU16Data(0);
+            return loadAllPlanesU16Data(timepoint);
         }
         final int planePixelCount = dims.getNumberOfElementsInDimension(2);
         final long totalValueCount = (long) planePixelCount * (long) planes.length;
@@ -99,4 +97,6 @@ public class CallbackLoader extends GenericLoader implements IPlaneLoader {
     public int[][] loadVoxels(final int timepoint, final V3i voxelDim, final Range<Integer> planeRange) {
         return loadVoxelsImplByValueAt(timepoint, voxelDim, planeRange);
     }
+
+
 }
