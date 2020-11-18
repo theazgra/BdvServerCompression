@@ -10,6 +10,7 @@ import java.io.*;
 import java.util.Arrays;
 
 public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
+    private final int BYTES_PER_ELEMENT = 2;
     private final FileInputData inputDataInfo;
     private final int planeDataSize;
 
@@ -38,7 +39,7 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
      * @return Offset in the file.
      */
     private int calculatePlaneDataOffset(final int timepoint, final int plane) {
-        return (2 * timepoint * dims.getNumberOfElementsInDimension(3)) + (plane * planeDataSize);
+        return (BYTES_PER_ELEMENT * timepoint * dims.getNumberOfElementsInDimension(3)) + (plane * planeDataSize);
     }
 
 
