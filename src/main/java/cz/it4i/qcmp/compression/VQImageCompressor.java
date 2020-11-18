@@ -344,12 +344,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                                                                         false);
 
         reportStatusToListeners("Starting LBG optimization.");
-        try {
-            System.out.println("Sleeping for 10 seconds...");
-            Thread.sleep(10000);
-        } catch (final InterruptedException e) {
-            e.printStackTrace();
-        }
 
         vqInitializer.setStatusListener(this::reportStatusToListeners);
         final LBGResult lbgResult = vqInitializer.findOptimalCodebook();
