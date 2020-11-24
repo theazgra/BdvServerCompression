@@ -162,7 +162,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             try (final InBitStream inBitStream = new InBitStream(compressedStream,
                                                                  header.getBitsPerCodebookIndex(),
                                                                  planeDataSize)) {
-                inBitStream.readToBuffer();
+                inBitStream.fillEntireBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
                 final int[][] decompressedVectors = new int[(int) planeVectorCount][vectorSize];
@@ -212,7 +212,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             try (final InBitStream inBitStream = new InBitStream(compressedStream,
                                                                  header.getBitsPerCodebookIndex(),
                                                                  planeDataSize)) {
-                inBitStream.readToBuffer();
+                inBitStream.fillEntireBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
                 final int[][] decompressedVectors = new int[(int) planeVectorCount][vectorSize];
@@ -284,7 +284,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             final int[][] decompressedVoxels = new int[voxelLayerVoxelCount][vectorSize];
 
             try (final InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerCodebookIndex(), voxelLayerDataSize)) {
-                inBitStream.readToBuffer();
+                inBitStream.fillEntireBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
                 for (int voxelIndex = 0; voxelIndex < voxelLayerVoxelCount; voxelIndex++) {
@@ -342,7 +342,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             final int[][] decompressedVoxels = new int[voxelLayerVoxelCount][vectorSize];
 
             try (final InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerCodebookIndex(), voxelLayerDataSize)) {
-                inBitStream.readToBuffer();
+                inBitStream.fillEntireBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
                 for (int voxelIndex = 0; voxelIndex < voxelLayerVoxelCount; voxelIndex++) {

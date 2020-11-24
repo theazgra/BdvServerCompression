@@ -95,7 +95,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             try (final InBitStream inBitStream = new InBitStream(compressedStream,
                                                                  header.getBitsPerCodebookIndex(),
                                                                  planeDataSize)) {
-                inBitStream.readToBuffer();
+                inBitStream.fillEntireBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
                 final int[] decompressedValues = new int[planePixelCount];
@@ -166,7 +166,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
 
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (final InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerCodebookIndex(), planeDataSize)) {
-                inBitStream.readToBuffer();
+                inBitStream.fillEntireBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
 
                 final int[] decompressedValues = new int[planePixelCount];
@@ -191,7 +191,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
     }
 
     @Override
-    public short[] decompressStreamMode(final DataInputStream compressedStream, final QCMPFileHeader header) throws ImageDecompressionException {
+    public short[] decompressStreamMode(final DataInputStream compressedStream,
+                                        final QCMPFileHeader header) throws ImageDecompressionException {
         throw new ImageDecompressionException("Not implemented yet.");
     }
 }
