@@ -30,16 +30,31 @@ public class InBitStream implements AutoCloseable {
     }
 
     /**
-     * Read whole buffer from input stream.
+     * Read entire buffer from input stream.
      *
      * @throws IOException when unable to read from input stream.
      */
-    public void readToBuffer() throws IOException {
+    public void fillEntireBuffer() throws IOException {
         int toRead = buffer.length;
         while (toRead > 0) {
             toRead -= inputStream.read(buffer, buffer.length - toRead, toRead);
         }
         bytesAvailable = buffer.length;
+        bufferPosition = 0;
+    }
+
+    /**
+     * Read whole buffer from input stream.
+     *
+     * @throws IOException when unable to read from input stream.
+     */
+    private void readToBuffer() throws IOException {
+        bytesAvailable = inputStream.read(buffer, 0, buffer.length);
+
+        if (bytesAvailable <= 0) {
+            throw new IOException("Unable to read from underlying stream. We have probably reached the end of stream.");
+        }
+
         bufferPosition = 0;
     }
 
@@ -105,7 +120,7 @@ public class InBitStream implements AutoCloseable {
 
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         bitBufferSize = 0;
         bytesAvailable = 0;
     }
