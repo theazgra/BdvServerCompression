@@ -1,5 +1,9 @@
 package cz.it4i.qcmp.huffman;
 
+import cz.it4i.qcmp.io.InBitStream;
+import cz.it4i.qcmp.io.OutBitStream;
+
+import java.io.IOException;
 import java.util.*;
 
 public class Huffman {
@@ -33,7 +37,7 @@ public class Huffman {
             parentB.setBit(0);
 
             final double mergedProbabilities = parentA.getProbability() + parentB.getProbability();
-            final HuffmanNode mergedNode = new HuffmanNode(mergedProbabilities, parentA, parentB);
+            final HuffmanNode mergedNode = HuffmanNode.constructWithProbability(parentA, parentB, mergedProbabilities);
             queue.add(mergedNode);
         }
         root = queue.poll();
@@ -123,5 +127,39 @@ public class Huffman {
             sortedHashMap.put(entry.getKey(), entry.getValue());
         }
         return sortedHashMap;
+    }
+
+    private void encodeHuffmanNode(final HuffmanNode node, final OutBitStream bitStream) throws IOException {
+        if (node.isLeaf()) {
+            bitStream.writeBit(1);
+            bitStream.write(node.getSymbol());
+        } else {
+            bitStream.writeBit(0);
+            encodeHuffmanNode(node.getSubNodeA(), bitStream);
+            encodeHuffmanNode(node.getSubNodeB(), bitStream);
+        }
+    }
+
+    private static HuffmanNode decodeHuffmanNode(final InBitStream bitStream) throws IOException {
+        if (bitStream.readBit()) // Leaf
+        {
+            return HuffmanNode.constructWithSymbol(null, null, bitStream.readValue());
+        } else {
+            final HuffmanNode nodeA = decodeHuffmanNode(bitStream);
+            nodeA.setBit(1);
+            final HuffmanNode nodeB = decodeHuffmanNode(bitStream);
+            nodeB.setBit(0);
+            return HuffmanNode.constructWithSymbol(nodeA, nodeB, -1);
+        }
+    }
+
+
+    public void saveHuffmanTree(final OutBitStream bitStream) throws IOException {
+        assert root != null : "The tree is not build.";
+        encodeHuffmanNode(root, bitStream);
+    }
+
+    public static HuffmanNode readHuffmanTree(final InBitStream bitStream) throws IOException {
+        return decodeHuffmanNode(bitStream);
     }
 }
