@@ -64,7 +64,7 @@ public class OutBitStream implements AutoCloseable {
      *
      * @param bit True for 1
      */
-    private void writeBit(final int bit) throws IOException {
+    public void writeBit(final int bit) throws IOException {
         writeBit(bit > 0);
     }
 
@@ -108,7 +108,7 @@ public class OutBitStream implements AutoCloseable {
      * @throws Exception when flush fails.
      */
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         flush();
     }
 
