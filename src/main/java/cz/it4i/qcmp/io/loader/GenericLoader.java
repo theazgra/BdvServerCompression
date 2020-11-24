@@ -43,14 +43,14 @@ abstract class GenericLoader {
     /**
      * Abstract method to load specified pixel value.
      *
-     * @param timepoint Zero based timepoint.
-     * @param plane     Zero based plane index.
-     * @param x         X location.
-     * @param y         Y location.
-     * @param width     Width of the image. // TODO(Moravec): There is 'better' word than 'width'.
+     * @param timepoint   Zero based timepoint.
+     * @param plane       Zero based plane index.
+     * @param x           X location.
+     * @param y           Y location.
+     * @param sourceWidth Width of the source image.
      * @return Pixel value at specified location.
      */
-    protected abstract int valueAt(int timepoint, final int plane, final int x, final int y, final int width);
+    protected abstract int valueAt(int timepoint, final int plane, final int x, final int y, final int sourceWidth);
 
     /**
      * Wrap column (x) index based on specified wrapping strategy.

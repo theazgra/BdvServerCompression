@@ -25,7 +25,7 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int width) {
+    protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int sourceWidth) {
         new Exception().printStackTrace(System.err);
         assert (false) : "RawDataLoader shouldn't use valueAt impl methods!";
         return -1;
@@ -154,7 +154,7 @@ public final class RawDataLoader extends GenericLoader implements IPlaneLoader {
 
         final int[] values = new int[(int) dataElementCount];
 
-        // TODO(Moravec): Should dis.readUnsignedShort() be replaced with .read() ?
+        // NOTE(Moravec): Should dis.readUnsignedShort() be replaced with .read() ?
         try (final FileInputStream fileStream = new FileInputStream(inputDataInfo.getFilePath());
              final DataInputStream dis = new DataInputStream(new BufferedInputStream(fileStream, 8192))) {
 

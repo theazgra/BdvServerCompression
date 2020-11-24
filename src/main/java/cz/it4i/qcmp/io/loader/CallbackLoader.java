@@ -18,7 +18,7 @@ public class CallbackLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int width) {
+    protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int sourceWidth) {
         return pixelLoad.getValueAt(x, y, plane, timepoint);
     }
 

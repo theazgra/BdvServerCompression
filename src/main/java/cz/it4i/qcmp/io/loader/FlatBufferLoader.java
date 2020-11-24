@@ -60,9 +60,9 @@ public class FlatBufferLoader extends GenericLoader implements IPlaneLoader {
     }
 
     @Override
-    protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int width) {
+    protected int valueAt(final int timepoint, final int plane, final int x, final int y, final int sourceWidth) {
         //                     BaseOffset                            + PlaneOffset
-        final int dataOffset = calculateDataOffset(timepoint, plane) + Block.index(x, y, width);
+        final int dataOffset = calculateDataOffset(timepoint, plane) + Block.index(x, y, sourceWidth);
         return TypeConverter.shortToInt(((short[]) bufferInputData.getPixelBuffer())[dataOffset]);
     }
 
