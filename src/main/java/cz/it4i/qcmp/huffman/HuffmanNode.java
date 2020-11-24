@@ -22,10 +22,22 @@ public class HuffmanNode implements Comparable<HuffmanNode> {
         this.leaf = true;
     }
 
-    public HuffmanNode(final double probability, final HuffmanNode parentA, final HuffmanNode parentB) {
-        this.probability = probability;
-        this.subNodeA = parentA;
-        this.subNodeB = parentB;
+    private HuffmanNode(final HuffmanNode parentA, final HuffmanNode parentB) {
+        subNodeA = parentA;
+        subNodeB = parentB;
+    }
+
+    public static HuffmanNode constructWithSymbol(final HuffmanNode parentA, final HuffmanNode parentB, final int symbol) {
+        final HuffmanNode node = new HuffmanNode(parentA, parentB);
+        node.symbol = symbol;
+        node.leaf = (parentA == null && parentB == null);
+        return node;
+    }
+
+    public static HuffmanNode constructWithProbability(final HuffmanNode parentA, final HuffmanNode parentB, final double probability) {
+        final HuffmanNode node = new HuffmanNode(parentA, parentB);
+        node.probability = probability;
+        return node;
     }
 
     public HuffmanNode traverse(final boolean queryBit) {
@@ -73,5 +85,33 @@ public class HuffmanNode implements Comparable<HuffmanNode> {
 
     public HuffmanNode getSubNodeB() {
         return subNodeB;
+    }
+
+    private static boolean treeNodeEquality(final HuffmanNode A, final HuffmanNode B) {
+        if (A.leaf) {
+            if (!B.leaf) {
+                return false;
+            }
+            return A.symbol == B.symbol;
+        } else {
+            if (B.leaf) {
+                return false;
+            }
+            if (A.bit != B.bit)
+                return false;
+
+            if ((A.subNodeA != null && B.subNodeA == null) || (A.subNodeA == null && B.subNodeA != null))
+                return false;
+            if ((A.subNodeB != null && B.subNodeB == null) || (A.subNodeB == null && B.subNodeB != null))
+                return false;
+
+            final boolean subTreeAResult = treeNodeEquality(A.subNodeA, B.subNodeA);
+            final boolean subTreeBResult = treeNodeEquality(A.subNodeB, B.subNodeB);
+            return (subTreeAResult && subTreeBResult);
+        }
+    }
+
+    public boolean treeEqual(final HuffmanNode opposite) {
+        return treeNodeEquality(this, opposite);
     }
 }
