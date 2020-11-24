@@ -74,11 +74,12 @@ public class VQCacheFile implements ICacheFile {
     @Override
     public void report(final StringBuilder builder) {
         final int[][] vectors = codebook.getVectors();
+        builder.append("\n- - - - - - - - - - - - - - - - - - - - - - - - -\n");
         for (final int[] vector : vectors) {
-            builder.append("- - - - - - - - - - - - - - - - - - - - - - - - -\n");
             for (final int x : vector) {
                 builder.append(x).append(';');
             }
+            builder.append("\n- - - - - - - - - - - - - - - - - - - - - - - - -\n");
         }
     }
 
