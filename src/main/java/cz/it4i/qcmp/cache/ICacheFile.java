@@ -1,5 +1,7 @@
 package cz.it4i.qcmp.cache;
 
+import cz.it4i.qcmp.fileformat.CacheFileHeader;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;

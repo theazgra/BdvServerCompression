@@ -1,5 +1,6 @@
 package cz.it4i.qcmp.cache;
 
+import cz.it4i.qcmp.fileformat.CacheFileHeader;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 
 import java.io.DataInputStream;

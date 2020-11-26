@@ -2,6 +2,7 @@ package cz.it4i.qcmp.cache;
 
 import cz.it4i.qcmp.compression.CompressionOptions;
 import cz.it4i.qcmp.data.V3i;
+import cz.it4i.qcmp.fileformat.CacheFileHeader;
 import cz.it4i.qcmp.fileformat.QuantizationType;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 import cz.it4i.qcmp.quantization.vector.VQCodebook;

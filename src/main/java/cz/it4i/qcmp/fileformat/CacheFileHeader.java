@@ -1,8 +1,7 @@
-package cz.it4i.qcmp.cache;
+package cz.it4i.qcmp.fileformat;
 
 import cz.it4i.qcmp.data.V2i;
 import cz.it4i.qcmp.data.V3i;
-import cz.it4i.qcmp.fileformat.QuantizationType;
 import cz.it4i.qcmp.utilities.Utils;
 
 import java.io.DataInputStream;
