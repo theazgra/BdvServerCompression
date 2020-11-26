@@ -5,6 +5,7 @@ import cz.it4i.qcmp.utilities.TypeConverter;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class RawDataIO {
 
@@ -28,6 +29,24 @@ public class RawDataIO {
         fileStream.write(buffer, 0, buffer.length);
         fileStream.flush();
         fileStream.close();
+    }
+
+    /**
+     * Read exactly N bytes from stream into the buffer.
+     *
+     * @param stream Input stream.
+     * @param buffer Memory buffer.
+     * @throws IOException when unable to read buffer.length bytes.
+     */
+    public static void readFullBuffer(final InputStream stream, final byte[] buffer) throws IOException {
+        int toRead = buffer.length;
+        while (toRead > 0) {
+            final int read = stream.read(buffer, (buffer.length - toRead), toRead);
+            if (read < 0) {
+                throw new IOException("Unable to read requested number of bytes.");
+            }
+            toRead -= read;
+        }
     }
 
 

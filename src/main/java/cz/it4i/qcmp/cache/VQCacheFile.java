@@ -1,6 +1,6 @@
 package cz.it4i.qcmp.cache;
 
-import cz.it4i.qcmp.fileformat.CacheFileHeader;
+import cz.it4i.qcmp.fileformat.cache.CacheFileHeaderV1;
 import cz.it4i.qcmp.quantization.vector.VQCodebook;
 
 import java.io.DataInputStream;
@@ -8,13 +8,13 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class VQCacheFile implements ICacheFile {
-    private CacheFileHeader header;
+    private CacheFileHeaderV1 header;
     private VQCodebook codebook;
 
     public VQCacheFile() {
     }
 
-    public VQCacheFile(final CacheFileHeader header, final VQCodebook codebook) {
+    public VQCacheFile(final CacheFileHeaderV1 header, final VQCodebook codebook) {
         this.header = header;
         this.codebook = codebook;
         assert (header.getCodebookSize() == codebook.getCodebookSize());
@@ -37,13 +37,13 @@ public class VQCacheFile implements ICacheFile {
     }
 
     public void readFromStream(final DataInputStream inputStream) throws IOException {
-        header = new CacheFileHeader();
+        header = new CacheFileHeaderV1();
         header.readFromStream(inputStream);
         readFromStream(inputStream, header);
     }
 
     @Override
-    public void readFromStream(final DataInputStream inputStream, final CacheFileHeader header) throws IOException {
+    public void readFromStream(final DataInputStream inputStream, final CacheFileHeaderV1 header) throws IOException {
         this.header = header;
         final int codebookSize = header.getCodebookSize();
 
@@ -64,7 +64,7 @@ public class VQCacheFile implements ICacheFile {
         codebook = new VQCodebook(header.getVectorDim(), vectors, frequencies);
     }
 
-    public CacheFileHeader getHeader() {
+    public CacheFileHeaderV1 getHeader() {
         return header;
     }
 

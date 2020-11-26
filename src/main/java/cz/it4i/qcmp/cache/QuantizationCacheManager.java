@@ -2,8 +2,8 @@ package cz.it4i.qcmp.cache;
 
 import cz.it4i.qcmp.compression.CompressionOptions;
 import cz.it4i.qcmp.data.V3i;
-import cz.it4i.qcmp.fileformat.CacheFileHeader;
 import cz.it4i.qcmp.fileformat.QuantizationType;
+import cz.it4i.qcmp.fileformat.cache.CacheFileHeaderV1;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 import cz.it4i.qcmp.quantization.vector.VQCodebook;
 
@@ -68,8 +68,8 @@ public class QuantizationCacheManager {
      * @param codebook  Final SQ codebook.
      * @return SQ cache file header.
      */
-    private CacheFileHeader createHeaderForSQ(final String trainFile, final SQCodebook codebook) {
-        final CacheFileHeader header = new CacheFileHeader();
+    private CacheFileHeaderV1 createHeaderForSQ(final String trainFile, final SQCodebook codebook) {
+        final CacheFileHeaderV1 header = new CacheFileHeaderV1();
         header.setQuantizationType(QuantizationType.Scalar);
         header.setCodebookSize(codebook.getCodebookSize());
         header.setTrainFileName(trainFile);
@@ -105,8 +105,8 @@ public class QuantizationCacheManager {
      * @param codebook  Final VQ codebook.
      * @return VQ cache file header.
      */
-    private CacheFileHeader createHeaderForVQ(final String trainFile, final VQCodebook codebook) {
-        final CacheFileHeader header = new CacheFileHeader();
+    private CacheFileHeaderV1 createHeaderForVQ(final String trainFile, final VQCodebook codebook) {
+        final CacheFileHeaderV1 header = new CacheFileHeaderV1();
         header.setQuantizationType(getQuantizationTypeFromVectorDimensions(codebook.getVectorDims()));
         header.setCodebookSize(codebook.getCodebookSize());
         header.setTrainFileName(trainFile);
@@ -125,7 +125,7 @@ public class QuantizationCacheManager {
     public String saveCodebook(final String trainFile, final SQCodebook codebook) throws IOException {
         final String fileName = getCacheFilePathForSQ(trainFile, codebook.getCodebookSize()).getAbsolutePath();
 
-        final CacheFileHeader header = createHeaderForSQ(new File(trainFile).getName(), codebook);
+        final CacheFileHeaderV1 header = createHeaderForSQ(new File(trainFile).getName(), codebook);
         final SQCacheFile cacheFile = new SQCacheFile(header, codebook);
 
         try (final FileOutputStream fos = new FileOutputStream(fileName, false);
@@ -152,7 +152,7 @@ public class QuantizationCacheManager {
                                                       codebook.getCodebookSize(),
                                                       codebook.getVectorDims()).getAbsolutePath();
 
-        final CacheFileHeader header = createHeaderForVQ(new File(trainFile).getName(), codebook);
+        final CacheFileHeaderV1 header = createHeaderForVQ(new File(trainFile).getName(), codebook);
         final VQCacheFile cacheFile = new VQCacheFile(header, codebook);
 
         try (final FileOutputStream fos = new FileOutputStream(fileName, false);
@@ -357,7 +357,7 @@ public class QuantizationCacheManager {
             dis = new DataInputStream(inputStream);
         }
 
-        final CacheFileHeader header = new CacheFileHeader();
+        final CacheFileHeaderV1 header = new CacheFileHeaderV1();
         try {
             header.readFromStream(dis);
         } catch (final IOException e) {
@@ -409,12 +409,12 @@ public class QuantizationCacheManager {
      * @param path Path to cache file.
      */
     public static void inspectCacheFile(final String path, final boolean verbose) {
-        CacheFileHeader header = null;
+        CacheFileHeaderV1 header = null;
         final long fileSize;
         try (final FileInputStream fis = new FileInputStream(path);
              final DataInputStream dis = new DataInputStream(fis)) {
             fileSize = fis.getChannel().size();
-            header = new CacheFileHeader();
+            header = new CacheFileHeaderV1();
             header.readFromStream(dis);
         } catch (final IOException e) {
             e.printStackTrace();

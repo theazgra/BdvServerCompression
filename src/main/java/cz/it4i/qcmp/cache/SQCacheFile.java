@@ -1,6 +1,6 @@
 package cz.it4i.qcmp.cache;
 
-import cz.it4i.qcmp.fileformat.CacheFileHeader;
+import cz.it4i.qcmp.fileformat.cache.CacheFileHeaderV1;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 
 import java.io.DataInputStream;
@@ -8,13 +8,13 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class SQCacheFile implements ICacheFile {
-    private CacheFileHeader header;
+    private CacheFileHeaderV1 header;
     private SQCodebook codebook;
 
     public SQCacheFile() {
     }
 
-    public SQCacheFile(final CacheFileHeader header, final SQCodebook codebook) {
+    public SQCacheFile(final CacheFileHeaderV1 header, final SQCodebook codebook) {
         this.header = header;
         this.codebook = codebook;
         assert (header.getCodebookSize() == codebook.getCodebookSize());
@@ -34,12 +34,12 @@ public class SQCacheFile implements ICacheFile {
     }
 
     public void readFromStream(final DataInputStream inputStream) throws IOException {
-        header = new CacheFileHeader();
+        header = new CacheFileHeaderV1();
         header.readFromStream(inputStream);
         readFromStream(inputStream, header);
     }
 
-    public void readFromStream(final DataInputStream inputStream, final CacheFileHeader header) throws IOException {
+    public void readFromStream(final DataInputStream inputStream, final CacheFileHeaderV1 header) throws IOException {
         this.header = header;
         final int codebookSize = header.getCodebookSize();
         final int[] centroids = new int[codebookSize];
@@ -54,7 +54,7 @@ public class SQCacheFile implements ICacheFile {
         codebook = new SQCodebook(centroids, frequencies);
     }
 
-    public CacheFileHeader getHeader() {
+    public CacheFileHeaderV1 getHeader() {
         return header;
     }
 
