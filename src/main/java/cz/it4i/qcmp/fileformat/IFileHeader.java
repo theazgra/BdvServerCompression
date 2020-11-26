@@ -15,7 +15,7 @@ public interface IFileHeader {
 
     void readFromStream(final DataInputStream stream) throws IOException;
 
-    void report(final StringBuilder builder);
+    void report(final StringBuilder builder, final String inputFile);
 
-    long getExpectedFileSize();
+    long getExpectedDataSize();
 }

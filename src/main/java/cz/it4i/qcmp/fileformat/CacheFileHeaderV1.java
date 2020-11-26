@@ -97,7 +97,7 @@ public class CacheFileHeaderV1 implements IFileHeader {
     }
 
     @Override
-    public long getExpectedFileSize() {
+    public long getExpectedDataSize() {
         long expectedFileSize = 20 + trainFileNameSize; // Base header size
         expectedFileSize += (codebookSize * 8);         // Frequency values
         switch (quantizationType) {
@@ -116,7 +116,7 @@ public class CacheFileHeaderV1 implements IFileHeader {
     }
 
     @Override
-    public void report(final StringBuilder sb) {
+    public void report(final StringBuilder sb, final String inputFile) {
         sb.append("HeaderVersion: ").append(VERSION).append('\n');
         sb.append("Magic: ").append(magicValue).append('\n');
 

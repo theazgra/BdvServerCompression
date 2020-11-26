@@ -137,7 +137,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
              final DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(fos, 8192))) {
 
             final QCMPFileHeader header = createHeader();
-            header.writeHeader(compressStream);
+            header.writeToStream(compressStream);
 
             planeDataSizes = imageCompressor.compress(compressStream);
 

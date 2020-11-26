@@ -9,14 +9,6 @@ import java.io.DataOutputStream;
 
 public interface IImageDecompressor extends IListenable {
     /**
-     * Get correct size of data block.
-     *
-     * @param header QCMPFile header with information about compressed file.
-     * @return Expected size of data.
-     */
-    long getExpectedDataSize(final QCMPFileHeader header);
-
-    /**
      * Decompress the image planes to decompress stream.
      *
      * @param compressedStream Input stream of compressed data.

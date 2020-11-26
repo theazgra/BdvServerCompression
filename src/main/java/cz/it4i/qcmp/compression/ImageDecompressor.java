@@ -46,10 +46,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
      */
     private QCMPFileHeader readQCMPFileHeader(final DataInputStream inputStream) throws IOException {
         final QCMPFileHeader header = new QCMPFileHeader();
-        if (!header.readHeader(inputStream)) {
-            // Invalid QCMPFile header.
-            return null;
-        }
+        header.readFromStream(inputStream);
         return header;
     }
 
@@ -102,89 +99,15 @@ public class ImageDecompressor extends CompressorDecompressorBase {
             return "";
         }
 
-        if (header == null) {
-            logBuilder.append("Input file is not valid QCMPFile\n");
+        if (!header.validateHeader()) {
+            logBuilder.append("Input file is not valid QCMP file\n");
             validFile = false;
         } else {
-
-
-            final boolean validHeader = header.validateHeader();
-            logBuilder.append("Header is:\t\t").append(validHeader ? "valid" : "invalid").append('\n');
-
-            logBuilder.append("Magic value:\t\t").append(header.getMagicValue()).append('\n');
-            logBuilder.append("Quantization type\t");
-            switch (header.getQuantizationType()) {
-                case Scalar:
-                    logBuilder.append("Scalar\n");
-                    break;
-                case Vector1D:
-                    logBuilder.append("Vector1D\n");
-                    break;
-                case Vector2D:
-                    logBuilder.append("Vector2D\n");
-                    break;
-                case Vector3D:
-                    logBuilder.append("Vector3D\n");
-                    break;
-                case Invalid:
-                    logBuilder.append("INVALID\n");
-                    break;
-            }
-            logBuilder.append("Bits per pixel:\t\t").append(header.getBitsPerCodebookIndex()).append('\n');
-
-            logBuilder.append("Codebook:\t\t").append(header.isCodebookPerPlane() ? "one per plane\n" : "one for " +
-                    "all\n");
-
-            final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
-            logBuilder.append("Codebook size:\t\t").append(codebookSize).append('\n');
-
-            logBuilder.append("Image size X:\t\t").append(header.getImageSizeX()).append('\n');
-            logBuilder.append("Image size Y:\t\t").append(header.getImageSizeY()).append('\n');
-            logBuilder.append("Image size Z:\t\t").append(header.getImageSizeZ()).append('\n');
-
-            logBuilder.append("Vector size X:\t\t").append(header.getVectorSizeX()).append('\n');
-            logBuilder.append("Vector size Y:\t\t").append(header.getVectorSizeY()).append('\n');
-            logBuilder.append("Vector size Z:\t\t").append(header.getVectorSizeZ()).append('\n');
-
-            final long headerSize = header.getHeaderSize();
-            final long fileSize = new File(options.getInputDataInfo().getFilePath()).length();
-            final long dataSize = fileSize - header.getHeaderSize();
-
-            final IImageDecompressor decompressor = getImageDecompressor(header.getQuantizationType());
-
-            if (decompressor != null) {
-                final long expectedDataSize = decompressor.getExpectedDataSize(header);
-                validFile = (dataSize == expectedDataSize);
-
-                logBuilder.append("File size:\t\t").append(fileSize).append(" B");
-
-                final long KB = (fileSize / 1000);
-                if (KB > 0) {
-                    logBuilder.append(" (").append(KB).append(" KB)");
-                    final long MB = (KB / 1000);
-                    if (MB > 0) {
-                        logBuilder.append(" (").append(MB).append(" MB)");
-                    }
-                }
-                logBuilder.append('\n');
-
-                logBuilder.append("Header size:\t\t").append(headerSize).append(" Bytes\n");
-                logBuilder.append("Data size:\t\t").append(dataSize).append(" Bytes ")
-                        .append(dataSize == expectedDataSize ? "(correct)\n" : "(INVALID)\n");
-
-                final long pixelCount = header.getImageDims().multiplyTogether();
-                final long uncompressedSize = 2 * pixelCount; // We assert 16 bit (2 byte) pixel.
-                final double compressionRatio = (double) fileSize / (double) uncompressedSize;
-                logBuilder.append(String.format("Compression ratio:\t%.4f\n", compressionRatio));
-
-                final double BPP = ((double) fileSize * 8.0) / (double) pixelCount;
-                logBuilder.append(String.format("Bits Per Pixel (BPP):\t%.4f\n", BPP));
-            }
+            header.report(logBuilder, options.getInputDataInfo().getFilePath());
         }
 
-        logBuilder.append("\n=== Input file is ").append(validFile ? "VALID" : "INVALID").append(" ===\n");
 
-        if (header != null && options.isVerbose()) {
+        if (validFile && options.isVerbose()) {
             final String prefix = header.getQuantizationType() != QuantizationType.Vector3D ? "Plane" : "Voxel layer";
             final long[] planeDataSizes = header.getPlaneDataSizes();
             long planeIndex = 0;
@@ -244,7 +167,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
     private boolean checkInputFileSize(final QCMPFileHeader header, final IImageDecompressor imageDecompressor) {
         final long fileSize = new File(options.getInputDataInfo().getFilePath()).length();
         final long dataSize = fileSize - header.getHeaderSize();
-        final long expectedDataSize = imageDecompressor.getExpectedDataSize(header);
+        final long expectedDataSize = header.getExpectedDataSize();
         if (dataSize != expectedDataSize) {
             reportStatusToListeners("Invalid file size.");
             return false;

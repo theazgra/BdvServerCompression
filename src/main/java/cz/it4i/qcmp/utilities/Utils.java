@@ -192,4 +192,18 @@ public class Utils {
         }
         return result;
     }
+
+    public static StringBuilder prettyPrintFileSize(final StringBuilder builder, final long fileSize) {
+        builder.append(fileSize).append(" B");
+
+        final long KB = (fileSize / 1000);
+        if (KB > 0) {
+            builder.append(" (").append(KB).append(" KB)");
+            final long MB = (KB / 1000);
+            if (MB > 0) {
+                builder.append(" (").append(MB).append(" MB)");
+            }
+        }
+        return builder;
+    }
 }

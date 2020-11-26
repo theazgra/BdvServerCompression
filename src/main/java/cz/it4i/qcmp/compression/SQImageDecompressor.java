@@ -41,25 +41,6 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
     }
 
     @Override
-    public long getExpectedDataSize(final QCMPFileHeader header) {
-        // Quantization value count.
-        final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
-
-        // Total codebook size in bytes. Also symbol frequencies for Huffman.
-        final long codebookDataSize = ((2 * codebookSize) + (LONG_BYTES * codebookSize)) *
-                (header.isCodebookPerPlane() ? header.getImageSizeZ() : 1);
-
-        // Indices are encoded using huffman. Plane data size is written in the header.
-        final long[] planeDataSizes = header.getPlaneDataSizes();
-        long totalPlaneDataSize = 0;
-        for (final long planeDataSize : planeDataSizes) {
-            totalPlaneDataSize += planeDataSize;
-        }
-
-        return (codebookDataSize + totalPlaneDataSize);
-    }
-
-    @Override
     public void decompress(final DataInputStream compressedStream,
                            final DataOutputStream decompressStream,
                            final QCMPFileHeader header) throws ImageDecompressionException {

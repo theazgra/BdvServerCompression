@@ -3,16 +3,23 @@ package cz.it4i.qcmp.fileformat;
 import cz.it4i.qcmp.U16;
 import cz.it4i.qcmp.compression.VQImageCompressor;
 import cz.it4i.qcmp.data.V3i;
+import cz.it4i.qcmp.io.RawDataIO;
+import cz.it4i.qcmp.utilities.Utils;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 
-public class QCMPFileHeader implements Cloneable {
-    public static final int BASE_QCMP_HEADER_SIZE = 23;
-    public static final String QCMP_MAGIC_VALUE = "QCMPFILE";
+public class QCMPFileHeader implements IFileHeader, Cloneable {
+    //region Constants
+    private static final int VERSION = 1;
+    private static final int BASE_QCMP_HEADER_SIZE = 23;
+    private static final String MAGIC_VALUE = "QCMPFILE";
+    //endregion
 
-    private String magicValue = QCMP_MAGIC_VALUE;
+    //region Header fields
+    private String magicValue = MAGIC_VALUE;
     private QuantizationType quantizationType;
     private byte bitsPerCodebookIndex;
     private boolean codebookPerPlane;
@@ -26,15 +33,18 @@ public class QCMPFileHeader implements Cloneable {
     private int vectorSizeZ;
 
     private long[] planeDataSizes;
+    //endregion
 
+    //region IFileHeader implementation
 
     /**
      * Validate that all header values are in their valid range.
      *
      * @return True if this is valid QCMPFILE header.
      */
+    @Override
     public boolean validateHeader() {
-        if (!magicValue.equals(QCMP_MAGIC_VALUE))
+        if (!magicValue.equals(MAGIC_VALUE))
             return false;
 
         if (bitsPerCodebookIndex == 0)
@@ -51,27 +61,12 @@ public class QCMPFileHeader implements Cloneable {
             return false;
         if (!U16.isInRange(vectorSizeY))
             return false;
-        if (!U16.isInRange(vectorSizeZ))
-            return false;
-
-        return true;
+        return U16.isInRange(vectorSizeZ);
     }
 
     @Override
-    protected Object clone() throws CloneNotSupportedException {
-        return super.clone();
-    }
-
-    public QCMPFileHeader copyOf() {
-        try {
-            return (QCMPFileHeader) this.clone();
-        } catch (final CloneNotSupportedException e) {
-            return null;
-        }
-    }
-
-    public void writeHeader(final DataOutputStream outputStream) throws IOException {
-        outputStream.writeBytes(QCMP_MAGIC_VALUE);
+    public void writeToStream(final DataOutputStream outputStream) throws IOException {
+        outputStream.writeBytes(MAGIC_VALUE);
 
         outputStream.writeByte(quantizationType.getValue());
         outputStream.writeByte(bitsPerCodebookIndex);
@@ -95,26 +90,18 @@ public class QCMPFileHeader implements Cloneable {
         }
     }
 
-    public boolean readHeader(final DataInputStream inputStream) throws IOException {
+    @Override
+    public void readFromStream(final DataInputStream inputStream) throws IOException {
         if (inputStream.available() < BASE_QCMP_HEADER_SIZE) {
-            return false;
+            throw new IOException("Provided file is not QCMP file. The file is too small.");
         }
 
-        final byte[] magicBuffer = new byte[QCMP_MAGIC_VALUE.length()];
+        final byte[] magicValueBuffer = new byte[MAGIC_VALUE.length()];
+        RawDataIO.readFullBuffer(inputStream, magicValueBuffer);
 
-        int toRead = QCMP_MAGIC_VALUE.length();
-        while (toRead > 0) {
-            final int read = inputStream.read(magicBuffer, QCMP_MAGIC_VALUE.length() - toRead, toRead);
-            if (read < 0) {
-                // Invalid magic value.
-                return false;
-            }
-            toRead -= read;
-        }
-
-        magicValue = new String(magicBuffer);
-        if (!magicValue.equals(QCMP_MAGIC_VALUE)) {
-            return false;
+        magicValue = new String(magicValueBuffer);
+        if (!magicValue.equals(MAGIC_VALUE)) {
+            throw new IOException("Provided file is not QCMP file. Magic value is invalid.");
         }
 
         quantizationType = QuantizationType.fromByte(inputStream.readByte());
@@ -139,10 +126,153 @@ public class QCMPFileHeader implements Cloneable {
             final long readValue = inputStream.readInt();
             planeDataSizes[i] = (readValue & 0x00000000FFFFFFFFL);
         }
-
-        return true;
     }
 
+    @Override
+    public int getHeaderVersion() {
+        return VERSION;
+    }
+
+    @Override
+    public void report(final StringBuilder builder, final String inputFile) {
+        if (!validateHeader()) {
+            builder.append("Header is:\t\t invalid\n");
+            return;
+        }
+        builder.append("HeaderVersion\t\t: ").append(VERSION).append('\n');
+        builder.append("Magic value\t\t: ").append(magicValue).append('\n');
+        builder.append("Quantization type\t: ");
+        switch (quantizationType) {
+            case Scalar:
+                builder.append("Scalar\n");
+                break;
+            case Vector1D:
+                builder.append("Vector1D\n");
+                break;
+            case Vector2D:
+                builder.append("Vector2D\n");
+                break;
+            case Vector3D:
+                builder.append("Vector3D\n");
+                break;
+            case Invalid:
+                builder.append("INVALID\n");
+                break;
+        }
+        builder.append("Bits per pixel\t\t: ").append(bitsPerCodebookIndex).append('\n');
+
+        builder.append("Codebook\t\t: ").append(codebookPerPlane ? "one per plane\n" : "one for all\n");
+
+        final int codebookSize = (int) Math.pow(2, bitsPerCodebookIndex);
+        builder.append("Codebook size\t\t: ").append(codebookSize).append('\n');
+
+        builder.append("Image stack size\t: ")
+                .append(imageSizeX).append('x')
+                .append(imageSizeY).append('x')
+                .append(imageSizeZ).append('\n');
+
+        builder.append("Quantization vector\t: ")
+                .append(vectorSizeX).append('x')
+                .append(vectorSizeY).append('x')
+                .append(vectorSizeZ).append('\n');
+
+        final long headerSize = getHeaderSize();
+        final long fileSize = new File(inputFile).length();
+        final long dataSize = fileSize - headerSize;
+
+        final long expectedDataSize = getExpectedDataSize();
+        final boolean correctFileSize = (dataSize == expectedDataSize);
+
+        builder.append("File size\t\t: ");
+        Utils.prettyPrintFileSize(builder, fileSize).append('\n');
+
+        builder.append("Header size\t\t: ").append(headerSize).append(" Bytes\n");
+        builder.append("Data size\t\t: ");
+        Utils.prettyPrintFileSize(builder, dataSize).append(correctFileSize ? "(correct)\n" : "(INVALID)\n");
+
+        final long pixelCount = imageSizeX * imageSizeY * imageSizeZ;
+        final long uncompressedSize = 2 * pixelCount; // We assert 16 bit (2 byte) pixel.
+        final double compressionRatio = (double) fileSize / (double) uncompressedSize;
+        builder.append(String.format("Compression ratio\t: %.4f\n", compressionRatio));
+
+        final double BPP = ((double) fileSize * 8.0) / (double) pixelCount;
+        builder.append(String.format("Bits Per Pixel (BPP)\t: %.4f\n", BPP));
+
+        builder.append("\n=== Input file is ").append(correctFileSize ? "VALID" : "INVALID").append(" ===\n");
+    }
+
+    private long calculateDataSizeForSq() {
+        final int LONG_BYTES = 8;
+        // Quantization value count.
+        final int codebookSize = (int) Math.pow(2, bitsPerCodebookIndex);
+
+        // Total codebook size in bytes. Also symbol frequencies for Huffman.
+        final long codebookDataSize = ((2 * codebookSize) + (LONG_BYTES * codebookSize)) * (codebookPerPlane ? imageSizeZ : 1);
+
+        // Indices are encoded using huffman. Plane data size is written in the header.
+        long totalPlaneDataSize = 0;
+        for (final long planeDataSize : planeDataSizes) {
+            totalPlaneDataSize += planeDataSize;
+        }
+
+        return (codebookDataSize + totalPlaneDataSize);
+    }
+
+    private long calculateDataSizeForVq() {
+        final int LONG_BYTES = 8;
+        // Vector count in codebook
+        final int codebookSize = (int) Math.pow(2, bitsPerCodebookIndex);
+
+        // Single vector size in bytes.
+        final int vectorDataSize = 2 * vectorSizeX * vectorSizeY * vectorSizeZ;
+
+        // Total codebook size in bytes.
+        final long codebookDataSize = ((codebookSize * vectorDataSize) + (codebookSize * LONG_BYTES)) * (codebookPerPlane ? imageSizeZ : 1);
+
+        // Indices are encoded using huffman. Plane data size is written in the header.
+        long totalPlaneDataSize = 0;
+        for (final long planeDataSize : planeDataSizes) {
+            totalPlaneDataSize += planeDataSize;
+        }
+        return (codebookDataSize + totalPlaneDataSize);
+    }
+
+    @Override
+    public long getExpectedDataSize() {
+        switch (quantizationType) {
+            case Scalar:
+                return calculateDataSizeForSq();
+            case Vector1D:
+            case Vector2D:
+            case Vector3D:
+                return calculateDataSizeForVq();
+        }
+        return -1;
+    }
+
+    @Override
+    public String getMagicValue() {
+        return magicValue;
+    }
+
+    //endregion
+
+    //region Cloneable implementation
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    public QCMPFileHeader copyOf() {
+        try {
+            return (QCMPFileHeader) this.clone();
+        } catch (final CloneNotSupportedException e) {
+            return null;
+        }
+    }
+    //endregion
+
+    //region Getters and Setters
     public QuantizationType getQuantizationType() {
         return quantizationType;
     }
@@ -219,10 +349,6 @@ public class QCMPFileHeader implements Cloneable {
         this.vectorSizeZ = vectorSizeZ;
     }
 
-    public String getMagicValue() {
-        return magicValue;
-    }
-
     public void setImageDimension(final V3i imageDims) {
         imageSizeX = imageDims.getX();
         imageSizeY = imageDims.getY();
@@ -250,4 +376,5 @@ public class QCMPFileHeader implements Cloneable {
 
         return BASE_QCMP_HEADER_SIZE + (chunkCount * 4);
     }
+    //endregion
 }

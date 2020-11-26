@@ -421,7 +421,7 @@ public class QuantizationCacheManager {
             return;
         }
         final StringBuilder reportBuilder = new StringBuilder();
-        final long expectedFileSize = header.getExpectedFileSize();
+        final long expectedFileSize = header.getExpectedDataSize();
         if (expectedFileSize == fileSize) {
             reportBuilder.append("\u001B[32mCache file is VALID ").append(fileSize).append(" bytes\u001B[0m\n");
         } else {
@@ -429,7 +429,7 @@ public class QuantizationCacheManager {
                     .append(fileSize).append(" bytes instead of expected ")
                     .append(expectedFileSize).append(" bytes.\n");
         }
-        header.report(reportBuilder);
+        header.report(reportBuilder, path);
 
         if (verbose) {
 
