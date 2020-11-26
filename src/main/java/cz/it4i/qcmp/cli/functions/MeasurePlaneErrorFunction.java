@@ -123,17 +123,26 @@ public class MeasurePlaneErrorFunction extends CustomFunctionBase {
                                        final OutputStreamWriter reportWriter) throws IOException {
 
         final int[][] testData = loadPlanes(testFile, ReferenceFileDimensions);
-
+        final int pixelCount = ReferenceFileDimensions.getNumberOfElementsInDimension(2);
         reportWriter.write("=========================================\n");
         reportWriter.write(testFile);
         reportWriter.write('\n');
         reportWriter.write("=========================================\n");
-        reportWriter.write("PlaneIndex;ErrorSum;MeanError\n");
+        reportWriter.write("PlaneIndex;ErrorSum;MeanError\n"); //;SMAPE
 
         final int planePixelCount = ReferenceFileDimensions.getNumberOfElementsInDimension(2);
         final int[] diffData = new int[planePixelCount];
 
         for (int plane = 0; plane < ReferenceFileDimensions.getPlaneCount(); plane++) {
+            // NOTE(Moravec): SMAPE metric. https://en.wikipedia.org/wiki/Symmetric_mean_absolute_percentage_error
+            // double numerator = 0;
+            // double denominator = 0;
+            // for (int i = 0; i < pixelCount; i++) {
+            //     numerator += Math.abs((double) testData[plane][i] - (double) referenceData[plane][i]);
+            //     denominator += ((double) referenceData[plane][i] + (double) testData[plane][i]);
+            // }
+            // assert (denominator != 0) : "SMAPE denominator can't be zero.";
+            // final double SMAPE = numerator / denominator;
             Utils.differenceToArray(referenceData[plane], testData[plane], diffData);
             Utils.applyAbsFunction(diffData);
 
