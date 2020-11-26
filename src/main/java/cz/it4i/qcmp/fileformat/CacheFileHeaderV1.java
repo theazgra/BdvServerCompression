@@ -1,9 +1,7 @@
-package cz.it4i.qcmp.fileformat.cache;
+package cz.it4i.qcmp.fileformat;
 
 import cz.it4i.qcmp.data.V2i;
 import cz.it4i.qcmp.data.V3i;
-import cz.it4i.qcmp.fileformat.IFileHeader;
-import cz.it4i.qcmp.fileformat.QuantizationType;
 import cz.it4i.qcmp.io.RawDataIO;
 import cz.it4i.qcmp.utilities.Utils;
 
