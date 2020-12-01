@@ -4,8 +4,8 @@ import cz.it4i.qcmp.cache.ICacheFile;
 import cz.it4i.qcmp.cache.SQCacheFile;
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
 import cz.it4i.qcmp.fileformat.QCMPFileHeader;
-import cz.it4i.qcmp.huffman.Huffman;
 import cz.it4i.qcmp.huffman.HuffmanNode;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InBitStream;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 import cz.it4i.qcmp.utilities.Stopwatch;
@@ -17,7 +17,7 @@ import java.io.IOException;
 
 public class SQImageDecompressor extends CompressorDecompressorBase implements IImageDecompressor {
     private SQCodebook cachedCodebook = null;
-    private Huffman cachedHuffman = null;
+    private HuffmanTreeBuilder cachedHuffman = null;
 
     public SQImageDecompressor(final CompressionOptions options) {
         super(options);
@@ -52,7 +52,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
 
         SQCodebook codebook = null;
-        Huffman huffman = null;
+        HuffmanTreeBuilder huffman = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
             reportStatusToListeners("Loading single codebook and huffman coder.");
@@ -130,7 +130,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
 
         SQCodebook codebook = null;
-        Huffman huffman = null;
+        HuffmanTreeBuilder huffman = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
             codebook = readScalarQuantizationValues(compressedStream, codebookSize);

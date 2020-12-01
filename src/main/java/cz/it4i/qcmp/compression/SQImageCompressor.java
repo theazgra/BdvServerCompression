@@ -5,7 +5,7 @@ import cz.it4i.qcmp.cache.ICacheFile;
 import cz.it4i.qcmp.cache.QuantizationCacheManager;
 import cz.it4i.qcmp.cache.SQCacheFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
-import cz.it4i.qcmp.huffman.Huffman;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.io.loader.IPlaneLoader;
 import cz.it4i.qcmp.io.loader.PlaneLoaderFactory;
@@ -20,7 +20,7 @@ import java.io.IOException;
 public class SQImageCompressor extends CompressorDecompressorBase implements IImageCompressor {
 
     private ScalarQuantizer cachedQuantizer;
-    private Huffman cachedHuffman;
+    private HuffmanTreeBuilder cachedHuffman;
 
     public SQImageCompressor(final CompressionOptions options) {
         super(options);
@@ -116,7 +116,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         }
 
         ScalarQuantizer quantizer = null;
-        Huffman huffman = null;
+        HuffmanTreeBuilder huffman = null;
         final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
         if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
             reportStatusToListeners("Loading codebook from cache file.");
@@ -174,7 +174,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
                 quantizer = trainScalarQuantizerFromData(planeData);
                 writeCodebookToOutputStream(quantizer, compressStream);
 
-                huffman = new Huffman(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
+                huffman = new HuffmanTreeBuilder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
                 huffman.buildHuffmanTree();
             }
 

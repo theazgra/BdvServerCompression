@@ -1,36 +1,38 @@
 package cz.it4i.qcmp.huffman;
 
+import cz.it4i.qcmp.io.InBitStream;
+import cz.it4i.qcmp.io.OutBitStream;
 import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
 
 public class HuffmanNode implements Comparable<HuffmanNode> {
     private int symbol = -1;
-    private long symbolFrequency = -1;
 
     private int bit = -1;
     private boolean leaf = false;
     private double probability = 0.0;
 
-    final HuffmanNode subNodeA;
-    final HuffmanNode subNodeB;
+    final HuffmanNode rightChild;
+    final HuffmanNode leftChild;
 
-    public HuffmanNode(final int symbol, final double probability, final long frequency) {
+    public HuffmanNode(final int symbol, final double probability) {
         this.symbol = symbol;
         this.probability = probability;
-        this.symbolFrequency = frequency;
-        subNodeA = null;
-        subNodeB = null;
+        rightChild = null;
+        leftChild = null;
         this.leaf = true;
     }
 
-    private HuffmanNode(final HuffmanNode parentA, final HuffmanNode parentB) {
-        subNodeA = parentA;
-        subNodeB = parentB;
+    private HuffmanNode(final HuffmanNode rightChild, final HuffmanNode leftChild) {
+        this.rightChild = rightChild;
+        this.leftChild = leftChild;
     }
 
-    public static HuffmanNode constructWithSymbol(final HuffmanNode parentA, final HuffmanNode parentB, final int symbol) {
-        final HuffmanNode node = new HuffmanNode(parentA, parentB);
+    public static HuffmanNode constructWithSymbol(final HuffmanNode rightChild, final HuffmanNode leftChild, final int symbol) {
+        final HuffmanNode node = new HuffmanNode(rightChild, leftChild);
         node.symbol = symbol;
-        node.leaf = (parentA == null && parentB == null);
+        node.leaf = (rightChild == null && leftChild == null);
         return node;
     }
 
@@ -41,10 +43,10 @@ public class HuffmanNode implements Comparable<HuffmanNode> {
     }
 
     public HuffmanNode traverse(final boolean queryBit) {
-        if (subNodeA != null && subNodeA.bit == (queryBit ? 1 : 0))
-            return subNodeA;
-        if (subNodeB != null && subNodeB.bit == (queryBit ? 1 : 0))
-            return subNodeB;
+        if (rightChild != null && rightChild.bit == (queryBit ? 1 : 0))
+            return rightChild;
+        if (leftChild != null && leftChild.bit == (queryBit ? 1 : 0))
+            return leftChild;
 
         assert (false) : "Corrupted huffman tree";
         return null;
@@ -63,10 +65,6 @@ public class HuffmanNode implements Comparable<HuffmanNode> {
         return symbol;
     }
 
-    public long getSymbolFrequency() {
-        return symbolFrequency;
-    }
-
     public int getBit() {
         return bit;
     }
@@ -79,39 +77,104 @@ public class HuffmanNode implements Comparable<HuffmanNode> {
         return probability;
     }
 
-    public HuffmanNode getSubNodeA() {
-        return subNodeA;
+    public HuffmanNode getRightChild() {
+        return rightChild;
     }
 
-    public HuffmanNode getSubNodeB() {
-        return subNodeB;
+    public HuffmanNode getLeftChild() {
+        return leftChild;
     }
 
-    private static boolean treeNodeEquality(final HuffmanNode A, final HuffmanNode B) {
-        if (A.leaf) {
-            if (!B.leaf) {
+    /**
+     * Check if two huffman nodes are value equal and if their subtrees are also equal.
+     *
+     * @param nodeA First huffman node.
+     * @param nodeB Second huffman code.
+     * @return True if nodes and their subtrees are equal.
+     */
+    private static boolean treeNodeEquality(final HuffmanNode nodeA, final HuffmanNode nodeB) {
+        if (nodeA.leaf) {
+            if (!nodeB.leaf) {
                 return false;
             }
-            return A.symbol == B.symbol;
+            return nodeA.symbol == nodeB.symbol;
         } else {
-            if (B.leaf) {
+            if (nodeB.leaf) {
                 return false;
             }
-            if (A.bit != B.bit)
+            if (nodeA.bit != nodeB.bit)
                 return false;
 
-            if ((A.subNodeA != null && B.subNodeA == null) || (A.subNodeA == null && B.subNodeA != null))
+            if ((nodeA.rightChild != null && nodeB.rightChild == null) || (nodeA.rightChild == null && nodeB.rightChild != null))
                 return false;
-            if ((A.subNodeB != null && B.subNodeB == null) || (A.subNodeB == null && B.subNodeB != null))
+            if ((nodeA.leftChild != null && nodeB.leftChild == null) || (nodeA.leftChild == null && nodeB.leftChild != null))
                 return false;
 
-            final boolean subTreeAResult = treeNodeEquality(A.subNodeA, B.subNodeA);
-            final boolean subTreeBResult = treeNodeEquality(A.subNodeB, B.subNodeB);
+
+            assert (nodeA.rightChild != null) : "Current node is not leaf and right child must be set.";
+            assert (nodeA.leftChild != null) : "Current node is not leaf and left child must be set.";
+
+            final boolean subTreeAResult = treeNodeEquality(nodeA.rightChild, nodeB.rightChild);
+            final boolean subTreeBResult = treeNodeEquality(nodeA.leftChild, nodeB.leftChild);
             return (subTreeAResult && subTreeBResult);
         }
     }
 
-    public boolean treeEqual(final HuffmanNode opposite) {
-        return treeNodeEquality(this, opposite);
+    /**
+     * Check if tree starting from this node is equal to one starting from otherRoot.
+     *
+     * @param otherRoot Other tree root node.
+     * @return True if both trees are value equal.
+     */
+    public boolean treeEqual(final HuffmanNode otherRoot) {
+        return treeNodeEquality(this, otherRoot);
+    }
+
+    /**
+     * Save current node and its children to binary stream.
+     *
+     * @param node      Node to write to stream.
+     * @param bitStream Binary output stream.
+     * @throws IOException when fails to write to stream.
+     */
+    private void writeToBinaryStreamImpl(final HuffmanNode node, final OutBitStream bitStream) throws IOException {
+        if (node.isLeaf()) {
+            bitStream.writeBit(1);
+            bitStream.write(node.getSymbol());
+        } else {
+            bitStream.writeBit(0);
+            writeToBinaryStreamImpl(node.getRightChild(), bitStream);
+            writeToBinaryStreamImpl(node.getLeftChild(), bitStream);
+        }
+    }
+
+    /**
+     * Save huffman tree from this node to the binary stream.
+     *
+     * @param bitStream Binary output stream.
+     * @throws IOException when fails to write to stream.
+     */
+    public void writeToBinaryStream(final OutBitStream bitStream) throws IOException {
+        writeToBinaryStreamImpl(this, bitStream);
+    }
+
+    /**
+     * Read huffman tree from the binary stream.
+     *
+     * @param bitStream Binary input stream.
+     * @return Root of the huffman tree.
+     * @throws IOException when fails to read from stream.
+     */
+    public static HuffmanNode readFromStream(final InBitStream bitStream) throws IOException {
+        if (bitStream.readBit()) // Leaf
+        {
+            return HuffmanNode.constructWithSymbol(null, null, bitStream.readValue());
+        } else {
+            final HuffmanNode rightChild = readFromStream(bitStream);
+            rightChild.setBit(1);
+            final HuffmanNode leftChild = readFromStream(bitStream);
+            leftChild.setBit(0);
+            return HuffmanNode.constructWithSymbol(rightChild, leftChild, -1);
+        }
     }
 }

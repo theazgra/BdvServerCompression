@@ -4,8 +4,8 @@ import cz.it4i.qcmp.cache.QuantizationCacheManager;
 import cz.it4i.qcmp.cache.VQCacheFile;
 import cz.it4i.qcmp.cli.CompressionOptionsCLIParser;
 import cz.it4i.qcmp.cli.CustomFunctionBase;
-import cz.it4i.qcmp.huffman.Huffman;
 import cz.it4i.qcmp.huffman.HuffmanNode;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InBitStream;
 import cz.it4i.qcmp.io.OutBitStream;
 import cz.it4i.qcmp.quantization.vector.VQCodebook;
@@ -36,14 +36,14 @@ public class DebugFunction extends CustomFunctionBase {
             symbols[i] = i;
         }
 
-        final Huffman huffman = new Huffman(symbols, codebook.getVectorFrequencies());
+        final HuffmanTreeBuilder huffman = new HuffmanTreeBuilder(symbols, codebook.getVectorFrequencies());
         huffman.buildHuffmanTree();
 
         final int bitsPerSymbol = (int) Utils.log2(codebook.getCodebookSize());
         try (final OutBitStream bitStream = new OutBitStream(new FileOutputStream("D:\\tmp\\huffman_tree.data", false),
                                                              bitsPerSymbol,
                                                              64)) {
-            huffman.saveHuffmanTree(bitStream);
+            huffman.getRoot().writeToBinaryStream(bitStream);
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -51,7 +51,7 @@ public class DebugFunction extends CustomFunctionBase {
 
         HuffmanNode readRoot = null;
         try (final InBitStream inBitStream = new InBitStream(new FileInputStream("D:\\tmp\\huffman_tree.data"), bitsPerSymbol, 256)) {
-            readRoot = Huffman.readHuffmanTree(inBitStream);
+            readRoot = HuffmanNode.readFromStream(inBitStream);
         } catch (final IOException ex) {
             ex.printStackTrace();
         }

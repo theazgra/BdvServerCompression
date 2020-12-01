@@ -6,7 +6,7 @@ import cz.it4i.qcmp.cache.VQCacheFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.fileformat.QuantizationType;
-import cz.it4i.qcmp.huffman.Huffman;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.io.loader.IPlaneLoader;
 import cz.it4i.qcmp.io.loader.PlaneLoaderFactory;
@@ -24,7 +24,7 @@ import java.io.IOException;
 public class VQImageCompressor extends CompressorDecompressorBase implements IImageCompressor {
 
     private VectorQuantizer cachedQuantizer = null;
-    private Huffman cachedHuffman = null;
+    private HuffmanTreeBuilder cachedHuffman = null;
 
     private boolean useKdTree = false;
 
@@ -158,7 +158,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         }
 
         VectorQuantizer quantizer = cachedQuantizer;
-        Huffman huffman = cachedHuffman;
+        HuffmanTreeBuilder huffman = cachedHuffman;
         assert (!streamMode || ((quantizer != null) && (huffman != null)));
 
         if (!streamMode) {
@@ -283,7 +283,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final long[] voxelLayersSizes = new long[voxelLayerCount];
 
         final VectorQuantizer quantizer = (cachedQuantizer != null) ? cachedQuantizer : loadQuantizerFromCache();
-        final Huffman huffman = (cachedHuffman != null) ? cachedHuffman : createHuffmanCoder(huffmanSymbols, quantizer.getFrequencies());
+        final HuffmanTreeBuilder huffman = (cachedHuffman != null) ? cachedHuffman : createHuffmanCoder(huffmanSymbols,
+                                                                                                        quantizer.getFrequencies());
         if (!streamMode)
             writeQuantizerToCompressStream(quantizer, compressStream);
 

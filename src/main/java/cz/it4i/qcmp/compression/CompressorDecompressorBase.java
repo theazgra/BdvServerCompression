@@ -3,7 +3,7 @@ package cz.it4i.qcmp.compression;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.compression.listeners.IProgressListener;
 import cz.it4i.qcmp.compression.listeners.IStatusListener;
-import cz.it4i.qcmp.huffman.Huffman;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.io.OutBitStream;
 
@@ -100,8 +100,8 @@ public abstract class CompressorDecompressorBase {
         return symbols;
     }
 
-    protected Huffman createHuffmanCoder(final int[] symbols, final long[] frequencies) {
-        final Huffman huffman = new Huffman(symbols, frequencies);
+    protected HuffmanTreeBuilder createHuffmanCoder(final int[] symbols, final long[] frequencies) {
+        final HuffmanTreeBuilder huffman = new HuffmanTreeBuilder(symbols, frequencies);
         huffman.buildHuffmanTree();
         return huffman;
     }
@@ -157,7 +157,7 @@ public abstract class CompressorDecompressorBase {
      * @throws ImageCompressionException when fails to write to compress stream.
      */
     protected long writeHuffmanEncodedIndices(final DataOutputStream compressStream,
-                                              final Huffman huffman,
+                                              final HuffmanTreeBuilder huffman,
                                               final int[] indices) throws ImageCompressionException {
         try (final OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerCodebookIndex(), 2048)) {
             for (final int index : indices) {
