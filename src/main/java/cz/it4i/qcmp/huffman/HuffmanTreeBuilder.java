@@ -1,11 +1,12 @@
 package cz.it4i.qcmp.huffman;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.PriorityQueue;
 
 public class HuffmanTreeBuilder {
     private HuffmanNode root = null;
     private HashMap<Integer, boolean[]> symbolCodes;
-    private HashMap<Integer, Double> symbolProbabilityMap;
     private final int[] symbols;
     private final long[] symbolFrequencies;
 
@@ -76,7 +77,7 @@ public class HuffmanTreeBuilder {
     }
 
     private PriorityQueue<HuffmanNode> buildPriorityQueue() {
-        symbolProbabilityMap = new HashMap<>(symbols.length);
+        final HashMap<Integer, Double> symbolProbabilityMap = new HashMap<>(symbols.length);
         double totalFrequency = 0.0;
         for (final long symbolFrequency : symbolFrequencies) {
             totalFrequency += symbolFrequency;
@@ -93,28 +94,18 @@ public class HuffmanTreeBuilder {
         return queue;
     }
 
-
-    public boolean[] getCode(final int symbol) {
-        return symbolCodes.get(symbol);
+    /**
+     * Create huffman encoder from symbol codes.
+     *
+     * @return Huffman encoder.
+     */
+    public HuffmanEncoder createEncoder() {
+        assert (root != null && symbolCodes != null) : "Huffman tree was not build yet";
+        return new HuffmanEncoder(root, symbolCodes);
     }
 
-    public HuffmanNode getRoot() {
-        return root;
-    }
-
-    public HashMap<Integer, Double> getSymbolProbabilityMap() {
-        return createSortedHashMap(symbolProbabilityMap);
-    }
-
-    private HashMap<Integer, Double> createSortedHashMap(final HashMap<Integer, Double> map) {
-        final List<Map.Entry<Integer, Double>> list = new LinkedList<Map.Entry<Integer, Double>>(map.entrySet());
-        //Custom Comparator
-        list.sort((t0, t1) -> (-(t0.getValue().compareTo(t1.getValue()))));
-        //copying the sorted list in HashMap to preserve the iteration order
-        final HashMap<Integer, Double> sortedHashMap = new LinkedHashMap<Integer, Double>();
-        for (final Map.Entry<Integer, Double> entry : list) {
-            sortedHashMap.put(entry.getKey(), entry.getValue());
-        }
-        return sortedHashMap;
+    public HuffmanDecoder createDecoder() {
+        assert (root != null) : "Huffman tree was not build yet";
+        return new HuffmanDecoder(root);
     }
 }

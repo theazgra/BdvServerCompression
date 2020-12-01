@@ -36,14 +36,14 @@ public class DebugFunction extends CustomFunctionBase {
             symbols[i] = i;
         }
 
-        final HuffmanTreeBuilder huffman = new HuffmanTreeBuilder(symbols, codebook.getVectorFrequencies());
-        huffman.buildHuffmanTree();
+        final HuffmanTreeBuilder huffmanBuilder = new HuffmanTreeBuilder(symbols, codebook.getVectorFrequencies());
+        huffmanBuilder.buildHuffmanTree();
 
         final int bitsPerSymbol = (int) Utils.log2(codebook.getCodebookSize());
         try (final OutBitStream bitStream = new OutBitStream(new FileOutputStream("D:\\tmp\\huffman_tree.data", false),
                                                              bitsPerSymbol,
                                                              64)) {
-            huffman.getRoot().writeToBinaryStream(bitStream);
+            huffmanBuilder.createEncoder().getRoot().writeToBinaryStream(bitStream);
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -56,7 +56,7 @@ public class DebugFunction extends CustomFunctionBase {
             ex.printStackTrace();
         }
 
-        final boolean equal = huffman.getRoot().treeEqual(readRoot);
+        final boolean equal = huffmanBuilder.createEncoder().getRoot().treeEqual(readRoot);
 
         System.out.println(readRoot != null);
 

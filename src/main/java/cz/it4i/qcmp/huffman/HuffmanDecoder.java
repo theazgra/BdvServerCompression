@@ -5,7 +5,7 @@ import cz.it4i.qcmp.io.InBitStream;
 import java.io.IOException;
 
 /**
- * Simply wrapper around root huffman node to provide easy decode function.
+ * Simple wrapper around root huffman node to provide easy decode function.
  */
 public class HuffmanDecoder {
     private final HuffmanNode root;
@@ -32,5 +32,9 @@ public class HuffmanDecoder {
             currentNode = currentNode.traverse(inBitStream.readBit());
         }
         return currentNode.getSymbol();
+    }
+
+    public HuffmanNode getRoot() {
+        return root;
     }
 }

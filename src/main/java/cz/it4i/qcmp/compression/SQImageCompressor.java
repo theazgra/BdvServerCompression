@@ -5,8 +5,7 @@ import cz.it4i.qcmp.cache.ICacheFile;
 import cz.it4i.qcmp.cache.QuantizationCacheManager;
 import cz.it4i.qcmp.cache.SQCacheFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
-import cz.it4i.qcmp.huffman.HuffmanDecoder;
-import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
+import cz.it4i.qcmp.huffman.HuffmanEncoder;
 import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.io.loader.IPlaneLoader;
 import cz.it4i.qcmp.io.loader.PlaneLoaderFactory;
@@ -21,7 +20,7 @@ import java.io.IOException;
 public class SQImageCompressor extends CompressorDecompressorBase implements IImageCompressor {
 
     private ScalarQuantizer cachedQuantizer;
-    private HuffmanDecoder cachedHuffmanDecoder;
+    private HuffmanEncoder cachedHuffmanEncoder;
 
     public SQImageCompressor(final CompressionOptions options) {
         super(options);
@@ -46,7 +45,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     public void preloadGlobalCodebook(final ICacheFile codebookCacheFile) {
         final SQCodebook cachedCodebook = ((SQCacheFile) codebookCacheFile).getCodebook();
         cachedQuantizer = new ScalarQuantizer(cachedCodebook);
-        cachedHuffmanDecoder = createHuffmanDecoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),
+        cachedHuffmanEncoder = createHuffmanEncoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),
                                                     cachedCodebook.getSymbolFrequencies());
     }
 
@@ -118,13 +117,13 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         }
 
         ScalarQuantizer quantizer = null;
-        HuffmanTreeBuilder huffman = null;
+        HuffmanEncoder huffmanEncoder = null;
         final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
         if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
             reportStatusToListeners("Loading codebook from cache file.");
 
             quantizer = loadQuantizerFromCache();
-            huffman = createHuffmanCoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
+            huffmanEncoder = createHuffmanEncoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
 
             reportStatusToListeners("Cached quantizer with huffman coder created.");
             writeCodebookToOutputStream(quantizer, compressStream);
@@ -140,7 +139,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
 
             reportStatusToListeners(String.format("Training scalar quantizer from middle plane %d.", middlePlaneIndex));
             quantizer = trainScalarQuantizerFromData(middlePlaneData);
-            huffman = createHuffmanCoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
+            huffmanEncoder = createHuffmanEncoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
 
             stopwatch.stop();
             writeCodebookToOutputStream(quantizer, compressStream);
@@ -176,16 +175,15 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
                 quantizer = trainScalarQuantizerFromData(planeData);
                 writeCodebookToOutputStream(quantizer, compressStream);
 
-                huffman = new HuffmanTreeBuilder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
-                huffman.buildHuffmanTree();
+                huffmanEncoder = createHuffmanEncoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
             }
 
             assert (quantizer != null) : "Scalar Quantizer wasn't initialized.";
-            assert (huffman != null) : "Huffman wasn't initialized.";
+            assert (huffmanEncoder != null) : "Huffman wasn't initialized.";
 
             final int[] indices = quantizer.quantizeIntoIndices(planeData, 1);
 
-            planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffman, indices);
+            planeDataSizes[planeCounter++] = writeHuffmanEncodedIndices(compressStream, huffmanEncoder, indices);
 
             stopwatch.stop();
             reportProgressToListeners(planeIndex, planeIndices.length,

@@ -4,6 +4,7 @@ import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.compression.listeners.IProgressListener;
 import cz.it4i.qcmp.compression.listeners.IStatusListener;
 import cz.it4i.qcmp.huffman.HuffmanDecoder;
+import cz.it4i.qcmp.huffman.HuffmanEncoder;
 import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.io.OutBitStream;
@@ -101,16 +102,16 @@ public abstract class CompressorDecompressorBase {
         return symbols;
     }
 
-    protected HuffmanTreeBuilder createHuffmanCoder(final int[] symbols, final long[] frequencies) {
+    protected HuffmanEncoder createHuffmanEncoder(final int[] symbols, final long[] frequencies) {
         final HuffmanTreeBuilder huffman = new HuffmanTreeBuilder(symbols, frequencies);
         huffman.buildHuffmanTree();
-        return huffman;
+        return huffman.createEncoder();
     }
 
     protected HuffmanDecoder createHuffmanDecoder(final int[] symbols, final long[] frequencies) {
         final HuffmanTreeBuilder huffman = new HuffmanTreeBuilder(symbols, frequencies);
         huffman.buildHuffmanTree();
-        return new HuffmanDecoder(huffman.getRoot());
+        return huffman.createDecoder();
     }
 
     protected int[] getPlaneIndicesForCompression(final InputData inputData) {
@@ -158,17 +159,17 @@ public abstract class CompressorDecompressorBase {
      * Write huffman encoded indices to the compress stream.
      *
      * @param compressStream Compress stream.
-     * @param huffman        Huffman encoder.
+     * @param huffmanEncoder Huffman encoder.
      * @param indices        Indices to write.
      * @return Number of bytes written.
      * @throws ImageCompressionException when fails to write to compress stream.
      */
     protected long writeHuffmanEncodedIndices(final DataOutputStream compressStream,
-                                              final HuffmanTreeBuilder huffman,
+                                              final HuffmanEncoder huffmanEncoder,
                                               final int[] indices) throws ImageCompressionException {
         try (final OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerCodebookIndex(), 2048)) {
             for (final int index : indices) {
-                outBitStream.write(huffman.getCode(index));
+                outBitStream.write(huffmanEncoder.getSymbolCode(index));
             }
             return outBitStream.getBytesWritten();
         } catch (final Exception ex) {
