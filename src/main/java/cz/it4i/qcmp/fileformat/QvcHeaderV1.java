@@ -9,7 +9,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class CacheFileHeaderV1 implements IFileHeader {
+public class QvcHeaderV1 implements IFileHeader {
     //region Constants
     private static final int VERSION = 1;
     private static final String MAGIC_VALUE = "QCMPCACHE";

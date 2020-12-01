@@ -1,6 +1,6 @@
 package cz.it4i.qcmp.cache;
 
-import cz.it4i.qcmp.fileformat.CacheFileHeaderV1;
+import cz.it4i.qcmp.fileformat.QvcHeaderV1;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -12,9 +12,9 @@ public interface ICacheFile {
 
     void readFromStream(DataInputStream inputStream) throws IOException;
 
-    void readFromStream(DataInputStream inputStream, CacheFileHeaderV1 header) throws IOException;
+    void readFromStream(DataInputStream inputStream, QvcHeaderV1 header) throws IOException;
 
-    CacheFileHeaderV1 getHeader();
+    QvcHeaderV1 getHeader();
 
     void report(StringBuilder builder);
 
