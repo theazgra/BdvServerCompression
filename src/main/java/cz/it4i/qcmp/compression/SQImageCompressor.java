@@ -5,6 +5,7 @@ import cz.it4i.qcmp.cache.ICacheFile;
 import cz.it4i.qcmp.cache.QuantizationCacheManager;
 import cz.it4i.qcmp.cache.SQCacheFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
+import cz.it4i.qcmp.huffman.HuffmanDecoder;
 import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.io.loader.IPlaneLoader;
@@ -20,7 +21,7 @@ import java.io.IOException;
 public class SQImageCompressor extends CompressorDecompressorBase implements IImageCompressor {
 
     private ScalarQuantizer cachedQuantizer;
-    private HuffmanTreeBuilder cachedHuffman;
+    private HuffmanDecoder cachedHuffmanDecoder;
 
     public SQImageCompressor(final CompressionOptions options) {
         super(options);
@@ -45,7 +46,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     public void preloadGlobalCodebook(final ICacheFile codebookCacheFile) {
         final SQCodebook cachedCodebook = ((SQCacheFile) codebookCacheFile).getCodebook();
         cachedQuantizer = new ScalarQuantizer(cachedCodebook);
-        cachedHuffman = createHuffmanCoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()), cachedCodebook.getSymbolFrequencies());
+        cachedHuffmanDecoder = createHuffmanDecoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),
+                                                    cachedCodebook.getSymbolFrequencies());
     }
 
     /**

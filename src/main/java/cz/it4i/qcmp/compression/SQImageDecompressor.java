@@ -4,8 +4,7 @@ import cz.it4i.qcmp.cache.ICacheFile;
 import cz.it4i.qcmp.cache.SQCacheFile;
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
 import cz.it4i.qcmp.fileformat.QCMPFileHeader;
-import cz.it4i.qcmp.huffman.HuffmanNode;
-import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
+import cz.it4i.qcmp.huffman.HuffmanDecoder;
 import cz.it4i.qcmp.io.InBitStream;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 import cz.it4i.qcmp.utilities.Stopwatch;
@@ -17,7 +16,7 @@ import java.io.IOException;
 
 public class SQImageDecompressor extends CompressorDecompressorBase implements IImageDecompressor {
     private SQCodebook cachedCodebook = null;
-    private HuffmanTreeBuilder cachedHuffman = null;
+    private HuffmanDecoder cachedHuffmanDecoder = null;
 
     public SQImageDecompressor(final CompressionOptions options) {
         super(options);
@@ -52,12 +51,12 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
 
         SQCodebook codebook = null;
-        HuffmanTreeBuilder huffman = null;
+        HuffmanDecoder huffmanDecoder = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
             reportStatusToListeners("Loading single codebook and huffman coder.");
             codebook = readScalarQuantizationValues(compressedStream, codebookSize);
-            huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
+            huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getSymbolFrequencies());
         }
 
         final Stopwatch stopwatch = new Stopwatch();
@@ -66,9 +65,9 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             if (header.isCodebookPerPlane()) {
                 reportStatusToListeners("Loading plane codebook...");
                 codebook = readScalarQuantizationValues(compressedStream, codebookSize);
-                huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
+                huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getSymbolFrequencies());
             }
-            assert (codebook != null && huffman != null);
+            assert (codebook != null && huffmanDecoder != null);
 
             reportStatusToListeners(String.format("Decompressing plane %d...", planeIndex));
             byte[] decompressedPlaneData = null;
@@ -82,13 +81,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
                 final int[] decompressedValues = new int[planePixelCount];
                 final int[] quantizationValues = codebook.getCentroids();
                 for (int pixel = 0; pixel < planePixelCount; pixel++) {
-                    HuffmanNode currentHuffmanNode = huffman.getRoot();
-                    boolean bit;
-                    while (!currentHuffmanNode.isLeaf()) {
-                        bit = inBitStream.readBit();
-                        currentHuffmanNode = currentHuffmanNode.traverse(bit);
-                    }
-                    decompressedValues[pixel] = quantizationValues[currentHuffmanNode.getSymbol()];
+                    final int decodedSymbol = huffmanDecoder.decodeSymbol(inBitStream);
+                    decompressedValues[pixel] = quantizationValues[decodedSymbol];
                 }
 
                 decompressedPlaneData =
@@ -116,7 +110,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         final SQCacheFile codebookCache = (SQCacheFile) codebookCacheFile;
 
         cachedCodebook = codebookCache.getCodebook();
-        cachedHuffman = createHuffmanCoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()), cachedCodebook.getSymbolFrequencies());
+        cachedHuffmanDecoder = createHuffmanDecoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),
+                                                    cachedCodebook.getSymbolFrequencies());
     }
 
     @Override
@@ -130,20 +125,20 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
 
         SQCodebook codebook = null;
-        HuffmanTreeBuilder huffman = null;
+        HuffmanDecoder huffmanDecoder = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
             codebook = readScalarQuantizationValues(compressedStream, codebookSize);
-            huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
+            huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getSymbolFrequencies());
         }
 
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
             reportProgressToListeners(planeIndex, planeCountForDecompression, "Decompressing plane %d", planeIndex);
             if (header.isCodebookPerPlane()) {
                 codebook = readScalarQuantizationValues(compressedStream, codebookSize);
-                huffman = createHuffmanCoder(huffmanSymbols, codebook.getSymbolFrequencies());
+                huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getSymbolFrequencies());
             }
-            assert (codebook != null && huffman != null);
+            assert (codebook != null && huffmanDecoder != null);
 
             final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
             try (final InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerCodebookIndex(), planeDataSize)) {
@@ -153,13 +148,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
                 final int[] decompressedValues = new int[planePixelCount];
                 final int[] quantizationValues = codebook.getCentroids();
                 for (int pixel = 0; pixel < planePixelCount; pixel++) {
-                    HuffmanNode currentHuffmanNode = huffman.getRoot();
-                    boolean bit;
-                    while (!currentHuffmanNode.isLeaf()) {
-                        bit = inBitStream.readBit();
-                        currentHuffmanNode = currentHuffmanNode.traverse(bit);
-                    }
-                    decompressedValues[pixel] = quantizationValues[currentHuffmanNode.getSymbol()];
+                    final int decodedSymbol = huffmanDecoder.decodeSymbol(inBitStream);
+                    decompressedValues[pixel] = quantizationValues[decodedSymbol];
                 }
 
                 buffer[planeIndex] = TypeConverter.intArrayToShortArray(decompressedValues);

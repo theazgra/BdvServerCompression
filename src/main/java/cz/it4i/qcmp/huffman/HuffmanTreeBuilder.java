@@ -23,9 +23,7 @@ public class HuffmanTreeBuilder {
             final HuffmanNode parentA = queue.poll();
             final HuffmanNode parentB = queue.poll();
             if (!(parentA.getProbability() <= parentB.getProbability())) {
-                System.err.println(String.format("Parent A prob: %.6f\nParent B prob: %.6f",
-                                                 parentA.getProbability(),
-                                                 parentB.getProbability()));
+                System.err.printf("Parent A prob: %.6f\nParent B prob: %.6f%n", parentA.getProbability(), parentB.getProbability());
                 assert (parentA.getProbability() <= parentB.getProbability());
             }
 
