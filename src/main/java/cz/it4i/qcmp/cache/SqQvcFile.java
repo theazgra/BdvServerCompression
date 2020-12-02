@@ -7,7 +7,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class SQCacheFile implements ICacheFile {
+public class SQCacheFile implements IQvcFile {
     private QvcHeaderV1 header;
     private SQCodebook codebook;
 
@@ -73,10 +73,5 @@ public class SQCacheFile implements ICacheFile {
                 builder.append(centroids[i]).append('\n');
             }
         }
-    }
-
-    @Override
-    public String klass() {
-        return "SQCacheFile";
     }
 }
