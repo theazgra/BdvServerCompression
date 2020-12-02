@@ -1,26 +1,28 @@
 package cz.it4i.qcmp.cache;
 
-import cz.it4i.qcmp.fileformat.QvcHeaderV1;
+import cz.it4i.qcmp.fileformat.IQvcHeader;
 import cz.it4i.qcmp.quantization.vector.VQCodebook;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class VQCacheFile implements IQvcFile {
-    private QvcHeaderV1 header;
+public class VqQvcFile implements IQvcFile {
+    private IQvcHeader header;
     private VQCodebook codebook;
 
-    public VQCacheFile() {
+    public VqQvcFile() {
     }
 
-    public VQCacheFile(final QvcHeaderV1 header, final VQCodebook codebook) {
+    public VqQvcFile(final IQvcHeader header, final VQCodebook codebook) {
         this.header = header;
         this.codebook = codebook;
         assert (header.getCodebookSize() == codebook.getCodebookSize());
     }
 
+    @Override
     public void writeToStream(final DataOutputStream outputStream) throws IOException {
+        // TODO
         header.writeToStream(outputStream);
 
         final int[][] entries = codebook.getVectors();
@@ -36,18 +38,13 @@ public class VQCacheFile implements IQvcFile {
         }
     }
 
-    public void readFromStream(final DataInputStream inputStream) throws IOException {
-        header = new QvcHeaderV1();
-        header.readFromStream(inputStream);
-        readFromStream(inputStream, header);
-    }
-
     @Override
-    public void readFromStream(final DataInputStream inputStream, final QvcHeaderV1 header) throws IOException {
+    public void readFromStream(final DataInputStream inputStream, final IQvcHeader header) throws IOException {
+        // TODO
         this.header = header;
         final int codebookSize = header.getCodebookSize();
 
-        final int entrySize = header.getVectorSizeX() * header.getVectorSizeY() * header.getVectorSizeZ();
+        final int entrySize = header.getVectorDim().multiplyTogether();
         final int[][] vectors = new int[codebookSize][entrySize];
         final long[] frequencies = new long[codebookSize];
 
@@ -64,7 +61,8 @@ public class VQCacheFile implements IQvcFile {
         codebook = new VQCodebook(header.getVectorDim(), vectors, frequencies);
     }
 
-    public QvcHeaderV1 getHeader() {
+    @Override
+    public IQvcHeader getHeader() {
         return header;
     }
 

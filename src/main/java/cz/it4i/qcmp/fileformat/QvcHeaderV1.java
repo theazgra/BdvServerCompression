@@ -9,21 +9,22 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class QvcHeaderV1 implements IFileHeader {
+public class QvcHeaderV1 implements IQvcHeader {
     //region Constants
     private static final int VERSION = 1;
-    private static final String MAGIC_VALUE = "QCMPCACHE";
+    public static final String MAGIC_VALUE = "QCMPCACHE";
+    public static final int BASE_HEADER_SIZE = 20;
     //endregion
 
     //region Header fields.
-    private String magicValue;
-    private QuantizationType quantizationType;
-    private int codebookSize;
-    private int trainFileNameSize;
-    private String trainFileName;
-    private int vectorSizeX;
-    private int vectorSizeY;
-    private int vectorSizeZ;
+    protected String magicValue;
+    protected QuantizationType quantizationType;
+    protected int codebookSize;
+    protected int trainFileNameSize;
+    protected String trainFileName;
+    protected int vectorSizeX;
+    protected int vectorSizeY;
+    protected int vectorSizeZ;
     //endregion
 
     //region IFileHeader implementation
@@ -49,18 +50,6 @@ public class QvcHeaderV1 implements IFileHeader {
      */
     @Override
     public void readFromStream(final DataInputStream inputStream) throws IOException {
-        final int MIN_AVAIL = 9;
-        if (inputStream.available() < MIN_AVAIL) {
-            throw new IOException("Provided file is not QCMP cache file.");
-        }
-
-        final byte[] magicValueBuffer = new byte[MAGIC_VALUE.length()];
-        RawDataIO.readFullBuffer(inputStream, magicValueBuffer);
-
-        magicValue = new String(magicValueBuffer);
-        if (!magicValue.equals(MAGIC_VALUE)) {
-            throw new IOException("Invalid QCMP cache file. Wrong magic value.");
-        }
         quantizationType = QuantizationType.fromByte(inputStream.readByte());
         codebookSize = inputStream.readUnsignedShort();
 
@@ -68,7 +57,6 @@ public class QvcHeaderV1 implements IFileHeader {
 
         final byte[] fileNameBuffer = new byte[trainFileNameSize];
         RawDataIO.readFullBuffer(inputStream, fileNameBuffer);
-
         trainFileName = new String(fileNameBuffer);
 
         vectorSizeX = inputStream.readUnsignedShort();
@@ -84,7 +72,7 @@ public class QvcHeaderV1 implements IFileHeader {
      */
     @Override
     public void writeToStream(final DataOutputStream outputStream) throws IOException {
-        outputStream.writeBytes(MAGIC_VALUE);
+        outputStream.writeBytes(getMagicValue());
         outputStream.writeByte(quantizationType.getValue());
         outputStream.writeShort(codebookSize);
 
@@ -98,16 +86,16 @@ public class QvcHeaderV1 implements IFileHeader {
 
     @Override
     public long getExpectedDataSize() {
-        long expectedFileSize = 20 + trainFileNameSize; // Base header size
-        expectedFileSize += (codebookSize * 8);         // Frequency values
+        long expectedFileSize = BASE_HEADER_SIZE + trainFileNameSize;
+        expectedFileSize += codebookSize * 8L;          // Frequency values
         switch (quantizationType) {
             case Scalar:
-                expectedFileSize += (codebookSize * 2); // Scalar quantization values
+                expectedFileSize += codebookSize * 2L;  // Scalar quantization values
                 break;
             case Vector1D:
             case Vector2D:
             case Vector3D:
-                expectedFileSize += ((vectorSizeX * vectorSizeY * vectorSizeZ) * codebookSize * 2); // Quantization vectors
+                expectedFileSize += (((long) vectorSizeX * vectorSizeY * vectorSizeZ) * codebookSize * 2L); // Quantization vectors
                 break;
             case Invalid:
                 return -1;
@@ -117,8 +105,8 @@ public class QvcHeaderV1 implements IFileHeader {
 
     @Override
     public void report(final StringBuilder sb, final String inputFile) {
-        sb.append("HeaderVersion: ").append(VERSION).append('\n');
-        sb.append("Magic: ").append(magicValue).append('\n');
+        sb.append("HeaderVersion: ").append(getHeaderVersion()).append('\n');
+        sb.append("Magic: ").append(getMagicValue()).append('\n');
 
         sb.append("CodebookType: ");
         switch (quantizationType) {
@@ -155,18 +143,6 @@ public class QvcHeaderV1 implements IFileHeader {
         this.trainFileNameSize = this.trainFileName.length();
     }
 
-    public void setVectorSizeX(final int vectorSizeX) {
-        this.vectorSizeX = vectorSizeX;
-    }
-
-    public void setVectorSizeY(final int vectorSizeY) {
-        this.vectorSizeY = vectorSizeY;
-    }
-
-    public void setVectorSizeZ(final int vectorSizeZ) {
-        this.vectorSizeZ = vectorSizeZ;
-    }
-
     public QuantizationType getQuantizationType() {
         return quantizationType;
     }
@@ -177,10 +153,6 @@ public class QvcHeaderV1 implements IFileHeader {
 
     public int getBitsPerCodebookIndex() {
         return (int) Utils.log2(codebookSize);
-    }
-
-    public int getTrainFileNameSize() {
-        return trainFileNameSize;
     }
 
     public String getTrainFileName() {

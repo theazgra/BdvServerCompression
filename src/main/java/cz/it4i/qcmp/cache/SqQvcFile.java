@@ -1,26 +1,28 @@
 package cz.it4i.qcmp.cache;
 
-import cz.it4i.qcmp.fileformat.QvcHeaderV1;
+import cz.it4i.qcmp.fileformat.IQvcHeader;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class SQCacheFile implements IQvcFile {
-    private QvcHeaderV1 header;
+public class SqQvcFile implements IQvcFile {
+    private IQvcHeader header;
     private SQCodebook codebook;
 
-    public SQCacheFile() {
+    public SqQvcFile() {
     }
 
-    public SQCacheFile(final QvcHeaderV1 header, final SQCodebook codebook) {
+    public SqQvcFile(final IQvcHeader header, final SQCodebook codebook) {
         this.header = header;
         this.codebook = codebook;
         assert (header.getCodebookSize() == codebook.getCodebookSize());
     }
 
+    @Override
     public void writeToStream(final DataOutputStream outputStream) throws IOException {
+        // TODO
         header.writeToStream(outputStream);
         final int[] quantizationValues = codebook.getCentroids();
         final long[] frequencies = codebook.getSymbolFrequencies();
@@ -33,13 +35,9 @@ public class SQCacheFile implements IQvcFile {
         }
     }
 
-    public void readFromStream(final DataInputStream inputStream) throws IOException {
-        header = new QvcHeaderV1();
-        header.readFromStream(inputStream);
-        readFromStream(inputStream, header);
-    }
-
-    public void readFromStream(final DataInputStream inputStream, final QvcHeaderV1 header) throws IOException {
+    @Override
+    public void readFromStream(final DataInputStream inputStream, final IQvcHeader header) throws IOException {
+        // TODO
         this.header = header;
         final int codebookSize = header.getCodebookSize();
         final int[] centroids = new int[codebookSize];
@@ -54,7 +52,8 @@ public class SQCacheFile implements IQvcFile {
         codebook = new SQCodebook(centroids, frequencies);
     }
 
-    public QvcHeaderV1 getHeader() {
+    @Override
+    public IQvcHeader getHeader() {
         return header;
     }
 
