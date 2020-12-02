@@ -3,11 +3,14 @@ package cz.it4i.qcmp.cache;
 import cz.it4i.qcmp.compression.CompressionOptions;
 import cz.it4i.qcmp.data.V3i;
 import cz.it4i.qcmp.fileformat.QuantizationType;
-import cz.it4i.qcmp.fileformat.QvcHeaderV1;
+import cz.it4i.qcmp.fileformat.QvcHeaderV2;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 import cz.it4i.qcmp.quantization.vector.VQCodebook;
 
-import java.io.*;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 
 
@@ -37,8 +40,7 @@ public class QuantizationCacheManager {
      */
     private File getCacheFilePathForSQ(final String trainFile, final int codebookSize) {
         final File inputFile = new File(trainFile);
-        return new File(cacheFolder, String.format("%s_%d_bits.qvc",
-                                                   inputFile.getName(), codebookSize));
+        return new File(cacheFolder, String.format("%s_%d_bits.qvc", inputFile.getName(), codebookSize));
     }
 
     /**
@@ -53,9 +55,8 @@ public class QuantizationCacheManager {
                                        final int codebookSize,
                                        final V3i vDim) {
         final File inputFile = new File(trainFile);
-        final String cacheFileName = String.format("%s_%d_%dx%dx%d.qvc", inputFile.getName(), codebookSize,
-                                                   vDim.getX(), vDim.getY(), vDim.getZ());
-        //         System.out.println("getCacheFilePathForVQ()=" + cacheFileName);
+        final String cacheFileName = String.format("%s_%d_%dx%dx%d.qvc", inputFile.getName(),
+                                                   codebookSize, vDim.getX(), vDim.getY(), vDim.getZ());
         return new File(cacheFolder, cacheFileName);
     }
 
@@ -67,8 +68,8 @@ public class QuantizationCacheManager {
      * @param codebook  Final SQ codebook.
      * @return SQ cache file header.
      */
-    private QvcHeaderV1 createHeaderForSQ(final String trainFile, final SQCodebook codebook) {
-        final QvcHeaderV1 header = new QvcHeaderV1();
+    private QvcHeaderV2 createHeaderForSQ(final String trainFile, final SQCodebook codebook) {
+        final QvcHeaderV2 header = new QvcHeaderV2();
         header.setQuantizationType(QuantizationType.Scalar);
         header.setCodebookSize(codebook.getCodebookSize());
         header.setTrainFileName(trainFile);
@@ -104,8 +105,8 @@ public class QuantizationCacheManager {
      * @param codebook  Final VQ codebook.
      * @return VQ cache file header.
      */
-    private QvcHeaderV1 createHeaderForVQ(final String trainFile, final VQCodebook codebook) {
-        final QvcHeaderV1 header = new QvcHeaderV1();
+    private QvcHeaderV2 createHeaderForVQ(final String trainFile, final VQCodebook codebook) {
+        final QvcHeaderV2 header = new QvcHeaderV2();
         header.setQuantizationType(getQuantizationTypeFromVectorDimensions(codebook.getVectorDims()));
         header.setCodebookSize(codebook.getCodebookSize());
         header.setTrainFileName(trainFile);
@@ -124,7 +125,7 @@ public class QuantizationCacheManager {
     public String saveCodebook(final String trainFile, final SQCodebook codebook) throws IOException {
         final String fileName = getCacheFilePathForSQ(trainFile, codebook.getCodebookSize()).getAbsolutePath();
 
-        final QvcHeaderV1 header = createHeaderForSQ(new File(trainFile).getName(), codebook);
+        final QvcHeaderV2 header = createHeaderForSQ(new File(trainFile).getName(), codebook);
         final SqQvcFile cacheFile = new SqQvcFile(header, codebook);
 
         try (final FileOutputStream fos = new FileOutputStream(fileName, false);
@@ -132,7 +133,7 @@ public class QuantizationCacheManager {
 
             cacheFile.writeToStream(dos);
         } catch (final IOException ex) {
-            throw new IOException("Failed to save SQ cache file\n" + ex.getMessage());
+            throw new IOException("Failed to save SQ QVC file\n" + ex.getMessage());
         }
         return fileName;
     }
@@ -151,7 +152,7 @@ public class QuantizationCacheManager {
                                                       codebook.getCodebookSize(),
                                                       codebook.getVectorDims()).getAbsolutePath();
 
-        final QvcHeaderV1 header = createHeaderForVQ(new File(trainFile).getName(), codebook);
+        final QvcHeaderV2 header = createHeaderForVQ(new File(trainFile).getName(), codebook);
         final VqQvcFile cacheFile = new VqQvcFile(header, codebook);
 
         try (final FileOutputStream fos = new FileOutputStream(fileName, false);
@@ -165,30 +166,13 @@ public class QuantizationCacheManager {
     }
 
     /**
-     * Read data from file to cache file.
-     *
-     * @param file      Cache file.
-     * @param cacheFile Actual cache file object.
-     * @return Cache file with data from disk.
-     * @throws IOException when fails to read the cache file from disk.
-     */
-    private IQvcFile readCacheFile(final File file, final IQvcFile cacheFile) throws IOException {
-        try (final FileInputStream fis = new FileInputStream(file);
-             final DataInputStream dis = new DataInputStream(fis)) {
-
-            cacheFile.readFromStream(dis);
-            return cacheFile;
-        }
-    }
-
-    /**
      * Check if the SQ cache file for given image file exists.
      *
      * @param imageFile    Image file.
      * @param codebookSize Scalar quantization codebook size.
      * @return True if cache file exists and and can be loaded.
      */
-    public boolean doesSQCacheExists(final String imageFile, final int codebookSize) {
+    public boolean doesSqQvcFileExists(final String imageFile, final int codebookSize) {
         return getCacheFilePathForSQ(imageFile, codebookSize).exists();
     }
 
@@ -200,7 +184,7 @@ public class QuantizationCacheManager {
      * @param vDim         Quantization vector dimensions.
      * @return True if cache file exists and and can be loaded.
      */
-    public boolean doesVQCacheExists(final String imageFile, final int codebookSize, final V3i vDim) {
+    public boolean doesVqQvcFileExists(final String imageFile, final int codebookSize, final V3i vDim) {
         return getCacheFilePathForVQ(imageFile, codebookSize, vDim).exists();
     }
 
@@ -212,14 +196,8 @@ public class QuantizationCacheManager {
      * @return SQ cache file.
      */
     public SqQvcFile loadSQCacheFile(final String imageFile, final int codebookSize) {
-        final File path = getCacheFilePathForSQ(imageFile, codebookSize);
-        try {
-            return (SqQvcFile) readCacheFile(path, new SqQvcFile());
-        } catch (final IOException e) {
-            System.err.println("Failed to read SQ cache file." + path);
-            e.printStackTrace(System.err);
-            return null;
-        }
+        final File fileInfo = getCacheFilePathForSQ(imageFile, codebookSize);
+        return (SqQvcFile) QvcFileReader.readCacheFile(fileInfo.getAbsolutePath());
     }
 
     /**
@@ -233,14 +211,8 @@ public class QuantizationCacheManager {
     public VqQvcFile loadVQCacheFile(final String trainFile,
                                      final int codebookSize,
                                      final V3i vDim) {
-        final File path = getCacheFilePathForVQ(trainFile, codebookSize, vDim);
-        try {
-            return (VqQvcFile) readCacheFile(path, new VqQvcFile());
-        } catch (final IOException e) {
-            System.err.println("Failed to read VQ cache file." + path);
-            e.printStackTrace(System.err);
-            return null;
-        }
+        final File fileInfo = getCacheFilePathForVQ(trainFile, codebookSize, vDim);
+        return (VqQvcFile) QvcFileReader.readCacheFile(fileInfo.getAbsolutePath());
     }
 
     /**
@@ -276,17 +248,6 @@ public class QuantizationCacheManager {
             return null;
 
     }
-
-    private static IQvcFile getCacheFile(final QuantizationType qt) {
-        if (qt.isOneOf(QuantizationType.Vector1D, QuantizationType.Vector2D, QuantizationType.Vector3D))
-            return new VqQvcFile();
-        else if (qt == QuantizationType.Scalar)
-            return new SqQvcFile();
-
-        assert (false) : "Invalid quantization type.";
-        return null;
-    }
-
 
     /**
      * Tries to load all (different codebook sizes) available cache files for given file and quantization type.
@@ -339,68 +300,10 @@ public class QuantizationCacheManager {
             default:
                 return null;
         }
-        return readCacheFile(path);
+
+        return QvcFileReader.readCacheFile(path);
     }
 
-    /**
-     * Read cache file by DataInputStream.
-     *
-     * @param inputStream Input stream.
-     * @return Cache file or null, if exception occurs.
-     */
-    private static IQvcFile readCacheFileImpl(final InputStream inputStream) {
-        final DataInputStream dis;
-        if (inputStream instanceof DataInputStream) {
-            dis = (DataInputStream) inputStream;
-        } else {
-            dis = new DataInputStream(inputStream);
-        }
-
-        final QvcHeaderV1 header = new QvcHeaderV1();
-        try {
-            header.readFromStream(dis);
-        } catch (final IOException e) {
-            System.err.println("Failed to read CacheFileHeader from input stream");
-            e.printStackTrace();
-            return null;
-        }
-
-        final IQvcFile cacheFile = getCacheFile(header.getQuantizationType());
-        assert (cacheFile != null);
-        try {
-            cacheFile.readFromStream(dis, header);
-        } catch (final IOException e) {
-            System.err.println("Failed to read cache file from input stream.");
-            e.printStackTrace();
-            return null;
-        }
-        return cacheFile;
-    }
-
-    /**
-     * Read cache file from input stream.
-     *
-     * @param inputStream Input data stream.
-     * @return Cache file or null if reading fails.
-     */
-    public static IQvcFile readCacheFile(final InputStream inputStream) {
-        return readCacheFileImpl(inputStream);
-    }
-
-
-    /**
-     * Read cache file from file.
-     *
-     * @param path File path.
-     * @return Cache file or null if reading fails.
-     */
-    public static IQvcFile readCacheFile(final String path) {
-        try (final FileInputStream fis = new FileInputStream(path)) {
-            return readCacheFileImpl(fis);
-        } catch (final IOException e) {
-            return null;
-        }
-    }
 
     /**
      * Inspect cache file specified by the path.
@@ -408,41 +311,20 @@ public class QuantizationCacheManager {
      * @param path Path to cache file.
      */
     public static void inspectCacheFile(final String path, final boolean verbose) {
-        QvcHeaderV1 header = null;
-        final long fileSize;
-        try (final FileInputStream fis = new FileInputStream(path);
-             final DataInputStream dis = new DataInputStream(fis)) {
-            fileSize = fis.getChannel().size();
-            header = new QvcHeaderV1();
-            header.readFromStream(dis);
-        } catch (final IOException e) {
-            e.printStackTrace();
+        final IQvcFile qvcFile = QvcFileReader.readCacheFile(path);
+        if (qvcFile == null) {
+            System.err.println("Provided path is not of valid QVC file.");
+            return;
+        }
+        if (!qvcFile.getHeader().validateHeader()) {
+            System.err.println("Provided file is corrupted.");
             return;
         }
         final StringBuilder reportBuilder = new StringBuilder();
-        final long expectedFileSize = header.getExpectedDataSize();
-        if (expectedFileSize == fileSize) {
-            reportBuilder.append("\u001B[32mCache file is VALID ").append(fileSize).append(" bytes\u001B[0m\n");
-        } else {
-            reportBuilder.append("\u001B[31mCache file is INVALID.\u001B[0m\n\t")
-                    .append(fileSize).append(" bytes instead of expected ")
-                    .append(expectedFileSize).append(" bytes.\n");
-        }
-        header.report(reportBuilder, path);
+        qvcFile.getHeader().report(reportBuilder, path);
 
         if (verbose) {
-
-            final IQvcFile cacheFile = getCacheFile(header.getQuantizationType());
-            assert (cacheFile != null);
-
-            try (final FileInputStream fis = new FileInputStream(path);
-                 final DataInputStream dis = new DataInputStream(fis)) {
-                cacheFile.readFromStream(dis);
-            } catch (final Exception e) {
-                reportBuilder.append(e.getMessage());
-            }
-
-            cacheFile.report(reportBuilder);
+            qvcFile.report(reportBuilder);
         }
 
         System.out.println(reportBuilder);

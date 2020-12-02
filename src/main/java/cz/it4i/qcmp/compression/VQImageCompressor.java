@@ -101,9 +101,9 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     private VectorQuantizer loadQuantizerFromCache() throws ImageCompressionException {
         final QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
-        if (!cacheManager.doesVQCacheExists(options.getInputDataInfo().getCacheFileName(),
-                                            getCodebookSize(),
-                                            options.getQuantizationVector())) {
+        if (!cacheManager.doesVqQvcFileExists(options.getInputDataInfo().getCacheFileName(),
+                                              getCodebookSize(),
+                                              options.getQuantizationVector())) {
             reportStatusToListeners("Codebook cache not found.");
             trainAndSaveCodebook();
         }

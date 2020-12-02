@@ -24,6 +24,8 @@ public class QvcFileReader {
         try (final FileInputStream fis = new FileInputStream(path)) {
             return readCacheFileImpl(fis);
         } catch (final IOException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

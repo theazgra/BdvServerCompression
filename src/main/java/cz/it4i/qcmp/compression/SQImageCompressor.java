@@ -84,7 +84,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     private ScalarQuantizer loadQuantizerFromCache() throws ImageCompressionException {
         final QuantizationCacheManager cacheManager = new QuantizationCacheManager(options.getCodebookCacheFolder());
 
-        if (!cacheManager.doesSQCacheExists(options.getInputDataInfo().getCacheFileName(), getCodebookSize())) {
+        if (!cacheManager.doesSqQvcFileExists(options.getInputDataInfo().getCacheFileName(), getCodebookSize())) {
             trainAndSaveCodebook();
         }
 
