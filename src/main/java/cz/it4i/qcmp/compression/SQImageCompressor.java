@@ -1,9 +1,9 @@
 package cz.it4i.qcmp.compression;
 
 import cz.it4i.qcmp.U16;
-import cz.it4i.qcmp.cache.ICacheFile;
+import cz.it4i.qcmp.cache.IQvcFile;
 import cz.it4i.qcmp.cache.QuantizationCacheManager;
-import cz.it4i.qcmp.cache.SQCacheFile;
+import cz.it4i.qcmp.cache.SqQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.huffman.HuffmanEncoder;
 import cz.it4i.qcmp.io.InputData;
@@ -42,8 +42,8 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     @Override
-    public void preloadGlobalCodebook(final ICacheFile codebookCacheFile) {
-        final SQCodebook cachedCodebook = ((SQCacheFile) codebookCacheFile).getCodebook();
+    public void preloadGlobalCodebook(final IQvcFile codebookCacheFile) {
+        final SQCodebook cachedCodebook = ((SqQvcFile) codebookCacheFile).getCodebook();
         cachedQuantizer = new ScalarQuantizer(cachedCodebook);
         cachedHuffmanEncoder = createHuffmanEncoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),
                                                     cachedCodebook.getSymbolFrequencies());

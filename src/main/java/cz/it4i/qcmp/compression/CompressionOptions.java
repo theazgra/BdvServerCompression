@@ -1,6 +1,6 @@
 package cz.it4i.qcmp.compression;
 
-import cz.it4i.qcmp.cache.ICacheFile;
+import cz.it4i.qcmp.cache.IQvcFile;
 import cz.it4i.qcmp.data.V3i;
 import cz.it4i.qcmp.fileformat.QuantizationType;
 import cz.it4i.qcmp.io.InputData;
@@ -69,7 +69,7 @@ public class CompressionOptions implements Cloneable {
         this.workerCount = (cores / 2);
     }
 
-    public CompressionOptions(final ICacheFile codebookCacheFile) {
+    public CompressionOptions(final IQvcFile codebookCacheFile) {
         this();
         quantizationType = codebookCacheFile.getHeader().getQuantizationType();
         bitsPerCodebookIndex = codebookCacheFile.getHeader().getBitsPerCodebookIndex();

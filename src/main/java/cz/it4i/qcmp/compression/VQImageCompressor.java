@@ -1,8 +1,8 @@
 package cz.it4i.qcmp.compression;
 
-import cz.it4i.qcmp.cache.ICacheFile;
+import cz.it4i.qcmp.cache.IQvcFile;
 import cz.it4i.qcmp.cache.QuantizationCacheManager;
-import cz.it4i.qcmp.cache.VQCacheFile;
+import cz.it4i.qcmp.cache.VqQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.fileformat.QuantizationType;
@@ -33,8 +33,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     }
 
     @Override
-    public void preloadGlobalCodebook(final ICacheFile codebookCacheFile) {
-        final VQCodebook cachedCodebook = ((VQCacheFile) codebookCacheFile).getCodebook();
+    public void preloadGlobalCodebook(final IQvcFile codebookCacheFile) {
+        final VQCodebook cachedCodebook = ((VqQvcFile) codebookCacheFile).getCodebook();
         cachedQuantizer = new VectorQuantizer(cachedCodebook);
         cachedHuffmanEncoder = createHuffmanEncoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),
                                                     cachedCodebook.getVectorFrequencies());

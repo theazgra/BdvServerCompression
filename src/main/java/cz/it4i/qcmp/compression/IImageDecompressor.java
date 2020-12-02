@@ -1,6 +1,6 @@
 package cz.it4i.qcmp.compression;
 
-import cz.it4i.qcmp.cache.ICacheFile;
+import cz.it4i.qcmp.cache.IQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
 import cz.it4i.qcmp.fileformat.QCMPFileHeader;
 
@@ -40,5 +40,5 @@ public interface IImageDecompressor extends IListenable {
      *
      * @param codebookCacheFile Codebook cache file.
      */
-    void preloadGlobalCodebook(final ICacheFile codebookCacheFile);
+    void preloadGlobalCodebook(final IQvcFile codebookCacheFile);
 }

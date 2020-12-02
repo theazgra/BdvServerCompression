@@ -1,7 +1,7 @@
 package cz.it4i.qcmp.compression;
 
-import cz.it4i.qcmp.cache.ICacheFile;
-import cz.it4i.qcmp.cache.SQCacheFile;
+import cz.it4i.qcmp.cache.IQvcFile;
+import cz.it4i.qcmp.cache.SqQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
 import cz.it4i.qcmp.fileformat.QCMPFileHeader;
 import cz.it4i.qcmp.huffman.HuffmanDecoder;
@@ -104,10 +104,10 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
     }
 
     @Override
-    public void preloadGlobalCodebook(final ICacheFile codebookCacheFile) {
-        assert (codebookCacheFile instanceof SQCacheFile) : "Incorrect codebook cache file type for SQImageDecompressor";
+    public void preloadGlobalCodebook(final IQvcFile codebookCacheFile) {
+        assert (codebookCacheFile instanceof SqQvcFile) : "Incorrect codebook cache file type for SQImageDecompressor";
 
-        final SQCacheFile codebookCache = (SQCacheFile) codebookCacheFile;
+        final SqQvcFile codebookCache = (SqQvcFile) codebookCacheFile;
 
         cachedCodebook = codebookCache.getCodebook();
         cachedHuffmanDecoder = createHuffmanDecoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),

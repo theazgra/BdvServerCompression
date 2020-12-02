@@ -1,7 +1,7 @@
 package cz.it4i.qcmp.compression;
 
 import cz.it4i.qcmp.U16;
-import cz.it4i.qcmp.cache.ICacheFile;
+import cz.it4i.qcmp.cache.IQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.fileformat.QCMPFileHeader;
@@ -20,7 +20,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
         imageCompressor = getImageCompressor();
     }
 
-    public ImageCompressor(final CompressionOptions options, final ICacheFile codebookCacheFile) {
+    public ImageCompressor(final CompressionOptions options, final IQvcFile codebookCacheFile) {
         this(options);
         imageCompressor.preloadGlobalCodebook(codebookCacheFile);
     }

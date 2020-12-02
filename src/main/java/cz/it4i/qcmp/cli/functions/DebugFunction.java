@@ -1,7 +1,7 @@
 package cz.it4i.qcmp.cli.functions;
 
 import cz.it4i.qcmp.cache.QuantizationCacheManager;
-import cz.it4i.qcmp.cache.VQCacheFile;
+import cz.it4i.qcmp.cache.VqQvcFile;
 import cz.it4i.qcmp.cli.CompressionOptionsCLIParser;
 import cz.it4i.qcmp.cli.CustomFunctionBase;
 import cz.it4i.qcmp.huffman.HuffmanNode;
@@ -29,7 +29,7 @@ public class DebugFunction extends CustomFunctionBase {
     @Override
     public boolean run() {
 
-        final VQCodebook codebook = ((VQCacheFile) QuantizationCacheManager.readCacheFile("D:\\tmp\\codebook.qvc")).getCodebook();
+        final VQCodebook codebook = ((VqQvcFile) QuantizationCacheManager.readCacheFile("D:\\tmp\\codebook.qvc")).getCodebook();
 
         final int[] symbols = new int[codebook.getCodebookSize()];
         for (int i = 0; i < codebook.getCodebookSize(); i++) {
@@ -55,6 +55,8 @@ public class DebugFunction extends CustomFunctionBase {
         } catch (final IOException ex) {
             ex.printStackTrace();
         }
+
+        readRoot.
 
         final boolean equal = huffmanBuilder.createEncoder().getRoot().treeEqual(readRoot);
 

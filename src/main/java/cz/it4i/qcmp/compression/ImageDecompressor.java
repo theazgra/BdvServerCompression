@@ -1,6 +1,6 @@
 package cz.it4i.qcmp.compression;
 
-import cz.it4i.qcmp.cache.ICacheFile;
+import cz.it4i.qcmp.cache.IQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
 import cz.it4i.qcmp.data.ImageU16Dataset;
 import cz.it4i.qcmp.fileformat.QCMPFileHeader;
@@ -25,7 +25,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
     }
 
 
-    public ImageDecompressor(final ICacheFile codebookCacheFile) {
+    public ImageDecompressor(final IQvcFile codebookCacheFile) {
         this(new CompressionOptions(codebookCacheFile));
         cachedDecompressor = getImageDecompressor(options.getQuantizationType());
         assert (cachedDecompressor != null);
