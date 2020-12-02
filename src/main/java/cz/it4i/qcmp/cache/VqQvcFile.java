@@ -1,6 +1,12 @@
 package cz.it4i.qcmp.cache;
 
 import cz.it4i.qcmp.fileformat.IQvcHeader;
+import cz.it4i.qcmp.fileformat.QvcHeaderV2;
+import cz.it4i.qcmp.huffman.HuffmanNode;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
+import cz.it4i.qcmp.io.InBitStream;
+import cz.it4i.qcmp.io.MemoryOutputStream;
+import cz.it4i.qcmp.io.OutBitStream;
 import cz.it4i.qcmp.quantization.vector.VQCodebook;
 
 import java.io.DataInputStream;
@@ -22,7 +28,17 @@ public class VqQvcFile implements IQvcFile {
 
     @Override
     public void writeToStream(final DataOutputStream outputStream) throws IOException {
-        // TODO
+        assert (header instanceof QvcHeaderV2) : "Only the latest header is supporter when writing qvc file.";
+
+        final int huffmanTreeBinaryRepresentationSize;
+        final MemoryOutputStream bufferStream = new MemoryOutputStream(256);
+        try (final OutBitStream bitStream = new OutBitStream(bufferStream, header.getBitsPerCodebookIndex(), 32)) {
+            codebook.getHuffmanTreeRoot().writeToBinaryStream(bitStream);
+            huffmanTreeBinaryRepresentationSize = (int) bitStream.getBytesWritten();
+        }
+        assert (huffmanTreeBinaryRepresentationSize == bufferStream.getCurrentBufferLength());
+        ((QvcHeaderV2) header).setHuffmanDataSize(huffmanTreeBinaryRepresentationSize);
+
         header.writeToStream(outputStream);
 
         final int[][] entries = codebook.getVectors();
@@ -32,33 +48,45 @@ public class VqQvcFile implements IQvcFile {
             }
         }
 
-        final long[] frequencies = codebook.getVectorFrequencies();
-        for (final long vF : frequencies) {
-            outputStream.writeLong(vF);
-        }
+        outputStream.write(bufferStream.getBuffer(), 0, huffmanTreeBinaryRepresentationSize);
     }
 
     @Override
     public void readFromStream(final DataInputStream inputStream, final IQvcHeader header) throws IOException {
-        // TODO
         this.header = header;
         final int codebookSize = header.getCodebookSize();
 
         final int entrySize = header.getVectorDim().multiplyTogether();
         final int[][] vectors = new int[codebookSize][entrySize];
-        final long[] frequencies = new long[codebookSize];
 
         for (int i = 0; i < codebookSize; i++) {
-            //int[] vector = new int[entrySize];
             for (int j = 0; j < entrySize; j++) {
                 vectors[i][j] = inputStream.readUnsignedShort();
             }
         }
 
-        for (int i = 0; i < codebookSize; i++) {
-            frequencies[i] = inputStream.readLong();
+        final HuffmanNode huffmanRoot;
+        final int headerVersion = header.getHeaderVersion();
+        if (headerVersion == 1) {
+            final long[] frequencies = new long[codebookSize];
+            for (int i = 0; i < codebookSize; i++) {
+                frequencies[i] = inputStream.readLong();
+            }
+            final HuffmanTreeBuilder builder = new HuffmanTreeBuilder(codebookSize, frequencies);
+            builder.buildHuffmanTree();
+            huffmanRoot = builder.getRoot();
+        } else if (headerVersion == 2) {
+            final InBitStream bitStream = new InBitStream(inputStream,
+                                                          header.getBitsPerCodebookIndex(),
+                                                          ((QvcHeaderV2) header).getHuffmanDataSize());
+            bitStream.fillEntireBuffer();
+            bitStream.setAllowReadFromUnderlyingStream(false);
+            huffmanRoot = HuffmanNode.readFromStream(bitStream);
+        } else {
+            throw new IOException("Unable to read VqQvcFile of version: " + headerVersion);
         }
-        codebook = new VQCodebook(header.getVectorDim(), vectors, frequencies);
+
+        codebook = new VQCodebook(header.getVectorDim(), vectors, huffmanRoot);
     }
 
     @Override

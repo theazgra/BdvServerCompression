@@ -47,4 +47,13 @@ public class Codebook {
             huffmanEncoder = new HuffmanEncoder(huffmanRoot, HuffmanTreeBuilder.createSymbolCodes(huffmanRoot));
         return huffmanEncoder;
     }
+
+    /**
+     * Get root of the huffman tree coder.
+     *
+     * @return Root of the huffman tree.
+     */
+    public HuffmanNode getHuffmanTreeRoot() {
+        return huffmanRoot;
+    }
 }

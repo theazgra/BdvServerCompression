@@ -1,6 +1,7 @@
 package cz.it4i.qcmp.fileformat;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class QvcHeaderV2 extends QvcHeaderV1 {
@@ -12,7 +13,7 @@ public class QvcHeaderV2 extends QvcHeaderV1 {
     //endregion
 
     //region Header fields.
-    int huffmanDataSize;
+    private int huffmanDataSize;
     //endregion
 
     //region IFileHeader implementation
@@ -41,6 +42,17 @@ public class QvcHeaderV2 extends QvcHeaderV1 {
     }
 
     @Override
+    public void writeToStream(final DataOutputStream outputStream) throws IOException {
+        super.writeToStream(outputStream);
+
+        outputStream.writeShort(huffmanDataSize);
+
+        for (int i = 0; i < RESERVED_BYTES_SIZE; i++) {
+            outputStream.writeByte(0);
+        }
+    }
+
+    @Override
     public long getExpectedDataSize() {
         long expectedFileSize = BASE_HEADER_SIZE + trainFileNameSize + huffmanDataSize;
 
@@ -65,4 +77,13 @@ public class QvcHeaderV2 extends QvcHeaderV1 {
         sb.append("HuffmanDataSize: ").append(huffmanDataSize).append('\n');
     }
     //endregion
+
+
+    public int getHuffmanDataSize() {
+        return huffmanDataSize;
+    }
+
+    public void setHuffmanDataSize(final int n) {
+        huffmanDataSize = n;
+    }
 }

@@ -1,6 +1,12 @@
 package cz.it4i.qcmp.cache;
 
 import cz.it4i.qcmp.fileformat.IQvcHeader;
+import cz.it4i.qcmp.fileformat.QvcHeaderV2;
+import cz.it4i.qcmp.huffman.HuffmanNode;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
+import cz.it4i.qcmp.io.InBitStream;
+import cz.it4i.qcmp.io.MemoryOutputStream;
+import cz.it4i.qcmp.io.OutBitStream;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 
 import java.io.DataInputStream;
@@ -22,34 +28,66 @@ public class SqQvcFile implements IQvcFile {
 
     @Override
     public void writeToStream(final DataOutputStream outputStream) throws IOException {
-        // TODO
-        header.writeToStream(outputStream);
-        final int[] quantizationValues = codebook.getCentroids();
-        final long[] frequencies = codebook.getSymbolFrequencies();
+        assert (header instanceof QvcHeaderV2) : "Only the latest header is supporter when writing qvc file.";
 
+        final int huffmanTreeBinaryRepresentationSize;
+        final MemoryOutputStream bufferStream = new MemoryOutputStream(256);
+        try (final OutBitStream bitStream = new OutBitStream(bufferStream, header.getBitsPerCodebookIndex(), 32)) {
+            codebook.getHuffmanTreeRoot().writeToBinaryStream(bitStream);
+            huffmanTreeBinaryRepresentationSize = (int) bitStream.getBytesWritten();
+        }
+        assert (huffmanTreeBinaryRepresentationSize == bufferStream.getCurrentBufferLength());
+        ((QvcHeaderV2) header).setHuffmanDataSize(huffmanTreeBinaryRepresentationSize);
+
+        header.writeToStream(outputStream);
+        
+        final int[] quantizationValues = codebook.getCentroids();
         for (final int qV : quantizationValues) {
             outputStream.writeShort(qV);
         }
-        for (final long sF : frequencies) {
-            outputStream.writeLong(sF);
-        }
+
+        outputStream.write(bufferStream.getBuffer(), 0, huffmanTreeBinaryRepresentationSize);
     }
 
+    /**
+     * Read codebook from file based on format version.
+     *
+     * @param inputStream Input stream.
+     * @param header      File header.
+     * @throws IOException when fails to read from input stream.
+     */
     @Override
     public void readFromStream(final DataInputStream inputStream, final IQvcHeader header) throws IOException {
-        // TODO
         this.header = header;
-        final int codebookSize = header.getCodebookSize();
-        final int[] centroids = new int[codebookSize];
-        final long[] frequencies = new long[codebookSize];
 
+        final int headerVersion = header.getHeaderVersion();
+        final int codebookSize = header.getCodebookSize();
+
+        final int[] centroids = new int[codebookSize];
         for (int i = 0; i < codebookSize; i++) {
             centroids[i] = inputStream.readUnsignedShort();
         }
-        for (int i = 0; i < codebookSize; i++) {
-            frequencies[i] = inputStream.readLong();
+        final HuffmanNode huffmanRoot;
+        if (headerVersion == 1) {           // First version of qvc file.
+            final long[] frequencies = new long[codebookSize];
+            for (int i = 0; i < codebookSize; i++) {
+                frequencies[i] = inputStream.readLong();
+            }
+
+            final HuffmanTreeBuilder builder = new HuffmanTreeBuilder(codebookSize, frequencies);
+            builder.buildHuffmanTree();
+            huffmanRoot = builder.getRoot();
+        } else if (headerVersion == 2) {    // Second version of qvc file.
+            final InBitStream bitStream = new InBitStream(inputStream,
+                                                          header.getBitsPerCodebookIndex(),
+                                                          ((QvcHeaderV2) header).getHuffmanDataSize());
+            bitStream.fillEntireBuffer();
+            bitStream.setAllowReadFromUnderlyingStream(false);
+            huffmanRoot = HuffmanNode.readFromStream(bitStream);
+        } else {
+            throw new IOException("Unable to read SqQvcFile of version: " + headerVersion);
         }
-        codebook = new SQCodebook(centroids, frequencies);
+        codebook = new SQCodebook(centroids, huffmanRoot);
     }
 
     @Override
