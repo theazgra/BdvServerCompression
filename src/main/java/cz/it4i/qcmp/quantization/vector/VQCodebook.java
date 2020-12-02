@@ -1,20 +1,18 @@
 package cz.it4i.qcmp.quantization.vector;
 
 import cz.it4i.qcmp.data.V3i;
+import cz.it4i.qcmp.huffman.HuffmanNode;
+import cz.it4i.qcmp.quantization.Codebook;
 
 /**
  * Codebook for vector quantizer.
  */
-public class VQCodebook {
+public class VQCodebook extends Codebook {
     /**
      * Quantization vectors.
      */
     private final int[][] vectors;
 
-    /**
-     * Absolute frequencies of quantization vectors.
-     */
-    private final long[] vectorFrequencies;
 
     /**
      * Size of the codebook.
@@ -26,11 +24,16 @@ public class VQCodebook {
      */
     private final V3i vectorDims;
 
-    public VQCodebook(final V3i vectorDims, final int[][] vectors, final long[] vectorFrequencies) {
-        //assert (vectors.length == vectorFrequencies.length);
+    /**
+     * Create vector quantization codebook from quantization vectors and huffman coder.
+     *
+     * @param vectorDims  Quantization vector dimensions.
+     * @param vectors     Quantization vectors.
+     * @param huffmanRoot Root of the huffman tree.
+     */
+    public VQCodebook(final V3i vectorDims, final int[][] vectors, final HuffmanNode huffmanRoot) {
         this.vectorDims = vectorDims;
         this.vectors = vectors;
-        this.vectorFrequencies = vectorFrequencies;
         this.codebookSize = vectors.length;
     }
 
@@ -41,15 +44,6 @@ public class VQCodebook {
      */
     public int[][] getVectors() {
         return vectors;
-    }
-
-    /**
-     * Get frequencies of codebook vectors at indices.
-     *
-     * @return Frequencies of vectors.
-     */
-    public long[] getVectorFrequencies() {
-        return vectorFrequencies;
     }
 
     /**

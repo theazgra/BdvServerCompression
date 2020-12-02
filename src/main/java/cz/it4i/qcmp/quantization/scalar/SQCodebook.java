@@ -1,19 +1,17 @@
 package cz.it4i.qcmp.quantization.scalar;
 
 
+import cz.it4i.qcmp.huffman.HuffmanNode;
+import cz.it4i.qcmp.quantization.Codebook;
+
 /**
  * Codebook for scalar quantizer.
  */
-public class SQCodebook {
+public class SQCodebook extends Codebook {
     /**
      * Quantization values.
      */
     final int[] centroids;
-
-    /**
-     * Absolute frequencies of quantization values.
-     */
-    final long[] indexFrequencies;
 
     /**
      * Size of the codebook.
@@ -21,13 +19,14 @@ public class SQCodebook {
     final int codebookSize;
 
     /**
-     * @param centroids        Quantization values.
-     * @param indexFrequencies Absolute frequencies of quantization values.
+     * Create SQ codebook from quantization values and huffman coder.
+     *
+     * @param centroids   Quantization values.
+     * @param huffmanRoot Root of the huffman tree.
      */
-    public SQCodebook(final int[] centroids, final long[] indexFrequencies) {
-        assert (centroids.length == indexFrequencies.length);
+    public SQCodebook(final int[] centroids, final HuffmanNode huffmanRoot) {
+        super(huffmanRoot);
         this.centroids = centroids;
-        this.indexFrequencies = indexFrequencies;
         this.codebookSize = this.centroids.length;
     }
 
@@ -38,15 +37,6 @@ public class SQCodebook {
      */
     public int[] getCentroids() {
         return centroids;
-    }
-
-    /**
-     * Get frequencies of codebook symbols at indices.
-     *
-     * @return Frequencies of symbols.
-     */
-    public long[] getSymbolFrequencies() {
-        return indexFrequencies;
     }
 
     /**
