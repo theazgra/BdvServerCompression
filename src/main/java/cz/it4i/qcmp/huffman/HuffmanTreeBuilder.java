@@ -10,6 +10,15 @@ public class HuffmanTreeBuilder {
     private final int[] symbols;
     private final long[] symbolFrequencies;
 
+    public HuffmanTreeBuilder(final int codebookSize, final long[] symbolFrequencies) {
+        assert (codebookSize == symbolFrequencies.length) : "Array lengths mismatch";
+        this.symbolFrequencies = symbolFrequencies;
+        this.symbols = new int[codebookSize];
+        for (int i = 0; i < codebookSize; i++) {
+            symbols[i] = i;
+        }
+    }
+
     public HuffmanTreeBuilder(final int[] symbols, final long[] symbolFrequencies) {
         assert (symbols.length == symbolFrequencies.length) : "Array lengths mismatch";
         this.symbols = symbols;
@@ -36,16 +45,18 @@ public class HuffmanTreeBuilder {
             queue.add(mergedNode);
         }
         root = queue.poll();
-        buildHuffmanCodes();
+        symbolCodes = createSymbolCodes(root);
     }
 
-    private void buildHuffmanCodes() {
-        symbolCodes = new HashMap<>(symbols.length);
-
-        traverseSymbolCodes(root, new ArrayList<Boolean>());
+    public static HashMap<Integer, boolean[]> createSymbolCodes(final HuffmanNode node) {
+        final HashMap<Integer, boolean[]> codes = new HashMap<>();
+        createSymbolCodesImpl(codes, node, new ArrayList<Boolean>());
+        return codes;
     }
 
-    private void traverseSymbolCodes(final HuffmanNode currentNode, final ArrayList<Boolean> currentCode) {
+    private static void createSymbolCodesImpl(final HashMap<Integer, boolean[]> codes,
+                                              final HuffmanNode currentNode,
+                                              final ArrayList<Boolean> currentCode) {
         boolean inLeaf = true;
         final int bit = currentNode.getBit();
         if (bit != -1) {
@@ -54,12 +65,12 @@ public class HuffmanTreeBuilder {
 
         if (currentNode.rightChild != null) {
             final ArrayList<Boolean> codeCopy = new ArrayList<Boolean>(currentCode);
-            traverseSymbolCodes(currentNode.rightChild, codeCopy);
+            createSymbolCodesImpl(codes, currentNode.rightChild, codeCopy);
             inLeaf = false;
         }
         if (currentNode.leftChild != null) {
             final ArrayList<Boolean> codeCopy = new ArrayList<Boolean>(currentCode);
-            traverseSymbolCodes(currentNode.leftChild, codeCopy);
+            createSymbolCodesImpl(codes, currentNode.leftChild, codeCopy);
             inLeaf = false;
         }
 
@@ -71,9 +82,8 @@ public class HuffmanTreeBuilder {
             for (int i = 0; i < finalSymbolCode.length; i++) {
                 finalSymbolCode[i] = currentCode.get(i);
             }
-            symbolCodes.put(currentNode.getSymbol(), finalSymbolCode);
+            codes.put(currentNode.getSymbol(), finalSymbolCode);
         }
-
     }
 
     private PriorityQueue<HuffmanNode> buildPriorityQueue() {
@@ -107,5 +117,9 @@ public class HuffmanTreeBuilder {
     public HuffmanDecoder createDecoder() {
         assert (root != null) : "Huffman tree was not build yet";
         return new HuffmanDecoder(root);
+    }
+
+    public HuffmanNode getRoot() {
+        return root;
     }
 }
