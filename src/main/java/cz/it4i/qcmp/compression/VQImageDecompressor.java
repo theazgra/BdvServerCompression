@@ -56,6 +56,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                     codebookVectors[codebookIndex][vecIndex] = compressedStream.readUnsignedShort();
                 }
             }
+            // TODO(Moravec): Read frequencies or binary huffman tree based on file format version!!!
             for (int codebookIndex = 0; codebookIndex < codebookSize; codebookIndex++) {
                 frequencies[codebookIndex] = compressedStream.readLong();
             }

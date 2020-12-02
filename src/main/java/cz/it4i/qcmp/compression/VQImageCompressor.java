@@ -8,6 +8,7 @@ import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.fileformat.QuantizationType;
 import cz.it4i.qcmp.huffman.HuffmanEncoder;
 import cz.it4i.qcmp.io.InputData;
+import cz.it4i.qcmp.io.OutBitStream;
 import cz.it4i.qcmp.io.loader.IPlaneLoader;
 import cz.it4i.qcmp.io.loader.PlaneLoaderFactory;
 import cz.it4i.qcmp.quantization.vector.LBGResult;
@@ -72,7 +73,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      */
     private void writeQuantizerToCompressStream(final VectorQuantizer quantizer,
                                                 final DataOutputStream compressStream) throws ImageCompressionException {
-        // TODO
         final int[][] codebook = quantizer.getCodebookVectors();
         try {
             for (final int[] entry : codebook) {
@@ -80,9 +80,8 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                     compressStream.writeShort(vecVal);
                 }
             }
-            final long[] frequencies = quantizer.getFrequencies();
-            for (final long symbolFrequency : frequencies) {
-                compressStream.writeLong(symbolFrequency);
+            try (final OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerCodebookIndex(), 32)) {
+                quantizer.getCodebook().getHuffmanTreeRoot().writeToBinaryStream(outBitStream);
             }
         } catch (final IOException ioEx) {
             throw new ImageCompressionException("Unable to write codebook to compress stream.", ioEx);

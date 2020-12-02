@@ -7,6 +7,7 @@ import cz.it4i.qcmp.cache.SqQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.huffman.HuffmanEncoder;
 import cz.it4i.qcmp.io.InputData;
+import cz.it4i.qcmp.io.OutBitStream;
 import cz.it4i.qcmp.io.loader.IPlaneLoader;
 import cz.it4i.qcmp.io.loader.PlaneLoaderFactory;
 import cz.it4i.qcmp.quantization.scalar.LloydMaxU16ScalarQuantization;
@@ -59,14 +60,15 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
                                              final DataOutputStream compressStream) throws ImageCompressionException {
         final SQCodebook codebook = quantizer.getCodebook();
         final int[] centroids = codebook.getCentroids();
-        final long[] frequencies = codebook.getSymbolFrequencies();
         try {
             for (final int quantizationValue : centroids) {
                 compressStream.writeShort(quantizationValue);
             }
-            for (final long symbolFrequency : frequencies) {
-                compressStream.writeLong(symbolFrequency);
+
+            try (final OutBitStream outBitStream = new OutBitStream(compressStream, options.getBitsPerCodebookIndex(), 32)) {
+                codebook.getHuffmanTreeRoot().writeToBinaryStream(outBitStream);
             }
+
         } catch (final IOException ioEx) {
             throw new ImageCompressionException("Unable to write codebook to compress stream.", ioEx);
         }

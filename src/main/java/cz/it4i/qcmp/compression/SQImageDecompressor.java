@@ -30,6 +30,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             for (int i = 0; i < codebookSize; i++) {
                 quantizationValues[i] = compressedStream.readUnsignedShort();
             }
+            // TODO(Moravec): Read frequencies or binary huffman tree based on file format version!!!
             for (int i = 0; i < codebookSize; i++) {
                 symbolFrequencies[i] = compressedStream.readLong();
             }

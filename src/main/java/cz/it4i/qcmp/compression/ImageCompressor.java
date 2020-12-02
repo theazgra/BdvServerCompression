@@ -217,6 +217,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
      * @return Valid QCMPFile header for compressed file.
      */
     private QCMPFileHeader createHeader() {
+        // TODO(Moravec): Change header to newer version!
         final QCMPFileHeader header = new QCMPFileHeader();
 
 
