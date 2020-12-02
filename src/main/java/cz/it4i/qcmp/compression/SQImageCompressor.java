@@ -45,8 +45,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
     public void preloadGlobalCodebook(final IQvcFile codebookCacheFile) {
         final SQCodebook cachedCodebook = ((SqQvcFile) codebookCacheFile).getCodebook();
         cachedQuantizer = new ScalarQuantizer(cachedCodebook);
-        cachedHuffmanEncoder = createHuffmanEncoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),
-                                                    cachedCodebook.getSymbolFrequencies());
+        cachedHuffmanEncoder = cachedCodebook.getHuffmanEncoder();
     }
 
     /**
@@ -89,8 +88,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             trainAndSaveCodebook();
         }
 
-        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputDataInfo().getCacheFileName(),
-                                                                getCodebookSize());
+        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputDataInfo().getCacheFileName(), getCodebookSize());
         if (codebook == null) {
             throw new ImageCompressionException("Failed to read quantization values from cache file.");
         }
@@ -123,7 +121,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             reportStatusToListeners("Loading codebook from cache file.");
 
             quantizer = loadQuantizerFromCache();
-            huffmanEncoder = createHuffmanEncoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
+            huffmanEncoder = quantizer.getCodebook().getHuffmanEncoder();
 
             reportStatusToListeners("Cached quantizer with huffman coder created.");
             writeCodebookToOutputStream(quantizer, compressStream);
@@ -139,7 +137,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
 
             reportStatusToListeners(String.format("Training scalar quantizer from middle plane %d.", middlePlaneIndex));
             quantizer = trainScalarQuantizerFromData(middlePlaneData);
-            huffmanEncoder = createHuffmanEncoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
+            huffmanEncoder = quantizer.getCodebook().getHuffmanEncoder();
 
             stopwatch.stop();
             writeCodebookToOutputStream(quantizer, compressStream);
@@ -175,7 +173,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
                 quantizer = trainScalarQuantizerFromData(planeData);
                 writeCodebookToOutputStream(quantizer, compressStream);
 
-                huffmanEncoder = createHuffmanEncoder(huffmanSymbols, quantizer.getCodebook().getSymbolFrequencies());
+                huffmanEncoder = quantizer.getCodebook().getHuffmanEncoder();
             }
 
             assert (quantizer != null) : "Scalar Quantizer wasn't initialized.";
@@ -200,7 +198,7 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
         } catch (final Exception e) {
             throw new ImageCompressionException("Unable to create SCIFIO reader. " + e.getMessage());
         }
-        int[] trainData = null;
+        final int[] trainData;
 
         if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
             final int middlePlaneIndex = getMiddlePlaneIndex();

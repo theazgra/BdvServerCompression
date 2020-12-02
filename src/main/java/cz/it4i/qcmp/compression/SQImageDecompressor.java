@@ -5,6 +5,7 @@ import cz.it4i.qcmp.cache.SqQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
 import cz.it4i.qcmp.fileformat.QCMPFileHeader;
 import cz.it4i.qcmp.huffman.HuffmanDecoder;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InBitStream;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 import cz.it4i.qcmp.utilities.Stopwatch;
@@ -22,8 +23,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         super(options);
     }
 
-    private SQCodebook readScalarQuantizationValues(final DataInputStream compressedStream,
-                                                    final int codebookSize) throws ImageDecompressionException {
+    private SQCodebook readSqCodebook(final DataInputStream compressedStream, final int codebookSize) throws ImageDecompressionException {
         final int[] quantizationValues = new int[codebookSize];
         final long[] symbolFrequencies = new long[codebookSize];
         try {
@@ -36,7 +36,9 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         } catch (final IOException ioEx) {
             throw new ImageDecompressionException("Unable to read quantization values from compressed stream.", ioEx);
         }
-        return new SQCodebook(quantizationValues, symbolFrequencies);
+        final HuffmanTreeBuilder builder = new HuffmanTreeBuilder(createHuffmanSymbols(codebookSize), symbolFrequencies);
+        builder.buildHuffmanTree();
+        return new SQCodebook(quantizationValues, builder.getRoot());
     }
 
     @Override
@@ -45,7 +47,6 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
                            final QCMPFileHeader header) throws ImageDecompressionException {
 
         final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
-        final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
         final int planeCountForDecompression = header.getImageSizeZ();
 
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
@@ -55,8 +56,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
             reportStatusToListeners("Loading single codebook and huffman coder.");
-            codebook = readScalarQuantizationValues(compressedStream, codebookSize);
-            huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getSymbolFrequencies());
+            codebook = readSqCodebook(compressedStream, codebookSize);
+            huffmanDecoder = codebook.getHuffmanDecoder();
         }
 
         final Stopwatch stopwatch = new Stopwatch();
@@ -64,8 +65,8 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             stopwatch.restart();
             if (header.isCodebookPerPlane()) {
                 reportStatusToListeners("Loading plane codebook...");
-                codebook = readScalarQuantizationValues(compressedStream, codebookSize);
-                huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getSymbolFrequencies());
+                codebook = readSqCodebook(compressedStream, codebookSize);
+                huffmanDecoder = codebook.getHuffmanDecoder();
             }
             assert (codebook != null && huffmanDecoder != null);
 
@@ -110,8 +111,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         final SqQvcFile codebookCache = (SqQvcFile) codebookCacheFile;
 
         cachedCodebook = codebookCache.getCodebook();
-        cachedHuffmanDecoder = createHuffmanDecoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),
-                                                    cachedCodebook.getSymbolFrequencies());
+        cachedHuffmanDecoder = cachedCodebook.getHuffmanDecoder();
     }
 
     @Override
@@ -119,7 +119,6 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
                                    final short[][] buffer,
                                    final QCMPFileHeader header) throws ImageDecompressionException {
         final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
-        final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
         final int planeCountForDecompression = header.getImageSizeZ();
 
         final int planePixelCount = header.getImageSizeX() * header.getImageSizeY();
@@ -128,15 +127,15 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
         HuffmanDecoder huffmanDecoder = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
-            codebook = readScalarQuantizationValues(compressedStream, codebookSize);
-            huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getSymbolFrequencies());
+            codebook = readSqCodebook(compressedStream, codebookSize);
+            huffmanDecoder = codebook.getHuffmanDecoder();
         }
 
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
             reportProgressToListeners(planeIndex, planeCountForDecompression, "Decompressing plane %d", planeIndex);
             if (header.isCodebookPerPlane()) {
-                codebook = readScalarQuantizationValues(compressedStream, codebookSize);
-                huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getSymbolFrequencies());
+                codebook = readSqCodebook(compressedStream, codebookSize);
+                huffmanDecoder = codebook.getHuffmanDecoder();
             }
             assert (codebook != null && huffmanDecoder != null);
 

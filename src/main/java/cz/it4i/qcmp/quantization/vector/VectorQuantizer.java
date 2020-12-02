@@ -11,16 +11,15 @@ public class VectorQuantizer {
     private final VectorDistanceMetric metric = VectorDistanceMetric.Euclidean;
     private final int[][] codebookVectors;
     private final int vectorSize;
-    private final long[] frequencies;
+    private final VQCodebook codebook;
 
-    //    private final KDTree kdTree;
+    // private final KDTree kdTree;
 
     public VectorQuantizer(final VQCodebook codebook) {
+        this.codebook = codebook;
         this.codebookVectors = codebook.getVectors();
         this.vectorSize = codebook.getVectors()[0].length;
-        this.frequencies = codebook.getVectorFrequencies();
-
-        //        kdTree = new KDTreeBuilder(this.vectorSize, 8).buildTree(codebook.getVectors());
+        // kdTree = new KDTreeBuilder(this.vectorSize, 8).buildTree(codebook.getVectors());
     }
 
     public int[] quantize(final int[] dataVector) {
@@ -167,8 +166,8 @@ public class VectorQuantizer {
         return codebookVectors;
     }
 
-    public long[] getFrequencies() {
-        return frequencies;
+    public VQCodebook getCodebook() {
+        return codebook;
     }
 }
 

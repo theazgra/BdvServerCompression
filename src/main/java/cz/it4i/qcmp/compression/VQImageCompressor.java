@@ -16,7 +16,6 @@ import cz.it4i.qcmp.quantization.vector.VQCodebook;
 import cz.it4i.qcmp.quantization.vector.VectorQuantizer;
 import cz.it4i.qcmp.utilities.Stopwatch;
 import cz.it4i.qcmp.utilities.Utils;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -36,8 +35,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
     public void preloadGlobalCodebook(final IQvcFile codebookCacheFile) {
         final VQCodebook cachedCodebook = ((VqQvcFile) codebookCacheFile).getCodebook();
         cachedQuantizer = new VectorQuantizer(cachedCodebook);
-        cachedHuffmanEncoder = createHuffmanEncoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),
-                                                    cachedCodebook.getVectorFrequencies());
+        cachedHuffmanEncoder = cachedCodebook.getHuffmanEncoder();
     }
 
     public boolean shouldUseKdTree() {
@@ -74,6 +72,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
      */
     private void writeQuantizerToCompressStream(final VectorQuantizer quantizer,
                                                 final DataOutputStream compressStream) throws ImageCompressionException {
+        // TODO
         final int[][] codebook = quantizer.getCodebookVectors();
         try {
             for (final int[] entry : codebook) {
@@ -143,7 +142,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         return compress1D2DVectors(compressStream, true, inputData);
     }
 
-    @NotNull
     private long[] compress1D2DVectors(final DataOutputStream compressStream,
                                        final boolean streamMode,
                                        final InputData inputData) throws ImageCompressionException {
@@ -166,7 +164,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
                 reportStatusToListeners("Loading codebook from cache file.");
                 quantizer = loadQuantizerFromCache();
-                huffmanEncoder = createHuffmanEncoder(huffmanSymbols, quantizer.getFrequencies());
+                huffmanEncoder = quantizer.getCodebook().getHuffmanEncoder();
                 reportStatusToListeners("Cached quantizer with huffman coder created.");
                 writeQuantizerToCompressStream(quantizer, compressStream);
             } else if (options.getCodebookType() == CompressionOptions.CodebookType.MiddlePlane) {
@@ -175,7 +173,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                 final int[][] refPlaneVectors = planeLoader.loadVectorsFromPlaneRange(0, options,
                                                                                       Utils.singlePlaneRange(getMiddlePlaneIndex()));
                 quantizer = trainVectorQuantizerFromPlaneVectors(refPlaneVectors);
-                huffmanEncoder = createHuffmanEncoder(huffmanSymbols, quantizer.getFrequencies());
+                huffmanEncoder = quantizer.getCodebook().getHuffmanEncoder();
                 stopwatch.stop();
                 reportStatusToListeners("Middle plane codebook created in: " + stopwatch.getElapsedTimeString());
                 writeQuantizerToCompressStream(quantizer, compressStream);
@@ -209,7 +207,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             if (!streamMode && !hasGeneralQuantizer) {
                 reportStatusToListeners(String.format("Training vector quantizer from plane %d.", planeIndex));
                 quantizer = trainVectorQuantizerFromPlaneVectors(planeVectors);
-                huffmanEncoder = createHuffmanEncoder(huffmanSymbols, quantizer.getFrequencies());
+                huffmanEncoder = quantizer.getCodebook().getHuffmanEncoder();
                 writeQuantizerToCompressStream(quantizer, compressStream);
             }
 
@@ -258,7 +256,6 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
                                  final InputData inputData) throws ImageCompressionException {
         assert (options.getCodebookType() == CompressionOptions.CodebookType.Global);
         final IPlaneLoader planeLoader;
-        final int[] huffmanSymbols = createHuffmanSymbols(getCodebookSize());
         try {
             planeLoader = PlaneLoaderFactory.getPlaneLoaderForInputFile(inputData);
             planeLoader.setWorkerCount(options.getWorkerCount());
@@ -286,7 +283,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
         final VectorQuantizer quantizer = (cachedQuantizer != null) ? cachedQuantizer : loadQuantizerFromCache();
         final HuffmanEncoder huffmanEncoder = (cachedHuffmanEncoder != null)
                 ? cachedHuffmanEncoder
-                : createHuffmanEncoder(huffmanSymbols, quantizer.getFrequencies());
+                : quantizer.getCodebook().getHuffmanEncoder();
         if (!streamMode)
             writeQuantizerToCompressStream(quantizer, compressStream);
 
@@ -387,8 +384,7 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
 
         codebookTrainer.findOptimalCodebook(vqCodebook -> {
             try {
-                assert ((vqCodebook.getCodebookSize() == vqCodebook.getVectors().length) &&
-                        (vqCodebook.getCodebookSize() == vqCodebook.getVectorFrequencies().length))
+                assert (vqCodebook.getCodebookSize() == vqCodebook.getVectors().length)
                         : "Codebook size, Vector count, Frequencies count mismatch";
                 qcm.saveCodebook(options.getInputDataInfo().getCacheFileName(), vqCodebook);
             } catch (final IOException e) {

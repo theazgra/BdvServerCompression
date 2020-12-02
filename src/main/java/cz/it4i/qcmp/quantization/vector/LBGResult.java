@@ -1,6 +1,7 @@
 package cz.it4i.qcmp.quantization.vector;
 
 import cz.it4i.qcmp.data.V3i;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 
 public class LBGResult {
 
@@ -23,7 +24,9 @@ public class LBGResult {
     }
 
     public VQCodebook getCodebook() {
-        return new VQCodebook(vectorDims, codebookVectors, frequencies);
+        final HuffmanTreeBuilder builder = new HuffmanTreeBuilder(codebookVectors.length, frequencies);
+        builder.buildHuffmanTree();
+        return new VQCodebook(vectorDims, codebookVectors, builder.getRoot());
     }
 
     public double getAverageMse() {

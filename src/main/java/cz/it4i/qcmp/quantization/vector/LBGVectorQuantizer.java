@@ -3,6 +3,7 @@ package cz.it4i.qcmp.quantization.vector;
 import cz.it4i.qcmp.U16;
 import cz.it4i.qcmp.compression.listeners.IStatusListener;
 import cz.it4i.qcmp.data.V3i;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.utilities.Stopwatch;
 import cz.it4i.qcmp.utilities.Utils;
 
@@ -207,9 +208,7 @@ public class LBGVectorQuantizer {
 
                 workers[wId] = new Thread(() -> {
                     final long[] workerFrequencies = new long[codebook.length];
-                    final VectorQuantizer quantizer = new VectorQuantizer(new VQCodebook(vectorDimensions,
-                                                                                         codebook,
-                                                                                         frequencies));
+                    final VectorQuantizer quantizer = new VectorQuantizer(new VQCodebook(vectorDimensions, codebook, null));
 
                     double threadMse = 0.0;
                     int[] vector;
@@ -245,9 +244,7 @@ public class LBGVectorQuantizer {
             }
             mse = _mse / (double) workerCount;
         } else {
-            final VectorQuantizer quantizer = new VectorQuantizer(new VQCodebook(vectorDimensions,
-                                                                                 codebook,
-                                                                                 frequencies));
+            final VectorQuantizer quantizer = new VectorQuantizer(new VQCodebook(vectorDimensions, codebook, null));
             int qIndex;
             int[] qVector;
             for (final TrainingVector trV : trainingVectors) {
@@ -412,9 +409,10 @@ public class LBGVectorQuantizer {
                 final long[] codebookFrequencies = new long[codebook.length];
                 System.arraycopy(frequencies, 0, codebookFrequencies, 0, codebook.length);
 
-                codebookFoundCallback.process(new VQCodebook(vectorDimensions,
-                                                             learningCodebookToCodebook(codebook),
-                                                             codebookFrequencies));
+
+                final HuffmanTreeBuilder builder = new HuffmanTreeBuilder(codebook.length, frequencies);
+                builder.buildHuffmanTree();
+                codebookFoundCallback.process(new VQCodebook(vectorDimensions, learningCodebookToCodebook(codebook), builder.getRoot()));
             }
         }
         return codebook;

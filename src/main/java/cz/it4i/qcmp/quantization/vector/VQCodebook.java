@@ -32,6 +32,7 @@ public class VQCodebook extends Codebook {
      * @param huffmanRoot Root of the huffman tree.
      */
     public VQCodebook(final V3i vectorDims, final int[][] vectors, final HuffmanNode huffmanRoot) {
+        super(huffmanRoot);
         this.vectorDims = vectorDims;
         this.vectors = vectors;
         this.codebookSize = vectors.length;

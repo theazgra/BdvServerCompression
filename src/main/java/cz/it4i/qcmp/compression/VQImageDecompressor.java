@@ -7,6 +7,7 @@ import cz.it4i.qcmp.data.*;
 import cz.it4i.qcmp.fileformat.QCMPFileHeader;
 import cz.it4i.qcmp.fileformat.QuantizationType;
 import cz.it4i.qcmp.huffman.HuffmanDecoder;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InBitStream;
 import cz.it4i.qcmp.quantization.vector.VQCodebook;
 import cz.it4i.qcmp.utilities.Stopwatch;
@@ -36,8 +37,8 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
     }
 
     private long calculatePlaneVectorCount(final QCMPFileHeader header) {
-        final int vectorXCount = (int) Math.ceil((double) header.getImageSizeX() / (double) header.getVectorSizeX());
-        final int vectorYCount = (int) Math.ceil((double) header.getImageSizeY() / (double) header.getVectorSizeY());
+        final long vectorXCount = (long) Math.ceil((double) header.getImageSizeX() / (double) header.getVectorSizeX());
+        final long vectorYCount = (long) Math.ceil((double) header.getImageSizeY() / (double) header.getVectorSizeY());
         // Number of vectors per plane.
         return (vectorXCount * vectorYCount);
     }
@@ -62,8 +63,11 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             throw new ImageDecompressionException("Unable to read quantization values from compressed stream.", ioEx);
         }
 
+        final HuffmanTreeBuilder builder = new HuffmanTreeBuilder(createHuffmanSymbols(codebookSize), frequencies);
+        builder.buildHuffmanTree();
+
         // We don't care about vector dimensions in here.
-        return new VQCodebook(new V3i(0), codebookVectors, frequencies);
+        return new VQCodebook(new V3i(0), codebookVectors, builder.getRoot());
     }
 
     @Override
@@ -72,8 +76,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         final VqQvcFile codebookCache = (VqQvcFile) codebookCacheFile;
 
         cachedCodebook = codebookCache.getCodebook();
-        cachedHuffmanDecoder = createHuffmanDecoder(createHuffmanSymbols(cachedCodebook.getCodebookSize()),
-                                                    cachedCodebook.getVectorFrequencies());
+        cachedHuffmanDecoder = cachedCodebook.getHuffmanDecoder();
     }
 
 
@@ -118,21 +121,19 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         final int planeCountForDecompression = header.getImageSizeZ();
         final long planeVectorCount = calculatePlaneVectorCount(header);
         final V2i qVector = new V2i(header.getVectorSizeX(), header.getVectorSizeY());
-        final int[] huffmanSymbols = createHuffmanSymbols(codebookSize);
-
 
         VQCodebook codebook = null;
         HuffmanDecoder huffmanDecoder = null;
         if (!header.isCodebookPerPlane()) {
             // There is only one codebook.
             codebook = readCodebook(compressedStream, codebookSize, vectorSize);
-            huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getVectorFrequencies());
+            huffmanDecoder = codebook.getHuffmanDecoder();
         }
 
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
             if (header.isCodebookPerPlane()) {
                 codebook = readCodebook(compressedStream, codebookSize, vectorSize);
-                huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getVectorFrequencies());
+                huffmanDecoder = codebook.getHuffmanDecoder();
             }
             assert (codebook != null && huffmanDecoder != null);
 
@@ -239,7 +240,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
 
         final VQCodebook codebook = readCodebook(compressedStream, codebookSize, vectorSize);
-        final HuffmanDecoder huffmanDecoder = createHuffmanDecoder(huffmanSymbols, codebook.getVectorFrequencies());
+        final HuffmanDecoder huffmanDecoder = codebook.getHuffmanDecoder();
 
         final int voxelLayerCount = VQImageCompressor.calculateVoxelLayerCount(header.getImageSizeZ(), header.getVectorSizeZ());
         final Stopwatch stopwatch = new Stopwatch();

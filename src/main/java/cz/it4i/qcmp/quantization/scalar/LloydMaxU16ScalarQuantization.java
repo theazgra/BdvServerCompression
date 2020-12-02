@@ -2,6 +2,7 @@ package cz.it4i.qcmp.quantization.scalar;
 
 import cz.it4i.qcmp.U16;
 import cz.it4i.qcmp.compression.listeners.IStatusListener;
+import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.quantization.QTrainIteration;
 import cz.it4i.qcmp.utilities.MinMaxResult;
 import cz.it4i.qcmp.utilities.Stopwatch;
@@ -258,7 +259,9 @@ public class LloydMaxU16ScalarQuantization {
     }
 
     public SQCodebook getCodebook() {
-        return new SQCodebook(centroids, frequencies);
+        final HuffmanTreeBuilder builder = new HuffmanTreeBuilder(codebookSize, frequencies);
+        builder.buildHuffmanTree();
+        return new SQCodebook(centroids, builder.getRoot());
     }
 }
 

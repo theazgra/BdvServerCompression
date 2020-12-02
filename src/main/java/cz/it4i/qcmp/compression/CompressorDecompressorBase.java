@@ -3,9 +3,7 @@ package cz.it4i.qcmp.compression;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.compression.listeners.IProgressListener;
 import cz.it4i.qcmp.compression.listeners.IStatusListener;
-import cz.it4i.qcmp.huffman.HuffmanDecoder;
 import cz.it4i.qcmp.huffman.HuffmanEncoder;
-import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.io.OutBitStream;
 
@@ -101,19 +99,7 @@ public abstract class CompressorDecompressorBase {
         }
         return symbols;
     }
-
-    protected HuffmanEncoder createHuffmanEncoder(final int[] symbols, final long[] frequencies) {
-        final HuffmanTreeBuilder huffman = new HuffmanTreeBuilder(symbols, frequencies);
-        huffman.buildHuffmanTree();
-        return huffman.createEncoder();
-    }
-
-    protected HuffmanDecoder createHuffmanDecoder(final int[] symbols, final long[] frequencies) {
-        final HuffmanTreeBuilder huffman = new HuffmanTreeBuilder(symbols, frequencies);
-        huffman.buildHuffmanTree();
-        return huffman.createDecoder();
-    }
-
+    
     protected int[] getPlaneIndicesForCompression(final InputData inputData) {
         if (inputData.isPlaneIndexSet()) {
             return new int[]{inputData.getPlaneIndex()};
