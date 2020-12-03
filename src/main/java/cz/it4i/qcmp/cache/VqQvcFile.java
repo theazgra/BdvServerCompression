@@ -99,6 +99,11 @@ public class VqQvcFile implements IQvcFile {
     }
 
     @Override
+    public void convertToNewerVersion(final boolean inPlace, final String inputPath, final String outputPath) {
+        assert false : "NOT IMPLEMENTED YET";
+    }
+
+    @Override
     public void report(final StringBuilder builder) {
         final int[][] vectors = codebook.getVectors();
         builder.append("\n- - - - - - - - - - - - - - - - - - - - - - - - -\n");
@@ -108,5 +113,7 @@ public class VqQvcFile implements IQvcFile {
             }
             builder.append("\n- - - - - - - - - - - - - - - - - - - - - - - - -\n");
         }
+
+
     }
 }

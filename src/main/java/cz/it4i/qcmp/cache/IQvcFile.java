@@ -15,4 +15,6 @@ public interface IQvcFile {
     IQvcHeader getHeader();
 
     void report(StringBuilder builder);
+
+    void convertToNewerVersion(final boolean inPlace, final String inputPath, final String outputPath) throws IOException;
 }

@@ -40,7 +40,7 @@ public class SqQvcFile implements IQvcFile {
         ((QvcHeaderV2) header).setHuffmanDataSize(huffmanTreeBinaryRepresentationSize);
 
         header.writeToStream(outputStream);
-        
+
         final int[] quantizationValues = codebook.getCentroids();
         for (final int qV : quantizationValues) {
             outputStream.writeShort(qV);
@@ -88,6 +88,24 @@ public class SqQvcFile implements IQvcFile {
             throw new IOException("Unable to read SqQvcFile of version: " + headerVersion);
         }
         codebook = new SQCodebook(centroids, huffmanRoot);
+    }
+
+    private void convertQvcFromV1ToV2(final String outputFilePath) {
+
+    }
+
+    @Override
+    public void convertToNewerVersion(final boolean inPlace, final String inputPath, final String outputPath) {
+        final int headerVersion = header.getHeaderVersion();
+        if (!inPlace && (outputPath == null || outputPath.isEmpty())) {
+            System.err.println("InPlace conversion wasn't specified nor the output file path.");
+            return;
+        }
+        if (headerVersion == 1) {
+            convertQvcFromV1ToV2(inPlace ? inputPath : outputPath);
+        } else {
+            System.err.printf("Version %d is already the newest version of QVC file.\n", headerVersion);
+        }
     }
 
     @Override
