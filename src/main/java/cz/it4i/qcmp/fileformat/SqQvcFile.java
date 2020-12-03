@@ -1,26 +1,24 @@
-package cz.it4i.qcmp.cache;
+package cz.it4i.qcmp.fileformat;
 
-import cz.it4i.qcmp.fileformat.IQvcHeader;
-import cz.it4i.qcmp.fileformat.QvcHeaderV2;
 import cz.it4i.qcmp.huffman.HuffmanNode;
 import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InBitStream;
 import cz.it4i.qcmp.io.MemoryOutputStream;
 import cz.it4i.qcmp.io.OutBitStream;
-import cz.it4i.qcmp.quantization.vector.VQCodebook;
+import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class VqQvcFile implements IQvcFile {
+public class SqQvcFile implements IQvcFile {
     private IQvcHeader header;
-    private VQCodebook codebook;
+    private SQCodebook codebook;
 
-    public VqQvcFile() {
+    public SqQvcFile() {
     }
 
-    public VqQvcFile(final IQvcHeader header, final VQCodebook codebook) {
+    public SqQvcFile(final IQvcHeader header, final SQCodebook codebook) {
         this.header = header;
         this.codebook = codebook;
         assert (header.getCodebookSize() == codebook.getCodebookSize());
@@ -41,41 +39,43 @@ public class VqQvcFile implements IQvcFile {
 
         header.writeToStream(outputStream);
 
-        final int[][] entries = codebook.getVectors();
-        for (final int[] entry : entries) {
-            for (final int vectorValue : entry) {
-                outputStream.writeShort(vectorValue);
-            }
+        final int[] quantizationValues = codebook.getCentroids();
+        for (final int qV : quantizationValues) {
+            outputStream.writeShort(qV);
         }
 
         outputStream.write(bufferStream.getBuffer(), 0, huffmanTreeBinaryRepresentationSize);
     }
 
+    /**
+     * Read codebook from file based on format version.
+     *
+     * @param inputStream Input stream.
+     * @param header      File header.
+     * @throws IOException when fails to read from input stream.
+     */
     @Override
     public void readFromStream(final DataInputStream inputStream, final IQvcHeader header) throws IOException {
         this.header = header;
+
+        final int headerVersion = header.getHeaderVersion();
         final int codebookSize = header.getCodebookSize();
 
-        final int entrySize = header.getVectorDim().multiplyTogether();
-        final int[][] vectors = new int[codebookSize][entrySize];
-
+        final int[] centroids = new int[codebookSize];
         for (int i = 0; i < codebookSize; i++) {
-            for (int j = 0; j < entrySize; j++) {
-                vectors[i][j] = inputStream.readUnsignedShort();
-            }
+            centroids[i] = inputStream.readUnsignedShort();
         }
-
         final HuffmanNode huffmanRoot;
-        final int headerVersion = header.getHeaderVersion();
-        if (headerVersion == 1) {
+        if (headerVersion == 1) {           // First version of qvc file.
             final long[] frequencies = new long[codebookSize];
             for (int i = 0; i < codebookSize; i++) {
                 frequencies[i] = inputStream.readLong();
             }
+
             final HuffmanTreeBuilder builder = new HuffmanTreeBuilder(codebookSize, frequencies);
             builder.buildHuffmanTree();
             huffmanRoot = builder.getRoot();
-        } else if (headerVersion == 2) {
+        } else if (headerVersion == 2) {    // Second version of qvc file.
             final InBitStream bitStream = new InBitStream(inputStream,
                                                           header.getBitsPerCodebookIndex(),
                                                           ((QvcHeaderV2) header).getHuffmanDataSize());
@@ -83,10 +83,27 @@ public class VqQvcFile implements IQvcFile {
             bitStream.setAllowReadFromUnderlyingStream(false);
             huffmanRoot = HuffmanNode.readFromStream(bitStream);
         } else {
-            throw new IOException("Unable to read VqQvcFile of version: " + headerVersion);
+            throw new IOException("Unable to read SqQvcFile of version: " + headerVersion);
         }
+        codebook = new SQCodebook(centroids, huffmanRoot);
+    }
 
-        codebook = new VQCodebook(header.getVectorDim(), vectors, huffmanRoot);
+    private void convertQvcFromV1ToV2(final String outputFilePath) {
+
+    }
+
+    @Override
+    public void convertToNewerVersion(final boolean inPlace, final String inputPath, final String outputPath) {
+        final int headerVersion = header.getHeaderVersion();
+        if (!inPlace && (outputPath == null || outputPath.isEmpty())) {
+            System.err.println("InPlace conversion wasn't specified nor the output file path.");
+            return;
+        }
+        if (headerVersion == 1) {
+            convertQvcFromV1ToV2(inPlace ? inputPath : outputPath);
+        } else {
+            System.err.printf("Version %d is already the newest version of QVC file.\n", headerVersion);
+        }
     }
 
     @Override
@@ -94,26 +111,20 @@ public class VqQvcFile implements IQvcFile {
         return header;
     }
 
-    public VQCodebook getCodebook() {
+    public SQCodebook getCodebook() {
         return codebook;
     }
 
     @Override
-    public void convertToNewerVersion(final boolean inPlace, final String inputPath, final String outputPath) {
-        assert false : "NOT IMPLEMENTED YET";
-    }
-
-    @Override
     public void report(final StringBuilder builder) {
-        final int[][] vectors = codebook.getVectors();
-        builder.append("\n- - - - - - - - - - - - - - - - - - - - - - - - -\n");
-        for (final int[] vector : vectors) {
-            for (final int x : vector) {
-                builder.append(x).append(';');
+
+        final int[] centroids = codebook.getCentroids();
+        for (int i = 0; i < centroids.length; i++) {
+            if (i != centroids.length - 1) {
+                builder.append(centroids[i]).append(", ");
+            } else {
+                builder.append(centroids[i]).append('\n');
             }
-            builder.append("\n- - - - - - - - - - - - - - - - - - - - - - - - -\n");
         }
-
-
     }
 }

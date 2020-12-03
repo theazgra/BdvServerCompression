@@ -1,7 +1,7 @@
 package cz.it4i.qcmp.compression;
 
-import cz.it4i.qcmp.cache.IQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
+import cz.it4i.qcmp.fileformat.IQvcFile;
 import cz.it4i.qcmp.io.InputData;
 
 import java.io.DataOutputStream;

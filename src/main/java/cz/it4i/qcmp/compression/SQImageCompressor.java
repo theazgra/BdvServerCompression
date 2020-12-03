@@ -1,10 +1,10 @@
 package cz.it4i.qcmp.compression;
 
 import cz.it4i.qcmp.U16;
-import cz.it4i.qcmp.cache.IQvcFile;
 import cz.it4i.qcmp.cache.QuantizationCacheManager;
-import cz.it4i.qcmp.cache.SqQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
+import cz.it4i.qcmp.fileformat.IQvcFile;
+import cz.it4i.qcmp.fileformat.SqQvcFile;
 import cz.it4i.qcmp.huffman.HuffmanEncoder;
 import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.io.OutBitStream;

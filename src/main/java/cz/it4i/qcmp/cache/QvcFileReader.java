@@ -1,9 +1,6 @@
 package cz.it4i.qcmp.cache;
 
-import cz.it4i.qcmp.fileformat.IQvcHeader;
-import cz.it4i.qcmp.fileformat.QuantizationType;
-import cz.it4i.qcmp.fileformat.QvcHeaderV1;
-import cz.it4i.qcmp.fileformat.QvcHeaderV2;
+import cz.it4i.qcmp.fileformat.*;
 import cz.it4i.qcmp.io.RawDataIO;
 
 import java.io.DataInputStream;

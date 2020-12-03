@@ -1,9 +1,9 @@
 package cz.it4i.qcmp.compression;
 
-import cz.it4i.qcmp.cache.IQvcFile;
-import cz.it4i.qcmp.cache.SqQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
+import cz.it4i.qcmp.fileformat.IQvcFile;
 import cz.it4i.qcmp.fileformat.QCMPFileHeader;
+import cz.it4i.qcmp.fileformat.SqQvcFile;
 import cz.it4i.qcmp.huffman.HuffmanDecoder;
 import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InBitStream;

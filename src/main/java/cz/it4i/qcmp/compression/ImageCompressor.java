@@ -1,9 +1,9 @@
 package cz.it4i.qcmp.compression;
 
 import cz.it4i.qcmp.U16;
-import cz.it4i.qcmp.cache.IQvcFile;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.data.Range;
+import cz.it4i.qcmp.fileformat.IQvcFile;
 import cz.it4i.qcmp.fileformat.QCMPFileHeader;
 import cz.it4i.qcmp.io.InputData;
 
