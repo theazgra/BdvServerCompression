@@ -155,18 +155,22 @@ public class QvcHeaderV1 implements IQvcHeader {
         this.trainFileNameSize = this.trainFileName.length();
     }
 
+    @Override
     public QuantizationType getQuantizationType() {
         return quantizationType;
     }
 
+    @Override
     public int getCodebookSize() {
         return codebookSize;
     }
 
+    @Override
     public int getBitsPerCodebookIndex() {
         return (int) Utils.log2(codebookSize);
     }
 
+    @Override
     public String getTrainFileName() {
         return trainFileName;
     }
@@ -183,6 +187,7 @@ public class QvcHeaderV1 implements IQvcHeader {
         return vectorSizeZ;
     }
 
+    @Override
     public V3i getVectorDim() {
         return new V3i(vectorSizeX, vectorSizeY, vectorSizeZ);
     }

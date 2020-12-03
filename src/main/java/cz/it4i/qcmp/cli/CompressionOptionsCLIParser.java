@@ -390,6 +390,8 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
             method = ProgramMethod.InspectFile;
         } else if (cmd.hasOption(CliConstants.CUSTOM_FUNCTION_LONG)) {
             method = ProgramMethod.CustomFunction;
+        } else if (cmd.hasOption(CliConstants.CONVERT_LONG)) {
+            method = ProgramMethod.Convert;
         } else {
             parseErrorOccurred = true;
             errorBuilder.append("No program method was matched\n");
@@ -412,31 +414,7 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
     public String report() {
         final StringBuilder sb = new StringBuilder();
 
-        sb.append("Method: ");
-        switch (method) {
-            case Compress:
-                sb.append("Compress\n");
-                break;
-            case Decompress:
-                sb.append("Decompress\n");
-                break;
-            case Benchmark:
-                sb.append("Benchmark\n");
-                break;
-            case TrainCodebook:
-                sb.append("TrainCodebook\n");
-                break;
-            case PrintHelp:
-                sb.append("PrintHelp\n");
-                break;
-            case CustomFunction:
-                sb.append("CustomFunction\n");
-                break;
-            case InspectFile:
-                sb.append("InspectFile\n");
-                break;
-        }
-
+        sb.append("Method: ").append(method).append('\n');
 
         if (hasQuantizationType(method)) {
             sb.append("Quantization type: ");
@@ -470,7 +448,6 @@ public class CompressionOptionsCLIParser extends CompressionOptions implements C
         }
 
         if (hasQuantizationType(method)) {
-
             sb.append("Input image dims: ").append(getInputDataInfo().getDimensions().toString()).append('\n');
         }
         if (getInputDataInfo().isPlaneIndexSet()) {

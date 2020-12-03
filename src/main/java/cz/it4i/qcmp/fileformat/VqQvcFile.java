@@ -1,5 +1,6 @@
 package cz.it4i.qcmp.fileformat;
 
+import cz.it4i.qcmp.cache.QvcFileWriter;
 import cz.it4i.qcmp.huffman.HuffmanNode;
 import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InBitStream;
@@ -97,8 +98,16 @@ public class VqQvcFile implements IQvcFile {
     }
 
     @Override
-    public void convertToNewerVersion(final boolean inPlace, final String inputPath, final String outputPath) {
-        assert false : "NOT IMPLEMENTED YET";
+    public void convertToNewerVersion(final boolean inPlace, final String inputPath, final String outputPath) throws IOException {
+        if (!inPlace && (outputPath == null || outputPath.isEmpty())) {
+            System.err.println("InPlace conversion wasn't specified nor the output file path.");
+            return;
+        }
+        if (header.getHeaderVersion() == 2) {
+            System.err.print("Version 2 is already the newest version of QVC file.\n");
+            return;
+        }
+        QvcFileWriter.writeVqCacheFile(inPlace ? inputPath : outputPath, header.getTrainFileName(), codebook);
     }
 
     @Override
@@ -111,7 +120,5 @@ public class VqQvcFile implements IQvcFile {
             }
             builder.append("\n- - - - - - - - - - - - - - - - - - - - - - - - -\n");
         }
-
-
     }
 }

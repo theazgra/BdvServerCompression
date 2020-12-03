@@ -7,5 +7,6 @@ public enum ProgramMethod {
     TrainCodebook,
     PrintHelp,
     CustomFunction,
-    InspectFile
+    InspectFile,
+    Convert
 }

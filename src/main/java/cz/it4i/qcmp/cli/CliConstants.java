@@ -30,6 +30,9 @@ public class CliConstants {
     public static final String CUSTOM_FUNCTION_SHORT = "cf";
     public static final String CUSTOM_FUNCTION_LONG = "custom-function";
 
+    public static final String CONVERT_SHORT = "conv";
+    public static final String CONVERT_LONG = "convert";
+
     public static final String BITS_SHORT = "b";
     public static final String BITS_LONG = "bits";
 
@@ -72,6 +75,10 @@ public class CliConstants {
                                          CliConstants.INSPECT_LONG,
                                          false,
                                          "Inspect the compressed file"));
+        methodGroup.addOption(new Option(CliConstants.CONVERT_SHORT,
+                                         CliConstants.CONVERT_LONG,
+                                         false,
+                                         "Convert input file to new version of custom file format"));
 
         methodGroup.addOption(new Option(CliConstants.BENCHMARK_SHORT,
                                          CliConstants.BENCHMARK_LONG,

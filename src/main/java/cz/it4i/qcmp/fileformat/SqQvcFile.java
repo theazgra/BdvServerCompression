@@ -1,5 +1,6 @@
 package cz.it4i.qcmp.fileformat;
 
+import cz.it4i.qcmp.cache.QvcFileWriter;
 import cz.it4i.qcmp.huffman.HuffmanNode;
 import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InBitStream;
@@ -88,22 +89,18 @@ public class SqQvcFile implements IQvcFile {
         codebook = new SQCodebook(centroids, huffmanRoot);
     }
 
-    private void convertQvcFromV1ToV2(final String outputFilePath) {
-
-    }
 
     @Override
-    public void convertToNewerVersion(final boolean inPlace, final String inputPath, final String outputPath) {
-        final int headerVersion = header.getHeaderVersion();
+    public void convertToNewerVersion(final boolean inPlace, final String inputPath, final String outputPath) throws IOException {
         if (!inPlace && (outputPath == null || outputPath.isEmpty())) {
             System.err.println("InPlace conversion wasn't specified nor the output file path.");
             return;
         }
-        if (headerVersion == 1) {
-            convertQvcFromV1ToV2(inPlace ? inputPath : outputPath);
-        } else {
-            System.err.printf("Version %d is already the newest version of QVC file.\n", headerVersion);
+        if (header.getHeaderVersion() == 2) {
+            System.err.print("Version 2 is already the newest version of QVC file.\n");
+            return;
         }
+        QvcFileWriter.writeSqCacheFile(inPlace ? inputPath : outputPath, header.getTrainFileName(), codebook);
     }
 
     @Override

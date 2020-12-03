@@ -10,4 +10,6 @@ public interface IQvcHeader extends IFileHeader {
     int getCodebookSize();
 
     V3i getVectorDim();
+
+    String getTrainFileName();
 }
