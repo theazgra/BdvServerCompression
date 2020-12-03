@@ -90,9 +90,11 @@ public class SQImageCompressor extends CompressorDecompressorBase implements IIm
             trainAndSaveCodebook();
         }
 
-        final SQCodebook codebook = cacheManager.loadSQCodebook(options.getInputDataInfo().getCacheFileName(), getCodebookSize());
-        if (codebook == null) {
-            throw new ImageCompressionException("Failed to read quantization values from cache file.");
+        final SQCodebook codebook;
+        try {
+            codebook = cacheManager.loadSQCodebook(options.getInputDataInfo().getCacheFileName(), getCodebookSize());
+        } catch (final IOException e) {
+            throw new ImageCompressionException("Failed to read quantization values from cache file.", e);
         }
         return new ScalarQuantizer(codebook);
     }

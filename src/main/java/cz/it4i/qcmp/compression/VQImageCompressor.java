@@ -107,12 +107,13 @@ public class VQImageCompressor extends CompressorDecompressorBase implements IIm
             trainAndSaveCodebook();
         }
 
-        final VQCodebook codebook = cacheManager.loadVQCodebook(options.getInputDataInfo().getCacheFileName(),
-                                                                getCodebookSize(),
-                                                                options.getQuantizationVector());
-
-        if (codebook == null) {
-            throw new ImageCompressionException("Failed to read quantization vectors from cache.");
+        final VQCodebook codebook;
+        try {
+            codebook = cacheManager.loadVQCodebook(options.getInputDataInfo().getCacheFileName(),
+                                                   getCodebookSize(),
+                                                   options.getQuantizationVector());
+        } catch (final IOException e) {
+            throw new ImageCompressionException("Failed to read quantization vectors from cache.", e);
         }
         return new VectorQuantizer(codebook);
     }

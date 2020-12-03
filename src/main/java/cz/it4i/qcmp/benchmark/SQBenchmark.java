@@ -45,10 +45,12 @@ public class SQBenchmark extends BenchmarkBase {
         if (options.getCodebookType() == CompressionOptions.CodebookType.Global) {
             System.out.println("Loading codebook from cache");
             final QuantizationCacheManager cacheManager = new QuantizationCacheManager(cacheFolder);
-            final SQCodebook codebook = cacheManager.loadSQCodebook(inputFile, codebookSize);
-
-            if (codebook == null) {
+            final SQCodebook codebook;
+            try {
+                codebook = cacheManager.loadSQCodebook(inputFile, codebookSize);
+            } catch (final IOException e) {
                 System.err.println("Failed to read quantization values from cache file.");
+                e.printStackTrace();
                 return;
             }
 

@@ -17,13 +17,9 @@ public class QvcFileReader {
      * @param path File path.
      * @return Cache file or null if reading fails.
      */
-    public static IQvcFile readCacheFile(final String path) {
+    public static IQvcFile readCacheFile(final String path) throws IOException {
         try (final FileInputStream fis = new FileInputStream(path)) {
             return readCacheFileImpl(fis);
-        } catch (final IOException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-            return null;
         }
     }
 
