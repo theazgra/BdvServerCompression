@@ -1,5 +1,6 @@
 package cz.it4i.qcmp.fileformat;
 
+import cz.it4i.qcmp.U16;
 import cz.it4i.qcmp.data.V2i;
 import cz.it4i.qcmp.data.V3i;
 import cz.it4i.qcmp.io.RawDataIO;
@@ -17,7 +18,6 @@ public class QvcHeaderV1 implements IQvcHeader {
     //endregion
 
     //region Header fields.
-    protected String magicValue;
     protected QuantizationType quantizationType;
     protected int codebookSize;
     protected int trainFileNameSize;
@@ -40,7 +40,19 @@ public class QvcHeaderV1 implements IQvcHeader {
 
     @Override
     public boolean validateHeader() {
-        return (magicValue != null && magicValue.equals(MAGIC_VALUE));
+        if (!quantizationType.isOneOf(QuantizationType.Scalar,
+                                      QuantizationType.Vector1D,
+                                      QuantizationType.Vector2D,
+                                      QuantizationType.Vector3D))
+            return false;
+
+        if (!U16.isInRange(codebookSize))
+            return false;
+
+        if (!U16.isInRange(trainFileNameSize) || trainFileName.length() != trainFileNameSize)
+            return false;
+
+        return U16.isInRange(vectorSizeX) && U16.isInRange(vectorSizeY) && U16.isInRange(vectorSizeZ);
     }
 
     /**

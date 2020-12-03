@@ -317,7 +317,7 @@ public class QuantizationCacheManager {
             return;
         }
         if (!qvcFile.getHeader().validateHeader()) {
-            System.err.println("Provided file is corrupted.");
+            System.err.println("Provided file is corrupted. Header is not valid.");
             return;
         }
         final StringBuilder reportBuilder = new StringBuilder();

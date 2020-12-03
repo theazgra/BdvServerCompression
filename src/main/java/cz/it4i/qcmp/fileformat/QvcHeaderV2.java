@@ -1,5 +1,7 @@
 package cz.it4i.qcmp.fileformat;
 
+import cz.it4i.qcmp.U16;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -29,7 +31,8 @@ public class QvcHeaderV2 extends QvcHeaderV1 {
 
     @Override
     public boolean validateHeader() {
-        return (magicValue != null && magicValue.equals(MAGIC_VALUE));
+        final boolean v1HeaderValidation = super.validateHeader();
+        return U16.isInRange(huffmanDataSize) && v1HeaderValidation;
     }
 
     @Override
