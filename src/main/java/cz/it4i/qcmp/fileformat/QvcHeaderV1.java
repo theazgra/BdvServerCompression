@@ -117,10 +117,10 @@ public class QvcHeaderV1 implements IQvcHeader {
 
     @Override
     public void report(final StringBuilder sb, final String inputFile) {
-        sb.append("HeaderVersion: ").append(getHeaderVersion()).append('\n');
-        sb.append("Magic: ").append(getMagicValue()).append('\n');
+        sb.append("HeaderVersion\t: ").append(getHeaderVersion()).append('\n');
+        sb.append("Magic\t\t: ").append(getMagicValue()).append('\n');
 
-        sb.append("CodebookType: ");
+        sb.append("CodebookType\t: ");
         switch (quantizationType) {
             case Scalar:
                 sb.append("Scalar\n");
@@ -135,8 +135,8 @@ public class QvcHeaderV1 implements IQvcHeader {
                 sb.append(String.format("Vector3D %s\n", new V3i(vectorSizeX, vectorSizeY, vectorSizeZ).toString()));
                 break;
         }
-        sb.append("CodebookSize: ").append(codebookSize).append('\n');
-        sb.append("TrainFile: ").append(trainFileName).append('\n');
+        sb.append("CodebookSize\t: ").append(codebookSize).append('\n');
+        sb.append("TrainFile\t: ").append(trainFileName).append('\n');
     }
     //endregion
 

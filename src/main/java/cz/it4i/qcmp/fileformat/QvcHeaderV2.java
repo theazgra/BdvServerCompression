@@ -77,7 +77,7 @@ public class QvcHeaderV2 extends QvcHeaderV1 {
     @Override
     public void report(final StringBuilder sb, final String inputFile) {
         super.report(sb, inputFile);
-        sb.append("HuffmanDataSize: ").append(huffmanDataSize).append('\n');
+        sb.append("HuffmanDataSize\t: ").append(huffmanDataSize).append('\n');
     }
     //endregion
 
