@@ -139,7 +139,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
             assert (codebook != null && huffmanDecoder != null);
 
 
-            final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
+            final int planeDataSize = (int) header.getChunkDataSizes()[planeIndex];
             try (final InBitStream inBitStream = new InBitStream(compressedStream,
                                                                  header.getBitsPerCodebookIndex(),
                                                                  planeDataSize)) {
@@ -183,7 +183,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
         for (int planeIndex = 0; planeIndex < planeCountForDecompression; planeIndex++) {
 
-            final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
+            final int planeDataSize = (int) header.getChunkDataSizes()[planeIndex];
             try (final InBitStream inBitStream = new InBitStream(compressedStream,
                                                                  header.getBitsPerCodebookIndex(),
                                                                  planeDataSize)) {
@@ -253,7 +253,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                     ? header.getImageSizeZ()
                     : (voxelLayerDepth + (voxelLayerIndex * voxelLayerDepth));
             final V3i currentVoxelLayerDims = new V3i(header.getImageSizeX(), header.getImageSizeY(), toZ - fromZ);
-            final int voxelLayerDataSize = (int) header.getPlaneDataSizes()[voxelLayerIndex];
+            final int voxelLayerDataSize = (int) header.getChunkDataSizes()[voxelLayerIndex];
             final int voxelLayerVoxelCount = Voxel.calculateRequiredVoxelCount(currentVoxelLayerDims, voxelDims);
 
             final int[][] decompressedVoxels = new int[voxelLayerVoxelCount][vectorSize];
@@ -311,7 +311,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
                     ? header.getImageSizeZ()
                     : (voxelLayerDepth + (voxelLayerIndex * voxelLayerDepth));
             final V3i currentVoxelLayerDims = new V3i(header.getImageSizeX(), header.getImageSizeY(), toZ - fromZ);
-            final int voxelLayerDataSize = (int) header.getPlaneDataSizes()[voxelLayerIndex];
+            final int voxelLayerDataSize = (int) header.getChunkDataSizes()[voxelLayerIndex];
             final int voxelLayerVoxelCount = Voxel.calculateRequiredVoxelCount(currentVoxelLayerDims, voxelDims);
 
             final int[][] decompressedVoxels = new int[voxelLayerVoxelCount][vectorSize];

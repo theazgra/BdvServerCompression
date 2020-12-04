@@ -19,20 +19,20 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
     //endregion
 
     //region Header fields
-    private String magicValue = MAGIC_VALUE;
-    private QuantizationType quantizationType;
-    private byte bitsPerCodebookIndex;
-    private boolean codebookPerPlane;
+    protected String magicValue = MAGIC_VALUE;
+    protected QuantizationType quantizationType;
+    protected byte bitsPerCodebookIndex;
+    protected boolean codebookPerPlane;
 
-    private int imageSizeX;
-    private int imageSizeY;
-    private int imageSizeZ;
+    protected int imageSizeX;
+    protected int imageSizeY;
+    protected int imageSizeZ;
 
-    private int vectorSizeX;
-    private int vectorSizeY;
-    private int vectorSizeZ;
+    protected int vectorSizeX;
+    protected int vectorSizeY;
+    protected int vectorSizeZ;
 
-    private long[] planeDataSizes;
+    protected long[] chunkDataSizes;
     //endregion
 
     //region IFileHeader implementation
@@ -121,10 +121,10 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
                 ? imageSizeZ
                 : VQImageCompressor.calculateVoxelLayerCount(imageSizeZ, vectorSizeZ);
 
-        planeDataSizes = new long[chunkCount];
+        chunkDataSizes = new long[chunkCount];
         for (int i = 0; i < chunkCount; i++) {
             final long readValue = inputStream.readInt();
-            planeDataSizes[i] = (readValue & 0x00000000FFFFFFFFL);
+            chunkDataSizes[i] = (readValue & 0x00000000FFFFFFFFL);
         }
     }
 
@@ -211,7 +211,7 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
 
         // Indices are encoded using huffman. Plane data size is written in the header.
         long totalPlaneDataSize = 0;
-        for (final long planeDataSize : planeDataSizes) {
+        for (final long planeDataSize : chunkDataSizes) {
             totalPlaneDataSize += planeDataSize;
         }
 
@@ -231,7 +231,7 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
 
         // Indices are encoded using huffman. Plane data size is written in the header.
         long totalPlaneDataSize = 0;
-        for (final long planeDataSize : planeDataSizes) {
+        for (final long planeDataSize : chunkDataSizes) {
             totalPlaneDataSize += planeDataSize;
         }
         return (codebookDataSize + totalPlaneDataSize);
@@ -361,12 +361,12 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
         vectorSizeZ = vectorDims.getZ();
     }
 
-    public long[] getPlaneDataSizes() {
-        return planeDataSizes;
+    public long[] getChunkDataSizes() {
+        return chunkDataSizes;
     }
 
-    public void setPlaneDataSizes(final long[] sizes) {
-        planeDataSizes = sizes;
+    public void setChunkDataSizes(final long[] sizes) {
+        chunkDataSizes = sizes;
     }
 
     public long getHeaderSize() {

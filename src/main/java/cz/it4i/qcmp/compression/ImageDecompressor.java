@@ -109,7 +109,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
 
         if (validFile && options.isVerbose()) {
             final String prefix = header.getQuantizationType() != QuantizationType.Vector3D ? "Plane" : "Voxel layer";
-            final long[] planeDataSizes = header.getPlaneDataSizes();
+            final long[] planeDataSizes = header.getChunkDataSizes();
             long planeIndex = 0;
             for (final long planeDataSize : planeDataSizes) {
                 logBuilder.append(String.format("%s %d: %d Bytes\n", prefix, planeIndex++, planeDataSize));
@@ -244,7 +244,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
 
             dis.reset();
 
-            header.setPlaneDataSizes(chunkSizes);
+            header.setChunkDataSizes(chunkSizes);
 
 
             return cachedDecompressor.decompressStreamMode(dis, header);

@@ -73,7 +73,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
 
             reportStatusToListeners(String.format("Decompressing plane %d...", planeIndex));
             byte[] decompressedPlaneData = null;
-            final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
+            final int planeDataSize = (int) header.getChunkDataSizes()[planeIndex];
             try (final InBitStream inBitStream = new InBitStream(compressedStream,
                                                                  header.getBitsPerCodebookIndex(),
                                                                  planeDataSize)) {
@@ -140,7 +140,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
             }
             assert (codebook != null && huffmanDecoder != null);
 
-            final int planeDataSize = (int) header.getPlaneDataSizes()[planeIndex];
+            final int planeDataSize = (int) header.getChunkDataSizes()[planeIndex];
             try (final InBitStream inBitStream = new InBitStream(compressedStream, header.getBitsPerCodebookIndex(), planeDataSize)) {
                 inBitStream.fillEntireBuffer();
                 inBitStream.setAllowReadFromUnderlyingStream(false);
