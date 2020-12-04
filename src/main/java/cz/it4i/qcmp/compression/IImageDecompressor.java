@@ -2,7 +2,7 @@ package cz.it4i.qcmp.compression;
 
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
 import cz.it4i.qcmp.fileformat.IQvcFile;
-import cz.it4i.qcmp.fileformat.QCMPFileHeader;
+import cz.it4i.qcmp.fileformat.QCMPFileHeaderV1;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -18,7 +18,7 @@ public interface IImageDecompressor extends IListenable {
      */
     void decompress(DataInputStream compressedStream,
                     DataOutputStream decompressStream,
-                    final QCMPFileHeader header) throws ImageDecompressionException;
+                    final QCMPFileHeaderV1 header) throws ImageDecompressionException;
 
     /**
      * Decompress the image planes to memory buffer.
@@ -30,10 +30,10 @@ public interface IImageDecompressor extends IListenable {
      */
     void decompressToBuffer(DataInputStream compressedStream,
                             short[][] buffer,
-                            final QCMPFileHeader header) throws ImageDecompressionException;
+                            final QCMPFileHeaderV1 header) throws ImageDecompressionException;
 
     short[] decompressStreamMode(final DataInputStream compressedStream,
-                                 final QCMPFileHeader header) throws ImageDecompressionException;
+                                 final QCMPFileHeaderV1 header) throws ImageDecompressionException;
 
     /**
      * Preload decompressor codebook and Huffman tree for stream decompressor from provided cache file.

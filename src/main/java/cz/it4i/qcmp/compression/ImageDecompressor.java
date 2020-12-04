@@ -3,7 +3,7 @@ package cz.it4i.qcmp.compression;
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
 import cz.it4i.qcmp.data.ImageU16Dataset;
 import cz.it4i.qcmp.fileformat.IQvcFile;
-import cz.it4i.qcmp.fileformat.QCMPFileHeader;
+import cz.it4i.qcmp.fileformat.QCMPFileHeaderV1;
 import cz.it4i.qcmp.fileformat.QuantizationType;
 import cz.it4i.qcmp.utilities.Stopwatch;
 import cz.it4i.qcmp.utilities.Utils;
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class ImageDecompressor extends CompressorDecompressorBase {
 
     private IImageDecompressor cachedDecompressor = null;
-    private QCMPFileHeader cachedHeader = null;
+    private QCMPFileHeaderV1 cachedHeader = null;
 
     public ImageDecompressor(final CompressionOptions passedOptions) {
         super(passedOptions);
@@ -31,7 +31,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         assert (cachedDecompressor != null);
         cachedDecompressor.preloadGlobalCodebook(codebookCacheFile);
 
-        cachedHeader = new QCMPFileHeader();
+        cachedHeader = new QCMPFileHeaderV1();
         cachedHeader.setQuantizationType(codebookCacheFile.getHeader().getQuantizationType());
         cachedHeader.setBitsPerCodebookIndex((byte) ((int) Utils.log2(codebookCacheFile.getHeader().getCodebookSize())));
         cachedHeader.setVectorDimension(codebookCacheFile.getHeader().getVectorDim());
@@ -44,8 +44,8 @@ public class ImageDecompressor extends CompressorDecompressorBase {
      * @return Decompressed file header.
      * @throws IOException when failed to read header.
      */
-    private QCMPFileHeader readQCMPFileHeader(final DataInputStream inputStream) throws IOException {
-        final QCMPFileHeader header = new QCMPFileHeader();
+    private QCMPFileHeaderV1 readQCMPFileHeader(final DataInputStream inputStream) throws IOException {
+        final QCMPFileHeaderV1 header = new QCMPFileHeaderV1();
         header.readFromStream(inputStream);
         return header;
     }
@@ -90,7 +90,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         final StringBuilder logBuilder = new StringBuilder();
         boolean validFile = true;
 
-        final QCMPFileHeader header;
+        final QCMPFileHeaderV1 header;
         try (final FileInputStream fileInputStream = new FileInputStream(options.getInputDataInfo().getFilePath());
              final DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
             header = readQCMPFileHeader(dataInputStream);
@@ -125,7 +125,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         try (final FileInputStream fileInputStream = new FileInputStream(options.getInputDataInfo().getFilePath());
              final DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
 
-            final QCMPFileHeader header = decompressQcmpHeader(dataInputStream);
+            final QCMPFileHeaderV1 header = decompressQcmpHeader(dataInputStream);
             if (header == null)
                 return false;
 
@@ -164,7 +164,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         return true;
     }
 
-    private boolean checkInputFileSize(final QCMPFileHeader header, final IImageDecompressor imageDecompressor) {
+    private boolean checkInputFileSize(final QCMPFileHeaderV1 header, final IImageDecompressor imageDecompressor) {
         final long fileSize = new File(options.getInputDataInfo().getFilePath()).length();
         final long dataSize = fileSize - header.getHeaderSize();
         final long expectedDataSize = header.getExpectedDataSize();
@@ -179,7 +179,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         try (final FileInputStream fileInputStream = new FileInputStream(options.getInputDataInfo().getFilePath());
              final DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
 
-            final QCMPFileHeader header = decompressQcmpHeader(dataInputStream);
+            final QCMPFileHeaderV1 header = decompressQcmpHeader(dataInputStream);
             if (header == null)
                 return Optional.empty();
 
@@ -217,7 +217,7 @@ public class ImageDecompressor extends CompressorDecompressorBase {
         try (final DataInputStream dis = new DataInputStream(new BufferedInputStream(compressedStream))) {
             assert (dis.markSupported());
 
-            final QCMPFileHeader header = cachedHeader.copyOf();
+            final QCMPFileHeaderV1 header = cachedHeader.copyOf();
 
             header.setImageSizeX(dis.readUnsignedShort());
             header.setImageSizeY(dis.readUnsignedShort());
@@ -254,8 +254,8 @@ public class ImageDecompressor extends CompressorDecompressorBase {
     }
 
     @Nullable
-    private QCMPFileHeader decompressQcmpHeader(final DataInputStream dataInputStream) throws IOException {
-        final QCMPFileHeader header = readQCMPFileHeader(dataInputStream);
+    private QCMPFileHeaderV1 decompressQcmpHeader(final DataInputStream dataInputStream) throws IOException {
+        final QCMPFileHeaderV1 header = readQCMPFileHeader(dataInputStream);
         if (header == null) {
             System.err.println("Failed to read QCMPFile header");
             return null;

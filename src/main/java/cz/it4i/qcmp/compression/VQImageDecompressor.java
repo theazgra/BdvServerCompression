@@ -3,7 +3,7 @@ package cz.it4i.qcmp.compression;
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
 import cz.it4i.qcmp.data.*;
 import cz.it4i.qcmp.fileformat.IQvcFile;
-import cz.it4i.qcmp.fileformat.QCMPFileHeader;
+import cz.it4i.qcmp.fileformat.QCMPFileHeaderV1;
 import cz.it4i.qcmp.fileformat.QuantizationType;
 import cz.it4i.qcmp.fileformat.VqQvcFile;
 import cz.it4i.qcmp.huffman.HuffmanDecoder;
@@ -36,7 +36,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
         super(options);
     }
 
-    private long calculatePlaneVectorCount(final QCMPFileHeader header) {
+    private long calculatePlaneVectorCount(final QCMPFileHeaderV1 header) {
         final long vectorXCount = (long) Math.ceil((double) header.getImageSizeX() / (double) header.getVectorSizeX());
         final long vectorYCount = (long) Math.ceil((double) header.getImageSizeY() / (double) header.getVectorSizeY());
         // Number of vectors per plane.
@@ -98,7 +98,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
     @Override
     public void decompress(final DataInputStream compressedStream,
                            final DataOutputStream decompressStream,
-                           final QCMPFileHeader header) throws ImageDecompressionException {
+                           final QCMPFileHeaderV1 header) throws ImageDecompressionException {
         if (header.getQuantizationType() == QuantizationType.Vector3D) {
             decompressVoxels(compressedStream, decompressStream, header);
             return;
@@ -114,7 +114,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
     }
 
     public void decompressImpl(final DataInputStream compressedStream,
-                               final QCMPFileHeader header,
+                               final QCMPFileHeaderV1 header,
                                final DecompressCallback callback) throws ImageDecompressionException {
         final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
         assert (header.getVectorSizeZ() == 1);
@@ -170,7 +170,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
     @SuppressWarnings("DuplicatedCode")
     public void decompressStreamModelImpl(final DataInputStream compressedStream,
-                                          final QCMPFileHeader header,
+                                          final QCMPFileHeaderV1 header,
                                           final DecompressCallback callback) throws ImageDecompressionException {
 
         assert (cachedCodebook != null && cachedHuffmanDecoder != null);
@@ -215,7 +215,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
     @Override
     public void decompressToBuffer(final DataInputStream compressedStream,
                                    final short[][] buffer,
-                                   final QCMPFileHeader header) throws ImageDecompressionException {
+                                   final QCMPFileHeaderV1 header) throws ImageDecompressionException {
         if (header.getQuantizationType() == QuantizationType.Vector3D) {
             decompressVoxelsToBuffer(compressedStream, buffer, header);
             return;
@@ -227,7 +227,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
 
     private void decompressVoxelsImpl(final DataInputStream compressedStream,
-                                      final QCMPFileHeader header,
+                                      final QCMPFileHeaderV1 header,
                                       final DecompressVoxelCallback callback) throws ImageDecompressionException {
 
         assert (header.getQuantizationType() == QuantizationType.Vector3D);
@@ -289,7 +289,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
     @SuppressWarnings("DuplicatedCode")
     private void decompressVoxelsStreamModeImpl(final DataInputStream compressedStream,
-                                                final QCMPFileHeader header,
+                                                final QCMPFileHeaderV1 header,
                                                 final DecompressVoxelCallback callback) throws ImageDecompressionException {
 
         assert (header.getQuantizationType() == QuantizationType.Vector3D);
@@ -348,7 +348,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
     private void decompressVoxelsToBuffer(final DataInputStream compressedStream,
                                           final short[][] buffer,
-                                          final QCMPFileHeader header) throws ImageDecompressionException {
+                                          final QCMPFileHeaderV1 header) throws ImageDecompressionException {
 
         final V3i voxelDims = new V3i(header.getVectorSizeX(), header.getVectorSizeY(), header.getVectorSizeZ());
 
@@ -358,7 +358,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
     private void decompressVoxels(final DataInputStream compressedStream,
                                   final DataOutputStream decompressStream,
-                                  final QCMPFileHeader header) throws ImageDecompressionException {
+                                  final QCMPFileHeaderV1 header) throws ImageDecompressionException {
 
         final V3i voxelDims = new V3i(header.getVectorSizeX(), header.getVectorSizeY(), header.getVectorSizeZ());
         decompressVoxelsImpl(compressedStream, header, (voxel, voxelData, planeOffset) -> {
@@ -377,7 +377,7 @@ public class VQImageDecompressor extends CompressorDecompressorBase implements I
 
     @Override
     public short[] decompressStreamMode(final DataInputStream compressedStream,
-                                        final QCMPFileHeader header) throws ImageDecompressionException {
+                                        final QCMPFileHeaderV1 header) throws ImageDecompressionException {
         final short[] buffer = new short[(int) header.getImageDims().multiplyTogether()];
         if (header.getQuantizationType() == QuantizationType.Vector3D) {
             final V3i voxelDim = new V3i(header.getVectorSizeX(), header.getVectorSizeY(), header.getVectorSizeZ());

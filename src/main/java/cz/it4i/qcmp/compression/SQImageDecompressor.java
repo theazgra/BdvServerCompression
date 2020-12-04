@@ -2,7 +2,7 @@ package cz.it4i.qcmp.compression;
 
 import cz.it4i.qcmp.compression.exception.ImageDecompressionException;
 import cz.it4i.qcmp.fileformat.IQvcFile;
-import cz.it4i.qcmp.fileformat.QCMPFileHeader;
+import cz.it4i.qcmp.fileformat.QCMPFileHeaderV1;
 import cz.it4i.qcmp.fileformat.SqQvcFile;
 import cz.it4i.qcmp.huffman.HuffmanDecoder;
 import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
@@ -45,7 +45,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
     @Override
     public void decompress(final DataInputStream compressedStream,
                            final DataOutputStream decompressStream,
-                           final QCMPFileHeader header) throws ImageDecompressionException {
+                           final QCMPFileHeaderV1 header) throws ImageDecompressionException {
 
         final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
         final int planeCountForDecompression = header.getImageSizeZ();
@@ -118,7 +118,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
     @Override
     public void decompressToBuffer(final DataInputStream compressedStream,
                                    final short[][] buffer,
-                                   final QCMPFileHeader header) throws ImageDecompressionException {
+                                   final QCMPFileHeaderV1 header) throws ImageDecompressionException {
         final int codebookSize = (int) Math.pow(2, header.getBitsPerCodebookIndex());
         final int planeCountForDecompression = header.getImageSizeZ();
 
@@ -163,7 +163,7 @@ public class SQImageDecompressor extends CompressorDecompressorBase implements I
 
     @Override
     public short[] decompressStreamMode(final DataInputStream compressedStream,
-                                        final QCMPFileHeader header) throws ImageDecompressionException {
+                                        final QCMPFileHeaderV1 header) throws ImageDecompressionException {
         throw new ImageDecompressionException("Not implemented yet.");
     }
 }

@@ -1,6 +1,6 @@
 package cz.it4i.qcmp.io;
 
-import cz.it4i.qcmp.fileformat.QCMPFileHeader;
+import cz.it4i.qcmp.fileformat.QCMPFileHeaderV1;
 import cz.it4i.qcmp.fileformat.QvcHeaderV1;
 import cz.it4i.qcmp.fileformat.QvcHeaderV2;
 
@@ -39,9 +39,9 @@ public class FileTypeInspector {
         // QvcHeaderV1.MAGIC_VALUE      // 9 bytes
         // QvcHeaderV2.MAGIC_VALUE      // 9 bytes
         try (final FileInputStream stream = new FileInputStream(filePath)) {
-            final byte[] buf1 = new byte[QCMPFileHeader.MAGIC_VALUE.length()];
+            final byte[] buf1 = new byte[QCMPFileHeaderV1.MAGIC_VALUE.length()];
             RawDataIO.readFullBuffer(stream, buf1);
-            if (new String(buf1).equals(QCMPFileHeader.MAGIC_VALUE)) {
+            if (new String(buf1).equals(QCMPFileHeaderV1.MAGIC_VALUE)) {
                 return FileType.Qcmp;
             }
 

@@ -11,7 +11,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 
-public class QCMPFileHeader implements IFileHeader, Cloneable {
+public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
     //region Constants
     private static final int VERSION = 1;
     private static final int BASE_QCMP_HEADER_SIZE = 23;
@@ -263,9 +263,9 @@ public class QCMPFileHeader implements IFileHeader, Cloneable {
         return super.clone();
     }
 
-    public QCMPFileHeader copyOf() {
+    public QCMPFileHeaderV1 copyOf() {
         try {
-            return (QCMPFileHeader) this.clone();
+            return (QCMPFileHeaderV1) this.clone();
         } catch (final CloneNotSupportedException e) {
             return null;
         }

@@ -4,7 +4,7 @@ import cz.it4i.qcmp.U16;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.fileformat.IQvcFile;
-import cz.it4i.qcmp.fileformat.QCMPFileHeader;
+import cz.it4i.qcmp.fileformat.QCMPFileHeaderV1;
 import cz.it4i.qcmp.io.InputData;
 
 import java.io.*;
@@ -67,7 +67,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
         return compressor;
     }
 
-    private void reportCompressionRatio(final QCMPFileHeader header, final int written) {
+    private void reportCompressionRatio(final QCMPFileHeaderV1 header, final int written) {
         final long originalDataSize = 2 * header.getImageSizeX() * header.getImageSizeY() * header.getImageSizeZ();
         final double compressionRatio = (double) written / (double) originalDataSize;
         System.out.printf("Compression ratio: %.5f%%\n", compressionRatio);
@@ -136,7 +136,7 @@ public class ImageCompressor extends CompressorDecompressorBase {
         try (final FileOutputStream fos = new FileOutputStream(options.getOutputFilePath(), false);
              final DataOutputStream compressStream = new DataOutputStream(new BufferedOutputStream(fos, 8192))) {
 
-            final QCMPFileHeader header = createHeader();
+            final QCMPFileHeaderV1 header = createHeader();
             header.writeToStream(compressStream);
 
             planeDataSizes = imageCompressor.compress(compressStream);
@@ -216,9 +216,9 @@ public class ImageCompressor extends CompressorDecompressorBase {
      *
      * @return Valid QCMPFile header for compressed file.
      */
-    private QCMPFileHeader createHeader() {
+    private QCMPFileHeaderV1 createHeader() {
         // TODO(Moravec): Change header to newer version!
-        final QCMPFileHeader header = new QCMPFileHeader();
+        final QCMPFileHeaderV1 header = new QCMPFileHeaderV1();
 
 
         header.setQuantizationType(options.getQuantizationType());
