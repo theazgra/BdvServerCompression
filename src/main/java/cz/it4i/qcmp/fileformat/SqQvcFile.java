@@ -1,11 +1,11 @@
 package cz.it4i.qcmp.fileformat;
 
-import cz.it4i.qcmp.cache.QvcFileWriter;
 import cz.it4i.qcmp.huffman.HuffmanNode;
 import cz.it4i.qcmp.huffman.HuffmanTreeBuilder;
 import cz.it4i.qcmp.io.InBitStream;
 import cz.it4i.qcmp.io.MemoryOutputStream;
 import cz.it4i.qcmp.io.OutBitStream;
+import cz.it4i.qcmp.io.QvcFileWriter;
 import cz.it4i.qcmp.quantization.scalar.SQCodebook;
 
 import java.io.DataInputStream;

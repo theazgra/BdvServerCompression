@@ -1,4 +1,4 @@
-package cz.it4i.qcmp.cache;
+package cz.it4i.qcmp.io;
 
 import cz.it4i.qcmp.compression.CompressionOptions;
 import cz.it4i.qcmp.data.V3i;

@@ -1,8 +1,6 @@
 package cz.it4i.qcmp;
 
 import cz.it4i.qcmp.benchmark.CompressionBenchmark;
-import cz.it4i.qcmp.cache.QuantizationCacheManager;
-import cz.it4i.qcmp.cache.QvcFileReader;
 import cz.it4i.qcmp.cli.CliConstants;
 import cz.it4i.qcmp.cli.CompressionOptionsCLIParser;
 import cz.it4i.qcmp.cli.CustomFunctionBase;
@@ -11,6 +9,8 @@ import cz.it4i.qcmp.compression.ImageCompressor;
 import cz.it4i.qcmp.compression.ImageDecompressor;
 import cz.it4i.qcmp.fileformat.FileExtensions;
 import cz.it4i.qcmp.fileformat.IQvcFile;
+import cz.it4i.qcmp.io.QuantizationCacheManager;
+import cz.it4i.qcmp.io.QvcFileReader;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;

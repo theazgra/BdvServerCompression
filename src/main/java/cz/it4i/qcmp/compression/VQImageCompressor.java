@@ -1,6 +1,5 @@
 package cz.it4i.qcmp.compression;
 
-import cz.it4i.qcmp.cache.QuantizationCacheManager;
 import cz.it4i.qcmp.compression.exception.ImageCompressionException;
 import cz.it4i.qcmp.data.Range;
 import cz.it4i.qcmp.fileformat.IQvcFile;
@@ -9,6 +8,7 @@ import cz.it4i.qcmp.fileformat.VqQvcFile;
 import cz.it4i.qcmp.huffman.HuffmanEncoder;
 import cz.it4i.qcmp.io.InputData;
 import cz.it4i.qcmp.io.OutBitStream;
+import cz.it4i.qcmp.io.QuantizationCacheManager;
 import cz.it4i.qcmp.io.loader.IPlaneLoader;
 import cz.it4i.qcmp.io.loader.PlaneLoaderFactory;
 import cz.it4i.qcmp.quantization.vector.LBGResult;

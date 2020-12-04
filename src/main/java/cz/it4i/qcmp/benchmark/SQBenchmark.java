@@ -1,9 +1,9 @@
 package cz.it4i.qcmp.benchmark;
 
 import cz.it4i.qcmp.U16;
-import cz.it4i.qcmp.cache.QuantizationCacheManager;
 import cz.it4i.qcmp.cli.CompressionOptionsCLIParser;
 import cz.it4i.qcmp.compression.CompressionOptions;
+import cz.it4i.qcmp.io.QuantizationCacheManager;
 import cz.it4i.qcmp.io.loader.IPlaneLoader;
 import cz.it4i.qcmp.io.loader.PlaneLoaderFactory;
 import cz.it4i.qcmp.quantization.QTrainIteration;

@@ -1,7 +1,6 @@
-package cz.it4i.qcmp.cache;
+package cz.it4i.qcmp.io;
 
 import cz.it4i.qcmp.fileformat.*;
-import cz.it4i.qcmp.io.RawDataIO;
 
 import java.io.DataInputStream;
 import java.io.FileInputStream;
