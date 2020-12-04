@@ -44,7 +44,7 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
      */
     @Override
     public boolean validateHeader() {
-        if (!magicValue.equals(MAGIC_VALUE))
+        if (!magicValue.equals(getMagicValue()))
             return false;
 
         if (bitsPerCodebookIndex == 0)
@@ -139,26 +139,10 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
             builder.append("Header is:\t\t invalid\n");
             return;
         }
-        builder.append("HeaderVersion\t\t: ").append(VERSION).append('\n');
-        builder.append("Magic value\t\t: ").append(magicValue).append('\n');
-        builder.append("Quantization type\t: ");
-        switch (quantizationType) {
-            case Scalar:
-                builder.append("Scalar\n");
-                break;
-            case Vector1D:
-                builder.append("Vector1D\n");
-                break;
-            case Vector2D:
-                builder.append("Vector2D\n");
-                break;
-            case Vector3D:
-                builder.append("Vector3D\n");
-                break;
-            case Invalid:
-                builder.append("INVALID\n");
-                break;
-        }
+        builder.append("HeaderVersion\t\t: ").append(getHeaderVersion()).append('\n');
+        builder.append("Magic value\t\t: ").append(getMagicValue()).append('\n');
+        builder.append("Quantization type\t: ").append(quantizationType).append('\n');
+
         builder.append("Bits per pixel\t\t: ").append(bitsPerCodebookIndex).append('\n');
 
         builder.append("Codebook\t\t: ").append(codebookPerPlane ? "one per plane\n" : "one for all\n");
@@ -176,6 +160,10 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
                 .append(vectorSizeY).append('x')
                 .append(vectorSizeZ).append('\n');
 
+        printFileSizeInfo(builder, inputFile);
+    }
+
+    protected void printFileSizeInfo(final StringBuilder builder, final String inputFile) {
         final long headerSize = getHeaderSize();
         final long fileSize = new File(inputFile).length();
         final long dataSize = fileSize - headerSize;
@@ -190,7 +178,7 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
         builder.append("Data size\t\t: ");
         Utils.prettyPrintFileSize(builder, dataSize).append(correctFileSize ? "(correct)\n" : "(INVALID)\n");
 
-        final long pixelCount = imageSizeX * imageSizeY * imageSizeZ;
+        final long pixelCount = (long) imageSizeX * imageSizeY * imageSizeZ;
         final long uncompressedSize = 2 * pixelCount; // We assert 16 bit (2 byte) pixel.
         final double compressionRatio = (double) fileSize / (double) uncompressedSize;
         builder.append(String.format("Compression ratio\t: %.4f\n", compressionRatio));
@@ -201,7 +189,7 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
         builder.append("\n=== Input file is ").append(correctFileSize ? "VALID" : "INVALID").append(" ===\n");
     }
 
-    private long calculateDataSizeForSq() {
+    protected long calculateDataSizeForSq() {
         final int LONG_BYTES = 8;
         // Quantization value count.
         final int codebookSize = (int) Math.pow(2, bitsPerCodebookIndex);
@@ -218,7 +206,7 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
         return (codebookDataSize + totalPlaneDataSize);
     }
 
-    private long calculateDataSizeForVq() {
+    protected long calculateDataSizeForVq() {
         final int LONG_BYTES = 8;
         // Vector count in codebook
         final int codebookSize = (int) Math.pow(2, bitsPerCodebookIndex);
@@ -252,7 +240,7 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
 
     @Override
     public String getMagicValue() {
-        return magicValue;
+        return MAGIC_VALUE;
     }
 
     //endregion
