@@ -15,7 +15,7 @@ public class QCMPFileHeader implements IFileHeader, Cloneable {
     //region Constants
     private static final int VERSION = 1;
     private static final int BASE_QCMP_HEADER_SIZE = 23;
-    private static final String MAGIC_VALUE = "QCMPFILE";
+    public static final String MAGIC_VALUE = "QCMPFILE";
     //endregion
 
     //region Header fields

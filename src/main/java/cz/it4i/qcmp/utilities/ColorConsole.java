@@ -48,10 +48,10 @@ public final class ColorConsole {
 
         switch (target) {
             case stdout:
-                System.out.println(getColor(color) + string + ANSI_RESET);
+                System.out.print(getColor(color) + string + ANSI_RESET);
                 break;
             case stderr:
-                System.err.println(getColor(color) + string + ANSI_RESET);
+                System.err.print(getColor(color) + string + ANSI_RESET);
                 break;
         }
     }
