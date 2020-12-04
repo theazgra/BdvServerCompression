@@ -64,6 +64,7 @@ In the first version the Huffman tree is recontructed from the absolute frequenc
 ## QVC File Format V2
 Second version of QVC format is based on the first version and Header sector is almost the same, we just added the size of the huffman binary data.
 The difference is in the data sector and in the binary representation of Huffman tree.
+
 | Sector    | Offset  | Size   | Type        | Note                                                |
 | --------- |---------|--------|-------------|-----------------------------------------------------|
 | **Header**|         |        |             |                                                     |
