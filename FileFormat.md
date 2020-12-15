@@ -54,6 +54,8 @@ Otherwise (codebook per plane), there are always codebook data followed by the p
 ## QCMP File Format V2
 The second iteration of QCMP format solves the problem of the first. Hyperstack dimensions are supported and also metadata can be saved to the compressed file. We have also reserved 19 bytes for the future.
 
+Another difference is that compressed chunk size now also contains the size of the compressed codebook. The data size can now be calculated as a `SUM` of compressed image chunk sizes.
+
 | Offset                   | Size         | Type         | Note                                        |
 | ------------------------ | ------------ | ------------ | ------------------------------------------- |
 | 0                        | 8            | ASCII String | `QCMPFLV2` Magic value                      |
@@ -68,7 +70,7 @@ The second iteration of QCMP format solves the problem of the first. Hyperstack 
 | 21                       | 2            | u16          | Vector size X                               |
 | 23                       | 2            | u16          | Vector size Y                               |
 | 25                       | 2            | u16          | Vector size Z                               |
-| 27                       | 4            | u32          | MS=Metadata size                            |
+| 27                       | 4            | i32          | MS=Metadata size                            |
 | 31                       | 19           | u8           | Reserved bytes                              |
 | 50                       | MS           | u8[]         | Metadata                                    |
 | 50 + MS                  | 4*ChunkCount | u32[]        | Size of compressed image chunks             |

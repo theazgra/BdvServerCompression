@@ -81,17 +81,36 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
         outputStream.writeShort(vectorSizeZ);
 
         // NOTE(Moravec): Allocate space for plane/voxel layers data sizes. Offset: 23.
-        final int chunkCount = (quantizationType != QuantizationType.Vector3D)
-                ? imageSizeZ
-                : VQImageCompressor.calculateVoxelLayerCount(imageSizeZ, vectorSizeZ);
+        allocateSpaceForChunkSizes(outputStream);
+    }
 
+    /**
+     * Allocate bytes which will be modified at the end. Size of compressed chunks will be saved here.
+     *
+     * @param outputStream Compression stream.
+     * @throws IOException when fails to write int.
+     */
+    protected void allocateSpaceForChunkSizes(final DataOutputStream outputStream) throws IOException {
+        final int chunkCount = getChunkCount();
         for (int i = 0; i < chunkCount; i++) {
             outputStream.writeInt(0x0);
         }
     }
 
+    /**
+     * Get number of compressed image chunks. See FileFormat.md
+     *
+     * @return Number of compressed chunks.
+     */
+    protected int getChunkCount() {
+        return (quantizationType != QuantizationType.Vector3D)
+                ? imageSizeZ
+                : VQImageCompressor.calculateVoxelLayerCount(imageSizeZ, vectorSizeZ);
+    }
+
     @Override
     public void readFromStream(final DataInputStream inputStream) throws IOException {
+        // TODO(Moravec): When we have file inspector the magic value will be read there.
         if (inputStream.available() < BASE_QCMP_HEADER_SIZE) {
             throw new IOException("Provided file is not QCMP file. The file is too small.");
         }
@@ -117,10 +136,17 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
         vectorSizeZ = inputStream.readUnsignedShort();
 
 
-        final int chunkCount = (quantizationType != QuantizationType.Vector3D)
-                ? imageSizeZ
-                : VQImageCompressor.calculateVoxelLayerCount(imageSizeZ, vectorSizeZ);
+        readChunkDataSizes(inputStream);
+    }
 
+    /**
+     * Read sizes of compressed chunks.
+     *
+     * @param inputStream Decompress stream.
+     * @throws IOException when unable to read chunk sizes.
+     */
+    protected void readChunkDataSizes(final DataInputStream inputStream) throws IOException {
+        final int chunkCount = getChunkCount();
         chunkDataSizes = new long[chunkCount];
         for (int i = 0; i < chunkCount; i++) {
             final long readValue = inputStream.readInt();
@@ -358,11 +384,7 @@ public class QCMPFileHeaderV1 implements IFileHeader, Cloneable {
     }
 
     public long getHeaderSize() {
-        final int chunkCount = (quantizationType != QuantizationType.Vector3D)
-                ? imageSizeZ
-                : VQImageCompressor.calculateVoxelLayerCount(imageSizeZ, vectorSizeZ);
-
-        return BASE_QCMP_HEADER_SIZE + (chunkCount * 4);
+        return BASE_QCMP_HEADER_SIZE + (getChunkCount() * 4L);
     }
     //endregion
 }

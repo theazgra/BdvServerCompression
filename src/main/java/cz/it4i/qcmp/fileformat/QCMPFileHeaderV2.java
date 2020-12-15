@@ -1,7 +1,7 @@
 package cz.it4i.qcmp.fileformat;
 
 import cz.it4i.qcmp.U16;
-import cz.it4i.qcmp.compression.VQImageCompressor;
+import cz.it4i.qcmp.io.RawDataIO;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -12,6 +12,7 @@ public class QCMPFileHeaderV2 extends QCMPFileHeaderV1 {
     private static final int VERSION = 2;
     private static final int BASE_QCMP_HEADER_SIZE = 50;
     public static final String MAGIC_VALUE = "QCMPFLV2";
+    private static final int RESERVED_BYTES_SIZE = 19;
     //endregion
 
     //region Header fields
@@ -43,12 +44,78 @@ public class QCMPFileHeaderV2 extends QCMPFileHeaderV1 {
 
     @Override
     public void writeToStream(final DataOutputStream outputStream) throws IOException {
-        // TODO
+        outputStream.writeBytes(MAGIC_VALUE);
+
+        outputStream.writeByte(quantizationType.getValue());
+        outputStream.writeByte(bitsPerCodebookIndex);
+        outputStream.writeBoolean(codebookPerPlane);
+
+        outputStream.writeShort(imageSizeX);
+        outputStream.writeShort(imageSizeY);
+        outputStream.writeShort(imageSizeZ);
+        outputStream.writeShort(channelCount);
+        outputStream.writeShort(timepointCount);
+
+        outputStream.writeShort(vectorSizeX);
+        outputStream.writeShort(vectorSizeY);
+        outputStream.writeShort(vectorSizeZ);
+
+        outputStream.writeInt(metadataSize);
+
+        // Reserved bytes.
+        for (int i = 0; i < RESERVED_BYTES_SIZE; i++) {
+            outputStream.writeByte(0x0);
+        }
+        assert (metadata.length == metadataSize) : "Metadata size doesn't match with metadata.length";
+        outputStream.write(metadata);
+
+        // NOTE(Moravec): Allocate space for plane/voxel layers data sizes. Offset: 23.
+        allocateSpaceForChunkSizes(outputStream);
     }
 
     @Override
     public void readFromStream(final DataInputStream inputStream) throws IOException {
-        // TODO
+        if (inputStream.available() < BASE_QCMP_HEADER_SIZE) {
+            throw new IOException("Provided file is not QCMP v2 file. The file is too small.");
+        }
+
+        final byte[] magicValueBuffer = new byte[MAGIC_VALUE.length()];
+        RawDataIO.readFullBuffer(inputStream, magicValueBuffer);
+
+        magicValue = new String(magicValueBuffer);
+        if (!magicValue.equals(MAGIC_VALUE)) {
+            throw new IOException("Provided file is not QCMP v2 file. Magic value is invalid.");
+        }
+
+        quantizationType = QuantizationType.fromByte(inputStream.readByte());
+        bitsPerCodebookIndex = inputStream.readByte();
+        codebookPerPlane = inputStream.readBoolean();
+
+        imageSizeX = inputStream.readUnsignedShort();
+        imageSizeY = inputStream.readUnsignedShort();
+        imageSizeZ = inputStream.readUnsignedShort();
+        channelCount = inputStream.readUnsignedShort();
+        timepointCount = inputStream.readUnsignedShort();
+
+        vectorSizeX = inputStream.readUnsignedShort();
+        vectorSizeY = inputStream.readUnsignedShort();
+        vectorSizeZ = inputStream.readUnsignedShort();
+
+        metadataSize = inputStream.readInt();
+        if (metadataSize < 0)
+            throw new IOException("Negative metadata size was read from stream.");
+
+        final int skipped = inputStream.skipBytes(RESERVED_BYTES_SIZE);
+        if (skipped != RESERVED_BYTES_SIZE)
+            throw new IOException("Unable to read QCMPFileHeaderV2. Unable to skip reserved bytes.");
+
+        // TODO(Moravec): Should we always read the full metadata string?
+        if (metadataSize > 0) {
+            metadata = new byte[metadataSize];
+            RawDataIO.readFullBuffer(inputStream, metadata);
+        }
+
+        readChunkDataSizes(inputStream);
     }
 
     @Override
@@ -88,51 +155,29 @@ public class QCMPFileHeaderV2 extends QCMPFileHeaderV1 {
         printFileSizeInfo(builder, inputFile);
     }
 
+
+    private long calculateDataSize() {
+        long dataSize = 0;
+        for (final long chunkSize : chunkDataSizes) {
+            dataSize += chunkSize;
+        }
+        return dataSize;
+    }
+
     @Override
     protected long calculateDataSizeForSq() {
-        // TODO(Moravec): Fix this calculation. Size of the huffman tree will be added to chunk size.
-        final int LONG_BYTES = 8;
-        // Quantization value count.
-        final int codebookSize = (int) Math.pow(2, bitsPerCodebookIndex);
-
-        // Total codebook size in bytes. Also symbol frequencies for Huffman.
-        final long codebookDataSize = ((2 * codebookSize) + (LONG_BYTES * codebookSize)) * (codebookPerPlane ? imageSizeZ : 1);
-
-        // Indices are encoded using huffman. Plane data size is written in the header.
-        long totalPlaneDataSize = 0;
-        for (final long planeDataSize : planeDataSizes) {
-            totalPlaneDataSize += planeDataSize;
-        }
-
-        return (codebookDataSize + totalPlaneDataSize);
+        return calculateDataSize();
     }
 
     @Override
     protected long calculateDataSizeForVq() {
-        // TODO(Moravec): Fix this calculation. Size of the huffman tree will be added to chunk size.
-        final int LONG_BYTES = 8;
-        // Vector count in codebook
-        final int codebookSize = (int) Math.pow(2, bitsPerCodebookIndex);
-
-        // Single vector size in bytes.
-        final int vectorDataSize = 2 * vectorSizeX * vectorSizeY * vectorSizeZ;
-
-        // Total codebook size in bytes.
-        final long codebookDataSize = ((codebookSize * vectorDataSize) + (codebookSize * LONG_BYTES)) * (codebookPerPlane ? imageSizeZ : 1);
-
-        // Indices are encoded using huffman. Plane data size is written in the header.
-        long totalPlaneDataSize = 0;
-        for (final long planeDataSize : planeDataSizes) {
-            totalPlaneDataSize += planeDataSize;
-        }
-        return (codebookDataSize + totalPlaneDataSize);
+        return calculateDataSize();
     }
 
     @Override
     public String getMagicValue() {
         return MAGIC_VALUE;
     }
-
     //endregion
 
     //region Cloneable implementation
@@ -151,8 +196,6 @@ public class QCMPFileHeaderV2 extends QCMPFileHeaderV1 {
     //endregion
 
     //region Getters and Setters
-
-
     public int getChannelCount() {
         return channelCount;
     }
@@ -186,11 +229,7 @@ public class QCMPFileHeaderV2 extends QCMPFileHeaderV1 {
     }
 
     public long getHeaderSize() {
-        final int chunkCount = (quantizationType != QuantizationType.Vector3D)
-                ? imageSizeZ
-                : VQImageCompressor.calculateVoxelLayerCount(imageSizeZ, vectorSizeZ);
-
-        return BASE_QCMP_HEADER_SIZE + metadataSize + (chunkCount * 4L);
+        return BASE_QCMP_HEADER_SIZE + metadataSize + (getChunkCount() * 4L);
     }
     //endregion
 }
